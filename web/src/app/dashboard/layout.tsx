@@ -78,7 +78,7 @@ export default function DashboardLayout({
               variant="admin"
             />
             {/* Main Content */}
-            <div className="flex-1 font-dm bg-white dark:bg-navy-800 rounded-[20px]">
+            <div className="flex-1 font-dm rounded-[20px]">
               <main>
                 {/* Routes */}
                 <div>

@@ -30,7 +30,7 @@ function OverallRevenue() {
         </div>
 
         <div className="flex items-center justify-center">
-          <select className="mb-3 mr-2 flex items-center justify-center text-sm font-bold text-gray-600 hover:cursor-pointer dark:!bg-navy-800 dark:text-white">
+          <select className="mb-3 mr-2 flex items-center justify-center text-sm font-bold text-gray-600 hover:cursor-pointer dark:!bg-navy-dark dark:text-white">
             <option value="monthly">Monthly</option>
             <option value="yearly">Yearly</option>
             <option value="weekly">Weekly</option>

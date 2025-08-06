@@ -2,7 +2,7 @@ import Barcode from '/public/img/ecommerce/Code-128.png';
 import Image from 'next/image';
 const Details = () => {
   return (
-    <div className="flex h-full w-full flex-col items-center justify-between rounded-[20px] bg-white bg-clip-border px-[35px] pb-11 pt-8 shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none md:flex-row">
+    <div className="flex h-full w-full flex-col items-center justify-between rounded-[20px] bg-white bg-clip-border px-[35px] pb-11 pt-8 shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none md:flex-row">
       {/* left side */}
       <div className="flex flex-col items-center gap-16 md:flex-row">
         <div>

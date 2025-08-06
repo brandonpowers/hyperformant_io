@@ -12,7 +12,7 @@ const Weather = () => {
         <p className="text-gray-600">
           <MdOutlineLocationOn />
         </p>
-        <p className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-800">
+        <p className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-dark">
           New York, USA
         </p>
       </div>

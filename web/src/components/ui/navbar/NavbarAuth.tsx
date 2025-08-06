@@ -6,7 +6,7 @@ import { FiAlignJustify } from 'react-icons/fi';
 import Dropdown from 'components/ui/dropdown';
 import Link from 'next/link';
 import Image from 'next/image';
-import avatar from '/public/img/avatars/avatar4.png';
+import UserAvatar from 'components/ui/avatar/UserAvatar';
 import logoDark from '/public/logos/logo-dark.svg';
 import logoLight from '/public/logos/logo-light.svg';
 
@@ -313,13 +313,9 @@ function NavbarAuth(props: {
               // Profile dropdown when logged in
               <Dropdown
                 button={
-                  <Image
-                    width="40"
-                    height="40"
-                    className="h-10 w-10 cursor-pointer rounded-full"
-                    src={avatar}
-                    alt="Profile"
-                  />
+                  <div className="cursor-pointer">
+                    <UserAvatar size="lg" />
+                  </div>
                 }
                 classNames={'py-2 top-8 -left-[180px] w-max'}
               >
@@ -350,19 +346,19 @@ function NavbarAuth(props: {
                       onClick={() => signOut({ callbackUrl: '/' })}
                       className="mt-3 text-sm font-medium text-red-500 hover:text-red-500 w-full text-left"
                     >
-                      Log Out
+                      Sign Out
                     </button>
                   </div>
                 </div>
               </Dropdown>
             ) : (
-              // Login/Signup buttons when not logged in
+              // Sign In / Sign Up buttons when not logged in
               <>
                 <Link
                   href="/auth/sign-in"
                   className="text-sm font-medium text-white hover:text-gray-200"
                 >
-                  Login
+                  Sign In
                 </Link>
                 <Link
                   href="/auth/sign-up"

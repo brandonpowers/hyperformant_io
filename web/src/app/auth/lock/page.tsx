@@ -2,24 +2,35 @@
 import Card from 'components/ui/card';
 import InputField from 'components/ui/fields/InputField';
 import Centered from 'components/auth/variants/CenteredAuthLayout';
-import Image from 'next/image';
-import avatar from '/public/img/avatars/avatar4.png';
+import UserAvatar from 'components/ui/avatar/UserAvatar';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { signIn, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 
 function Lock() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
+
+  // Handle mounting to prevent hydration issues
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Handle redirect after mounting
+  useEffect(() => {
+    if (mounted && status === 'unauthenticated') {
+      router.push('/auth/sign-in');
+    }
+  }, [mounted, status, router]);
 
   // Get user info from session or use defaults
   const userName = session?.user?.name || 'User';
   const userEmail = session?.user?.email || '';
-  const userImage = session?.user?.image || avatar;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,9 +57,23 @@ function Lock() {
     }
   };
 
-  // If no session, redirect to sign-in
-  if (!session && typeof window !== 'undefined') {
-    router.push('/auth/sign-in');
+  // Show loading state during authentication check
+  if (!mounted || status === 'loading') {
+    return (
+      <Centered
+        maincard={
+          <Card extra="w-[480px] mx-auto p-8">
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+            </div>
+          </Card>
+        }
+      />
+    );
+  }
+
+  // Don't render anything if redirecting
+  if (status === 'unauthenticated') {
     return null;
   }
 
@@ -58,13 +83,7 @@ function Lock() {
         <Card extra="w-[480px] mx-auto p-8">
           <form onSubmit={handleSubmit}>
             <div className="mb-6 flex flex-col items-center">
-              <Image
-                width="80"
-                height="80"
-                className="h-20 w-20 rounded-full"
-                src={userImage}
-                alt="Profile"
-              />
+              <UserAvatar size="xl" />
               <h3 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
                 Hi, {userName}
               </h3>

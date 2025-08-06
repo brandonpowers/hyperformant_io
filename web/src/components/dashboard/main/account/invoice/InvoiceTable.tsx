@@ -89,7 +89,7 @@ export default function ComplexTable(props: { tableData: any }) {
     debugTable: true,
   });
   return (
-    <div className="w-full overflow-x-scroll dark:!bg-navy-800 2xl:overflow-x-hidden">
+    <div className="w-full overflow-x-scroll dark:!bg-navy-dark 2xl:overflow-x-hidden">
       <table className="w-full">
         <thead>
           {table.getHeaderGroups().map((headerGroup) => (

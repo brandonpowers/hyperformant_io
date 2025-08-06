@@ -4,7 +4,7 @@ import tableDataInvoice from 'variables/account/invoice/tableDataInvoice';
 const Content = () => {
   return (
     <div
-      className={`h-full w-full rounded-[20px] bg-white pb-8 font-dm dark:!bg-navy-800`}
+      className={`h-full w-full rounded-[20px] bg-white pb-8 font-dm dark:!bg-navy-dark`}
     >
       <div className="flex w-full flex-col justify-between rounded-[20px] p-7 shadow-3xl shadow-shadow-500 dark:!bg-navy-700 dark:shadow-none md:h-[190px] md:flex-row">
         <div className="mb-4">

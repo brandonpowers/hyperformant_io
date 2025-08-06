@@ -6,14 +6,14 @@ import {
 
 const UserActivity = () => {
   return (
-    <div className="relative flex h-[355px] w-full flex-col rounded-[20px] bg-white bg-clip-border px-[25px] py-[29px] shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
+    <div className="relative flex h-[355px] w-full flex-col rounded-[20px] bg-white bg-clip-border px-[25px] py-[29px] shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none">
       {/* Header */}
       <div className="flex w-full justify-between px-[8px]">
         <h4 className="text-lg font-bold text-navy-700 dark:text-white">
           User Activity
         </h4>
         <select
-          className="text-sm font-medium text-gray-600 dark:!bg-navy-800 dark:text-white"
+          className="text-sm font-medium text-gray-600 dark:!bg-navy-dark dark:text-white"
           name=""
           id=""
         >

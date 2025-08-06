@@ -21,7 +21,7 @@ const Invite = () => {
           type="text"
           id="username"
           placeholder="Email addresses..."
-          className="placeholder:text-lightFourth h-full w-full text-sm text-navy-700 outline-none dark:!bg-navy-800 dark:text-white"
+          className="placeholder:text-lightFourth h-full w-full text-sm text-navy-700 outline-none dark:!bg-navy-dark dark:text-white"
         />
         <button className="linear flex items-center justify-center rounded-full bg-brand-500 p-3 text-base text-white transition duration-200 hover:cursor-pointer  hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200">
           <IoPaperPlane />

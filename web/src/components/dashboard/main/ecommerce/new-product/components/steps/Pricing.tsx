@@ -32,10 +32,10 @@ const Pricing = () => {
             >
               Currency
             </label>
-            <div className="w-full rounded-xl border border-gray-200 mt-2 py-3 px-2.5 text-sm text-gray-600 outline-none dark:!border-white/10 dark:!bg-navy-800">
+            <div className="w-full rounded-xl border border-gray-200 mt-2 py-3 px-2.5 text-sm text-gray-600 outline-none dark:!border-white/10 dark:!bg-navy-dark">
               <select
                 id="currency"
-                className="w-full bg-white dark:!bg-navy-800 mb-0"
+                className="w-full bg-white dark:!bg-navy-dark mb-0"
               >
                 <option value="usd">USD</option>
                 <option value="usd">EUR</option>

@@ -15,7 +15,7 @@ const Light = () => {
           <MdOutlineLocationOn />
         </p>
         <select
-          className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-800"
+          className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-dark"
           name=""
           id=""
         >
@@ -25,7 +25,7 @@ const Light = () => {
         </select>
       </div>
       {/* Main */}
-      <div className="flex h-fit w-full flex-col items-center bg-white dark:!bg-navy-800">
+      <div className="flex h-fit w-full flex-col items-center bg-white dark:!bg-navy-dark">
         <div className="mb-4 flex h-[90px] w-[90px] items-center justify-center rounded-full text-[50px] text-brand-500 shadow-xl shadow-shadow-500 dark:bg-navy-700 dark:text-white dark:shadow-none">
           <MdOutlineLightbulb />
         </div>

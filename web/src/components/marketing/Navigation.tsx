@@ -54,7 +54,7 @@ export function Navigation() {
                 href="/auth/sign-in"
                 className="px-2 py-1 font-medium text-gray-900 hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-200"
               >
-                Log In
+                Sign In
               </Link>
               <Button
                 className="h-10 font-semibold"

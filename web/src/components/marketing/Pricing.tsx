@@ -7,7 +7,7 @@ const Pricing = () => {
   const [activeButton, setActiveButton] = useState('monthly');
 
   return (
-    <section id="pricing" className="py-20 px-4 bg-gray-50 dark:bg-navy-800">
+    <section id="pricing" className="py-20 px-4 bg-gray-50 dark:bg-navy-dark">
       <div className="mx-auto max-w-7xl">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold text-navy-700 dark:text-white mb-4">

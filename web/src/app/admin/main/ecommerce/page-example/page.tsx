@@ -4,7 +4,7 @@ import ProductInfo from 'components/dashboard/main/ecommerce/page-example/Produc
 
 const ProductPage = () => {
   return (
-    <div className="mt-3 grid h-full w-full grid-cols-12 gap-3 rounded-[20px] bg-white bg-clip-border p-[18px] shadow-3xl shadow-shadow-500 dark:!bg-navy-800 dark:shadow-none">
+    <div className="mt-3 grid h-full w-full grid-cols-12 gap-3 rounded-[20px] bg-white bg-clip-border p-[18px] shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none">
       <div className="relative col-span-12 h-full w-full xl:col-span-7">
         {/* image */}
         <PhotoGallery />

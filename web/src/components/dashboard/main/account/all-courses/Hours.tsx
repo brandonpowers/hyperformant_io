@@ -6,7 +6,7 @@ import BarChart from 'components/ui/charts/BarChart';
 
 const Hours = () => {
   return (
-    <div className="w-full rounded-[20px] bg-white font-dm shadow-2xl shadow-gray-100 dark:border dark:!border-white/10 dark:!bg-navy-800 dark:shadow-none">
+    <div className="w-full rounded-[20px] bg-white font-dm shadow-2xl shadow-gray-100 dark:border dark:!border-white/10 dark:!bg-navy-dark dark:shadow-none">
       {/* Header */}
       <div className="flex items-center justify-between px-6 py-4 3xl:px-8">
         <p className="leading-1 text-lg font-bold text-navy-700 dark:text-white">

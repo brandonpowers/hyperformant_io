@@ -72,7 +72,7 @@ function TagsField(props: {
           onKeyDown={(e) => keyPress(e)}
           id="username"
           placeholder={placeholder}
-          className="flex h-[48px] w-full border-none bg-none p-0 text-sm outline-none dark:!bg-navy-800"
+          className="flex h-[48px] w-full border-none bg-none p-0 text-sm outline-none dark:!bg-navy-dark"
         />
       </div>
     </div>

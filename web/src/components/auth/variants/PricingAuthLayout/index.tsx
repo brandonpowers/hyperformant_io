@@ -33,7 +33,7 @@ function Pricing() {
             No credit card required
           </div>
           {/* Monthly / Yearly */}
-          <div className="mt-12 flex h-[50px] w-[280px] items-center rounded-full bg-navy-800 p-1.5">
+          <div className="mt-12 flex h-[50px] w-[280px] items-center rounded-full bg-navy-dark p-1.5">
             <button
               className={`linear flex h-full w-1/2 cursor-pointer select-none items-center justify-center rounded-[20px] text-xs font-bold uppercase text-brand-500 transition duration-200 ${
                 activeButton === 'monthly'

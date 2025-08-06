@@ -19,7 +19,7 @@ const Temperature = () => {
           <MdOutlineLocationOn />
         </p>
         <select
-          className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-800 dark:text-white"
+          className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-dark dark:text-white"
           name=""
           id=""
         >

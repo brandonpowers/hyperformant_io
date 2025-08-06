@@ -34,17 +34,17 @@ export default function CompanySelector({
 
   if (loading) {
     return (
-      <div className="mx-4 my-2">
-        <div className="h-14 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg" />
+      <div className="px-4 pt-6 pb-0">
+        <div className="h-16 w-full bg-gray-200 dark:bg-gray-700 animate-pulse rounded-lg" />
       </div>
     );
   }
 
   return (
-    <div className="mx-4 my-2">
+    <div className="px-4 pt-6 pb-0">
       <Dropdown
         button={
-          <div className="flex items-center w-full hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg px-3 py-3 transition-all duration-200 cursor-pointer group border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
+          <div className="relative flex items-center w-full hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg px-4 py-3 transition-all duration-200 cursor-pointer group border border-transparent hover:border-gray-200 dark:hover:border-gray-700">
             {/* Company Avatar/Icon */}
             <div className="flex-shrink-0 w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mr-3">
               {selectedCompany?.name ? (
@@ -89,10 +89,10 @@ export default function CompanySelector({
             )}
           </div>
         }
-        animation="origin-top-left transition-all duration-200 ease-out"
-        classNames="py-1 top-full mt-1 left-0 w-72 shadow-lg border border-gray-200 dark:border-gray-700"
+        animation="origin-top transition-all duration-200 ease-out"
+        classNames="top-full mt-1 left-0 right-0 rounded-lg shadow-lg border border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700"
       >
-        <div className="divide-y divide-gray-100 rounded-md bg-white shadow-lg dark:bg-gray-800 dark:divide-gray-700">
+        <div className="divide-y divide-gray-100">
           <div className="px-1 py-1">
             {companies.map((company) => (
               <button

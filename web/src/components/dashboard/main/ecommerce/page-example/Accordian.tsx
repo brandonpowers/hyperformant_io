@@ -16,13 +16,13 @@ import { useState } from 'react';
 function Accordian() {
   const [open, setOpen] = useState(false);
   return (
-    <div className="mt-14 h-fit w-full bg-yellow-200 dark:!bg-navy-800">
+    <div className="mt-14 h-fit w-full bg-yellow-200 dark:!bg-navy-dark">
       <Accordion
-        className="bg-white dark:!bg-navy-800"
+        className="bg-white dark:!bg-navy-dark"
         allowMultipleExpanded={true}
         allowZeroExpanded={true}
       >
-        <AccordionItem className="bg-white dark:!bg-navy-800">
+        <AccordionItem className="bg-white dark:!bg-navy-dark">
           <AccordionItemHeading
             className="pr-6"
             onClick={() => {
@@ -50,7 +50,7 @@ function Accordian() {
             </p>
           </AccordionItemPanel>
         </AccordionItem>
-        <AccordionItem className="bg-white dark:!bg-navy-800">
+        <AccordionItem className="bg-white dark:!bg-navy-dark">
           <AccordionItemHeading
             className="pr-6"
             onClick={() => {
@@ -78,7 +78,7 @@ function Accordian() {
             </p>
           </AccordionItemPanel>
         </AccordionItem>
-        <AccordionItem className="bg-white dark:!bg-navy-800">
+        <AccordionItem className="bg-white dark:!bg-navy-dark">
           <AccordionItemHeading
             className="pr-6"
             onClick={() => {

@@ -2,6 +2,30 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer base {
+  :root {
+    --bg-navy-dark: #111c44; /* Original navy-800 color */
+  }
+  
+  .dark {
+    /* Can be customized per theme */
+    --bg-navy-dark: linear-gradient(
+      135deg,
+      rgba(33, 85, 120, 0.15),
+      rgba(255, 255, 255, 0.03)
+    );
+  }
+}
+
+@layer utilities {
+  .bg-navy-dark {
+    background: var(--bg-navy-dark);
+    backdrop-filter: blur(10px) brightness(1.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px rgba(33, 85, 120, 0.3), 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+}
+
 @font-face {
   font-family: "NanumPenScript";
   font-weight: 400;

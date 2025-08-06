@@ -14,7 +14,7 @@ const SiteHeader = () => {
   );
 
   return (
-    <header className="w-full bg-white dark:bg-navy-800 shadow-sm border-b border-gray-200 dark:border-navy-700 z-50">
+    <header className="w-full bg-white dark:bg-navy-dark shadow-sm border-b border-gray-200 dark:border-navy-700 z-50">
       <div className="flex items-center justify-between px-6 py-6">
         {/* Logo and Brand */}
         <div className="flex items-center space-x-4">

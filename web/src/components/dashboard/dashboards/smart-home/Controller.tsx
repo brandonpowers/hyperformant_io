@@ -19,7 +19,7 @@ const General = (props: {
       className="flex w-full flex-col items-center hover:cursor-pointer"
     >
       <button
-        className={`linear mb-2 flex items-center justify-center rounded-full bg-white px-4 py-4 text-[30px] transition-all duration-200 dark:!bg-navy-800 ${
+        className={`linear mb-2 flex items-center justify-center rounded-full bg-white px-4 py-4 text-[30px] transition-all duration-200 dark:!bg-navy-dark ${
           stateOff
             ? 'bg-lightPrimary from-[#0B1330] to-[#111C44] text-gray-600 shadow-inset shadow-shadow-500 dark:!bg-gradient-to-b dark:text-white/20 dark:!shadow-none'
             : 'from-[#ffffff0f] to-white/0 text-brand-500 shadow-xl shadow-shadow-500 dark:bg-gradient-to-b dark:text-gray-200 dark:shadow-darkinset dark:shadow-white/20'

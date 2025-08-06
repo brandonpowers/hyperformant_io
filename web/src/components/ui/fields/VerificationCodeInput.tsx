@@ -145,7 +145,7 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
             }
             ${
               disabled
-                ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-navy-800'
+                ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-navy-dark'
                 : 'bg-white dark:bg-navy-700'
             }
             text-navy-700 dark:text-white

@@ -171,9 +171,6 @@ function Verification() {
             )}
 
             <div className="mb-6">
-              <label className="mb-3 block text-sm font-medium text-navy-700 dark:text-white">
-                Verification Code*
-              </label>
               <VerificationCodeInput
                 length={6}
                 onComplete={handleCodeComplete}

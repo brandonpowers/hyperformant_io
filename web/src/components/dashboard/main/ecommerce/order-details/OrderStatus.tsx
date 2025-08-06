@@ -50,7 +50,7 @@ const OrderStatus = () => {
             <OrderStep
               title="Order Placed"
               subtitle="27 Jul 2022"
-              bg="bg-white dark:!bg-navy-800"
+              bg="bg-white dark:!bg-navy-dark"
               icon2={<MdCheck />}
               icon={<MdPointOfSale />}
               border="border border-green-500"
@@ -60,7 +60,7 @@ const OrderStatus = () => {
             <OrderStep
               title="Products Picked"
               subtitle="27 Jul 2022"
-              bg="bg-white dark:!bg-navy-800"
+              bg="bg-white dark:!bg-navy-dark"
               icon2={<MdCheck />}
               icon={<MdShoppingBasket />}
               border="border border-green-500"
@@ -91,7 +91,7 @@ const OrderStatus = () => {
             <OrderStep
               title="Order Packed"
               subtitle="27 Jul 2022"
-              bg="bg-white dark:!bg-navy-800"
+              bg="bg-white dark:!bg-navy-dark"
               icon2={<MdCheck />}
               icon={<MdArchive />}
               border="border border-green-500"
@@ -124,7 +124,7 @@ const OrderStatus = () => {
             <OrderStep
               title="Shipped"
               subtitle="27 Jul 2022"
-              bg="bg-white dark:!bg-navy-800"
+              bg="bg-white dark:!bg-navy-dark"
               icon2={<MdCheck />}
               icon={<MdLocalShipping />}
               border="border border-green-500"

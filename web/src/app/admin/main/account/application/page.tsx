@@ -46,7 +46,7 @@ const Application = () => {
             }
             title="Spendings"
             value="$1.249"
-            bgColor={'bg-white dark:!bg-navy-800'}
+            bgColor={'bg-white dark:!bg-navy-dark'}
             growth={'-12%'}
             growthColor="text-red-500"
             cardBg="bg-white"

@@ -72,7 +72,7 @@ const HistoryCard = () => {
       {HistoryData.map((data, index) => (
         <div
           key={index}
-          className="flex h-full w-full items-start justify-between bg-white px-3 py-[20px] hover:shadow-2xl dark:!bg-navy-800 dark:shadow-none dark:hover:!bg-navy-700"
+          className="flex h-full w-full items-start justify-between bg-white px-3 py-[20px] hover:shadow-2xl dark:!bg-navy-dark dark:shadow-none dark:hover:!bg-navy-700"
         >
           <div className="flex items-center gap-3">
             <div className="flex h-16 w-16 items-center justify-center">
