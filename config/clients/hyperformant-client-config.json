@@ -1,0 +1,290 @@
+{
+  "client_info": {
+    "client_name": "Hyperformant",
+    "client_id": "hyperformant-main",
+    "industry": "AI Automation & Business Intelligence",
+    "company_size": "startup",
+    "setup_date": "2024-12-01",
+    "contact_email": "hi@hyperformant.com"
+  },
+
+  "apollo_config": {
+    "api_key": "${APOLLO_API_KEY}",
+    "workspace_name": "Hyperformant Market Forces",
+    "daily_limits": {
+      "contacts_per_day": 500,
+      "sequences_per_day": 100,
+      "linkedin_connections_per_day": 25
+    }
+  },
+
+  "smart_lists": {
+    "market_forces_analysis_targets": {
+      "name": "Market Forces Analysis - Early Stage SaaS",
+      "description": "Target prospects for Market Forces Analysis reports - Early stage SaaS companies",
+      "apollo_filters": {
+        "person_titles": [
+          "Founder",
+          "CEO",
+          "Co-Founder",
+          "CTO",
+          "VP Strategy",
+          "Head of Business Development"
+        ],
+        "organization_num_employees_ranges": ["5,20", "21,50"],
+        "organization_estimated_annual_revenue_ranges": [
+          "500000,5000000",
+          "5000000,10000000"
+        ],
+        "q_organization_keyword_tags": [
+          "saas",
+          "software",
+          "technology",
+          "fintech",
+          "healthtech",
+          "edtech",
+          "proptech",
+          "martech"
+        ],
+        "organization_locations": ["United States", "Canada"],
+        "organization_founded_year_ranges": ["2018,2024"]
+      },
+      "target_size": 10000,
+      "sync_frequency_hours": 12,
+      "auto_refresh": true
+    },
+    "growth_stage_software_companies": {
+      "name": "Growth Stage Software Companies",
+      "description": "Mid-stage companies for premium Market Forces Analysis",
+      "apollo_filters": {
+        "person_titles": ["CEO", "Founder", "VP", "Director"],
+        "organization_num_employees_ranges": ["21,50", "51,100"],
+        "organization_estimated_annual_revenue_ranges": [
+          "5000000,25000000",
+          "25000000,50000000"
+        ],
+        "q_organization_keyword_tags": ["software", "saas", "technology"],
+        "organization_locations": ["United States", "Canada", "United Kingdom"],
+        "organization_founded_year_ranges": ["2017,2022"]
+      },
+      "target_size": 2500,
+      "sync_frequency_hours": 48,
+      "auto_refresh": true
+    },
+    "enterprise_consulting_targets": {
+      "name": "Enterprise Consulting Targets",
+      "description": "Large companies for strategic consulting services",
+      "apollo_filters": {
+        "person_titles": ["CEO", "President", "VP", "SVP", "C-Suite"],
+        "organization_num_employees_ranges": [
+          "100,500",
+          "500,1000",
+          "1000,5000"
+        ],
+        "organization_estimated_annual_revenue_ranges": ["50000000,200000000"],
+        "q_organization_keyword_tags": [
+          "enterprise software",
+          "saas",
+          "technology"
+        ],
+        "person_seniorities": ["c_suite", "vp", "director"]
+      },
+      "target_size": 1000,
+      "sync_frequency_hours": 72,
+      "auto_refresh": true
+    }
+  },
+
+  "sequences": {
+    "market_forces_email_sequence": {
+      "name": "Market Forces Analysis - Email Competitive Intelligence",
+      "type": "email",
+      "target_list": "market_forces_analysis_targets",
+      "steps": [
+        {
+          "step_number": 1,
+          "type": "email",
+          "delay_days": 0,
+          "subject": "{company_name} vs competitors - market positioning analysis",
+          "template": "market_forces_email_step_1"
+        },
+        {
+          "step_number": 2,
+          "type": "email",
+          "delay_days": 5,
+          "subject": "Market Forces Analysis: {company_name} competitive advantages",
+          "template": "market_forces_email_step_2"
+        },
+        {
+          "step_number": 3,
+          "type": "email",
+          "delay_days": 10,
+          "subject": "Final chance: {company_name} Market Forces Analysis",
+          "template": "market_forces_email_step_3"
+        }
+      ],
+      "settings": {
+        "daily_send_limit": 50,
+        "time_zone": "America/New_York",
+        "send_window": {
+          "start_time": "09:00",
+          "end_time": "17:00",
+          "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        },
+        "auto_stop_on_reply": true,
+        "track_opens": true,
+        "track_clicks": true
+      }
+    },
+    "market_forces_linkedin_sequence": {
+      "name": "Market Forces Analysis - LinkedIn Competitive Intelligence",
+      "type": "linkedin",
+      "target_list": "market_forces_analysis_targets",
+      "steps": [
+        {
+          "step_number": 1,
+          "type": "linkedin_connection_request",
+          "delay_days": 0,
+          "template": "market_forces_linkedin_connection"
+        },
+        {
+          "step_number": 2,
+          "type": "linkedin_message",
+          "delay_days": 3,
+          "template": "market_forces_linkedin_message_1"
+        },
+        {
+          "step_number": 3,
+          "type": "linkedin_message",
+          "delay_days": 7,
+          "template": "market_forces_linkedin_message_2"
+        }
+      ],
+      "settings": {
+        "daily_send_limit": 20,
+        "auto_stop_on_reply": true
+      }
+    },
+    "ceo_direct_sequence": {
+      "name": "Market Forces Analysis - CEO Direct",
+      "type": "email",
+      "target_list": "enterprise_consulting_targets",
+      "steps": [
+        {
+          "step_number": 1,
+          "type": "email",
+          "delay_days": 0,
+          "subject": "{company_name} competitive blind spots - CEO briefing",
+          "template": "ceo_direct_email_step_1"
+        },
+        {
+          "step_number": 2,
+          "type": "email",
+          "delay_days": 7,
+          "subject": "{company_name} strategic opportunities - final note",
+          "template": "ceo_direct_email_step_2"
+        }
+      ],
+      "settings": {
+        "daily_send_limit": 10,
+        "time_zone": "America/New_York",
+        "send_window": {
+          "start_time": "08:00",
+          "end_time": "18:00",
+          "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        },
+        "auto_stop_on_reply": true,
+        "track_opens": true,
+        "track_clicks": true
+      }
+    }
+  },
+
+  "message_templates": {
+    "market_forces_email_step_1": {
+      "subject": "{company_name} vs competitors - market positioning analysis",
+      "body": "Hi {first_name},\n\nI just completed a Market Forces Analysis of the {industry} space and discovered some significant vulnerabilities in the market leaders that {company_name} could exploit.\n\nThe analysis reveals:\n• What customers actually hate about your competitors\n• A market opportunity your competitors are missing\n• Specific acquisition targets that could accelerate your growth\n\nWould you be interested in seeing the 3-page executive summary? It includes competitor blind spots and M&A opportunities most founders never discover.\n\nBest regards,\nThe Hyperformant Research Team\n\nP.S. This isn't generic market research - it's real-time competitive intelligence based on actual customer sentiment and market signals."
+    },
+    "market_forces_email_step_2": {
+      "subject": "Market Forces Analysis: {company_name} competitive advantages",
+      "body": "Hi {first_name},\n\nI analyzed {company_name}'s competitive positioning and found some compelling insights:\n\n• 3 major weaknesses in your top competitors that customers complain about\n• Market opportunity your competitors are missing\n• 2 potential acquisition targets that would accelerate your growth\n\nThe customers are literally telling us where the vulnerabilities are - through Reddit complaints, G2 reviews, and social media signals.\n\nThe full Market Forces Analysis is 15 pages of actionable intelligence. Would you like me to send over the preview?\n\nBest,\nThe Hyperformant Research Team"
+    },
+    "market_forces_email_step_3": {
+      "subject": "Final chance: {company_name} Market Forces Analysis",
+      "body": "Hi {first_name},\n\nI don't want you to miss this Market Forces Analysis for {company_name}.\n\nJust last week, a SaaS founder used similar competitive intelligence to identify a $2M acquisition opportunity they never would have found otherwise.\n\nThe preview shows exactly where your competitors are vulnerable and which companies in your space are ripe for acquisition.\n\nThis kind of market timing intelligence is what separates the companies that get acquired from the ones that do the acquiring.\n\nShall I send it over?\n\nBest,\nThe Hyperformant Research Team\n\nP.S. If competitive positioning isn't a priority right now, no worries - just let me know and I'll stop following up."
+    },
+    "market_forces_linkedin_connection": {
+      "message": "Hi {first_name}, I just analyzed the competitive landscape in {industry} and found some surprising vulnerabilities in the market leaders. I'd love to connect and share insights about {company_name}'s positioning!"
+    },
+    "market_forces_linkedin_message_1": {
+      "message": "Thanks for connecting, {first_name}!\n\nI specialize in Market Forces Analysis - identifying competitor weaknesses and M&A opportunities that most founders miss.\n\nI found some interesting blind spots in {company_name}'s competitive landscape. Would you be interested in seeing the key findings?"
+    },
+    "market_forces_linkedin_message_2": {
+      "message": "Hi {first_name}, I put together a Market Forces Analysis showing:\n• What customers actually hate about your competitors\n• The biggest market gaps your competitors are missing\n• Which companies in your space are ripe for acquisition\n\nThe insights could be valuable for {company_name}'s strategic planning. Would you like me to send over the 3-page preview?"
+    },
+    "ceo_direct_email_step_1": {
+      "subject": "{company_name} competitive blind spots - CEO briefing",
+      "body": "{first_name},\n\nAs CEO of {company_name}, you're probably thinking about competitive positioning and market opportunities.\n\nI just finished a Market Forces Analysis of your space and found something interesting:\n\nYour main competitors have 3 significant vulnerabilities that customers are actively complaining about. Most founders never discover these blind spots because they're not monitoring the right signals.\n\nThe 15-minute read includes:\n• Customer rebellion data (what they hate about competitors)\n• Market gaps worth millions that competitors are missing\n• M&A targets that could accelerate your growth 3x\n\nWorth a look?\n\nThe Hyperformant Research Team"
+    },
+    "ceo_direct_email_step_2": {
+      "subject": "{company_name} strategic opportunities - final note",
+      "body": "{first_name},\n\nLast note on this - the Market Forces Analysis revealed some time-sensitive opportunities in your market.\n\nIf competitive intelligence and strategic positioning are priorities, I'm happy to share the findings.\n\nIf not, I'll leave you be!\n\nBest,\nThe Hyperformant Research Team"
+    }
+  },
+
+  "client_branding": {
+    "value_proposition_subject": "competitive intelligence and market positioning analysis",
+    "client_value_proposition": "identify competitor vulnerabilities and M&A opportunities through Market Forces Analysis",
+    "client_specific_value_message": "We analyze customer sentiment across Reddit, G2, Twitter, and HackerNews to identify exactly where your competitors are vulnerable and which companies in your space are acquisition targets.",
+    "client_success_story": "Last month, we helped a SaaS founder identify a $2M acquisition opportunity by analyzing competitor weaknesses in customer reviews and social media sentiment.",
+    "client_specific_linkedin_message": "We help SaaS founders identify competitor vulnerabilities and M&A opportunities through real-time market intelligence analysis.",
+    "sender_name": "The Hyperformant Research Team",
+    "client_signature": "Hyperformant\nMarket Forces Analysis & Competitive Intelligence\nhttps://hyperformant.com"
+  },
+
+  "analytics_config": {
+    "tracking_metrics": [
+      "email_open_rate",
+      "email_reply_rate",
+      "linkedin_connection_rate",
+      "linkedin_reply_rate",
+      "meeting_booking_rate",
+      "report_request_rate",
+      "premium_conversion_rate"
+    ],
+    "performance_targets": {
+      "email_open_rate": 0.35,
+      "email_reply_rate": 0.08,
+      "linkedin_connection_rate": 0.4,
+      "linkedin_reply_rate": 0.12,
+      "meeting_booking_rate": 0.02,
+      "report_request_rate": 0.05,
+      "premium_conversion_rate": 0.15
+    },
+    "reporting_frequency": "daily",
+    "alert_thresholds": {
+      "low_performance_threshold": 0.5,
+      "high_unsubscribe_threshold": 0.02
+    }
+  },
+
+  "automation_settings": {
+    "auto_create_lists": true,
+    "auto_create_sequences": true,
+    "auto_start_sequences": false,
+    "auto_optimize_underperforming": true,
+    "auto_pause_high_unsubscribe": true,
+    "backup_before_changes": true,
+    "dry_run_mode": false
+  },
+
+  "integration_settings": {
+    "supabase_sync": true,
+    "n8n_webhooks": true,
+    "custom_field_mapping": {
+      "apollo_custom_field_1": "market_forces_score",
+      "apollo_custom_field_2": "competitive_vulnerability_rating",
+      "apollo_custom_field_3": "acquisition_readiness_score"
+    }
+  }
+}

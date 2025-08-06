@@ -1,0 +1,35 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+*.tsbuildinfo
+
+# Generated files
+coverage/
+.nyc_output/
+
+# Wasp generated files
+app/.wasp/
+app/node_modules/
+app/public/
+app/dist/
+
+# Configuration files
+*.config.js
+*.config.cjs
+jest.config.js
+
+# N8N workflows and schemas
+n8n/
+
+# Migration files
+app/migrations/
+
+# Environment files
+.env*
+
+# Package files
+package-lock.json
+yarn.lock

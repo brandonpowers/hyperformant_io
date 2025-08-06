@@ -1,0 +1,665 @@
+{
+  "name": "Market Intelligence Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6,12,18 * * *"
+            }
+          ]
+        }
+      },
+      "id": "market-intelligence-schedule",
+      "name": "Every 6 Hours Sentiment Collection",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/prospect_apollo_sync",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id,company_id,companies(domain,name,industry)"
+            },
+            {
+              "name": "hyperformant_priority_level",
+              "value": "lte.2"
+            },
+            {
+              "name": "limit",
+              "value": "50"
+            }
+          ]
+        }
+      },
+      "id": "fetch-high-priority-prospects",
+      "name": "Fetch High Priority Prospects",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract company domains and prepare for sentiment analysis\nconst prospects = $input.all();\nconst companies = [];\nconst targetDomains = [];\n\nfor (const item of prospects) {\n  const prospect = item.json;\n  if (prospect.companies && prospect.companies.domain) {\n    companies.push({\n      domain: prospect.companies.domain,\n      name: prospect.companies.name,\n      industry: prospect.companies.industry,\n      prospect_id: prospect.id,\n      company_id: prospect.company_id\n    });\n    targetDomains.push(prospect.companies.domain);\n  }\n}\n\n// Create search queries for each platform\nconst searchQueries = companies.map(company => {\n  const companyName = company.name.replace(/[^a-zA-Z0-9\\s]/g, '');\n  const domain = company.domain.replace('.com', '').replace('.io', '').replace('.co', '');\n  \n  return {\n    company: company,\n    reddit_query: `\"${companyName}\" OR \"${domain}\" subreddit:SaaS OR subreddit:startups OR subreddit:entrepreneur`,\n    twitter_query: `\"${companyName}\" OR \"${domain}\" -is:retweet lang:en`,\n    g2_query: companyName,\n    hackernews_query: `\"${companyName}\" OR \"${domain}\"`\n  };\n});\n\nreturn {\n  companies: companies,\n  search_queries: searchQueries,\n  target_domains: targetDomains,\n  collection_timestamp: new Date().toISOString(),\n  batch_size: companies.length\n};"
+      },
+      "id": "prepare-sentiment-collection",
+      "name": "Prepare Sentiment Collection",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://oauth.reddit.com/search",
+        "authentication": "oAuth2",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $node[\"Prepare Sentiment Collection\"].json.search_queries[$itemIndex].reddit_query }}"
+            },
+            {
+              "name": "sort",
+              "value": "new"
+            },
+            {
+              "name": "limit",
+              "value": "25"
+            },
+            {
+              "name": "type",
+              "value": "link,comment"
+            }
+          ]
+        }
+      },
+      "id": "collect-reddit-sentiment",
+      "name": "Collect Reddit Sentiment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, 200],
+      "credentials": {
+        "oAuth2Api": {
+          "id": "reddit-oauth",
+          "name": "Reddit OAuth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.twitter.com/2/tweets/search/recent",
+        "authentication": "headerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $node[\"Prepare Sentiment Collection\"].json.search_queries[$itemIndex].twitter_query }}"
+            },
+            {
+              "name": "max_results",
+              "value": "25"
+            },
+            {
+              "name": "tweet.fields",
+              "value": "created_at,author_id,public_metrics,context_annotations"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.TWITTER_BEARER_TOKEN }}"
+            }
+          ]
+        }
+      },
+      "id": "collect-twitter-sentiment",
+      "name": "Collect Twitter Sentiment",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://data.g2.com/api/v1/survey-responses",
+        "authentication": "headerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "product_name",
+              "value": "={{ $node[\"Prepare Sentiment Collection\"].json.search_queries[$itemIndex].g2_query }}"
+            },
+            {
+              "name": "per_page",
+              "value": "25"
+            },
+            {
+              "name": "sort",
+              "value": "-submitted_at"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Token {{ $env.G2_API_KEY }}"
+            }
+          ]
+        }
+      },
+      "id": "collect-g2-reviews",
+      "name": "Collect G2 Reviews",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": {}
+      },
+      "id": "collect-hackernews-data",
+      "name": "Collect HackerNews Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [800, 500]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-haiku-20240307",
+        "options": {
+          "temperature": 0.0,
+          "maxTokens": 1500
+        },
+        "prompt": "=You are the Market Intelligence Agent analyzing consumer sentiment for competitive intelligence.\n\n**Company Being Analyzed:**\n{{ JSON.stringify($node[\"Prepare Sentiment Collection\"].json.companies[$itemIndex]) }}\n\n**Reddit Data:**\n{{ JSON.stringify($node[\"Collect Reddit Sentiment\"].json) }}\n\n**Twitter Data:**\n{{ JSON.stringify($node[\"Collect Twitter Sentiment\"].json) }}\n\n**G2 Reviews Data:**\n{{ JSON.stringify($node[\"Collect G2 Reviews\"].json) }}\n\n**Task:** Analyze this social media and review data to extract:\n1. **Sentiment Classification**: Overall sentiment toward the company\n2. **Pain Points**: Specific customer complaints and frustrations\n3. **Feature Requests**: What customers are asking for\n4. **Switching Signals**: Evidence of customers considering alternatives\n5. **Competitor Mentions**: References to competing products\n\n**Response Format:**\n```json\n{\n  \"target_company_domain\": \"string\",\n  \"analysis_timestamp\": \"{{ new Date().toISOString() }}\",\n  \"sentiment_summary\": {\n    \"overall_sentiment\": \"very_positive|positive|neutral|negative|very_negative\",\n    \"sentiment_score\": 0.0,\n    \"confidence_level\": 0.0,\n    \"total_mentions\": 0\n  },\n  \"extracted_insights\": [\n    {\n      \"source_platform\": \"reddit|twitter|g2|hackernews\",\n      \"content_text\": \"string\",\n      \"sentiment_classification\": \"very_positive|positive|neutral|negative|very_negative\",\n      \"sentiment_score\": 0.0,\n      \"pain_points\": [\"string\"],\n      \"feature_requests\": [\"string\"],\n      \"competitor_mentions\": [\"string\"],\n      \"switching_signals\": false,\n      \"pricing_complaints\": false,\n      \"support_issues_mentioned\": false\n    }\n  ],\n  \"competitive_intelligence\": {\n    \"top_pain_points\": [\"string\"],\n    \"most_requested_features\": [\"string\"],\n    \"competitive_threats\": [\"string\"],\n    \"customer_migration_signals\": 0\n  },\n  \"data_quality\": {\n    \"sources_analyzed\": [\"string\"],\n    \"total_data_points\": 0,\n    \"confidence_threshold_met\": false\n  }\n}\n```\n\n**Analysis Guidelines:**\n- Focus on actionable competitive intelligence\n- Identify specific pain points that competitors could exploit\n- Look for patterns across multiple sources\n- Flag high-confidence switching signals\n- Extract specific feature gaps and customer requests\n- Sentiment scores: -1 (very negative) to +1 (very positive)"
+      },
+      "id": "analyze-sentiment-data",
+      "name": "Analyze Sentiment Data",
+      "type": "n8n-nodes-base.anthropic",
+      "typeVersion": 1,
+      "position": [1000, 350],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process sentiment analysis and prepare database records\nconst analysis = JSON.parse($node[\"Analyze Sentiment Data\"].json.response);\nconst sentimentRecords = [];\nconst vulnerabilityUpdates = [];\nconst maOpportunitySignals = [];\n\n// Create consumer sentiment data records\nfor (const insight of analysis.extracted_insights) {\n  sentimentRecords.push({\n    target_company_domain: analysis.target_company_domain,\n    source_platform: insight.source_platform,\n    content_text: insight.content_text,\n    sentiment_score: insight.sentiment_score,\n    sentiment_classification: insight.sentiment_classification,\n    pain_points: insight.pain_points,\n    feature_requests: insight.feature_requests,\n    competitor_mentions: insight.competitor_mentions,\n    switching_signals: insight.switching_signals,\n    pricing_complaints: insight.pricing_complaints,\n    support_issues_mentioned: insight.support_issues_mentioned,\n    ai_processing_confidence: analysis.sentiment_summary.confidence_level,\n    collected_at: analysis.analysis_timestamp\n  });\n}\n\n// Identify competitor vulnerabilities\nconst painPointCounts = {};\nfor (const insight of analysis.extracted_insights) {\n  for (const painPoint of insight.pain_points) {\n    painPointCounts[painPoint] = (painPointCounts[painPoint] || 0) + 1;\n  }\n}\n\n// Create vulnerability records for significant pain points\nfor (const [painPoint, count] of Object.entries(painPointCounts)) {\n  if (count >= 3) { // Minimum threshold for vulnerability\n    vulnerabilityUpdates.push({\n      competitor_domain: analysis.target_company_domain,\n      vulnerability_type: 'customer_complaints',\n      vulnerability_description: painPoint,\n      customer_complaint_count: count,\n      vulnerability_severity: Math.min(Math.floor(count / 2), 10),\n      evidence_sources: [{\n        source: 'sentiment_analysis',\n        timestamp: analysis.analysis_timestamp,\n        confidence: analysis.sentiment_summary.confidence_level\n      }],\n      last_updated: analysis.analysis_timestamp\n    });\n  }\n}\n\n// Check for M&A opportunity signals\nconst switchingSignalCount = analysis.extracted_insights.filter(i => i.switching_signals).length;\nconst negativeRatio = analysis.extracted_insights.filter(i => i.sentiment_score < -0.3).length / analysis.extracted_insights.length;\n\nif (switchingSignalCount >= 2 || negativeRatio > 0.6) {\n  maOpportunitySignals.push({\n    target_company_domain: analysis.target_company_domain,\n    acquisition_readiness_score: Math.floor((switchingSignalCount * 10) + (negativeRatio * 30)),\n    financial_stress_indicators: {\n      customer_sentiment_decline: negativeRatio,\n      switching_signal_frequency: switchingSignalCount,\n      competitive_pressure: analysis.competitive_intelligence.competitive_threats.length\n    },\n    market_timing_factors: {\n      customer_dissatisfaction: negativeRatio > 0.5,\n      feature_gap_pressure: analysis.competitive_intelligence.most_requested_features.length > 3,\n      competitive_threats_emerging: analysis.competitive_intelligence.competitive_threats.length > 2\n    },\n    confidence_level: analysis.sentiment_summary.confidence_level,\n    analysis_sources: ['consumer_sentiment_analysis'],\n    updated_at: analysis.analysis_timestamp\n  });\n}\n\nreturn {\n  sentiment_records: sentimentRecords,\n  vulnerability_updates: vulnerabilityUpdates,\n  ma_opportunity_signals: maOpportunitySignals,\n  analysis_summary: {\n    company_analyzed: analysis.target_company_domain,\n    total_insights: analysis.extracted_insights.length,\n    vulnerabilities_identified: vulnerabilityUpdates.length,\n    ma_signals_detected: maOpportunitySignals.length,\n    overall_sentiment: analysis.sentiment_summary.overall_sentiment,\n    confidence_level: analysis.sentiment_summary.confidence_level\n  },\n  competitive_intelligence: analysis.competitive_intelligence\n};"
+      },
+      "id": "process-sentiment-analysis",
+      "name": "Process Sentiment Analysis",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 350]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/consumer_sentiment_data",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.sentiment_records) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "save-sentiment-data",
+      "name": "Save Sentiment Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1400, 250]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/competitor_vulnerabilities",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.vulnerability_updates) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        }
+      },
+      "id": "update-vulnerabilities",
+      "name": "Update Competitor Vulnerabilities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1400, 350]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/ma_opportunities",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.ma_opportunity_signals) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        }
+      },
+      "id": "update-ma-opportunities",
+      "name": "Update M&A Opportunities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1400, 450]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $node[\"Process Sentiment Analysis\"].json.analysis_summary.vulnerabilities_identified }}",
+              "rightValue": 2,
+              "operator": {
+                "type": "number",
+                "operation": "gte"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "check-high-value-intelligence",
+      "name": "Check for High-Value Intelligence",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1400, 550]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.1,
+          "maxTokens": 4000
+        },
+        "prompt": "=You are generating personalized competitive intelligence for Apollo.io outreach sequences.\n\n**Company Analysis Summary:**\n{{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.analysis_summary) }}\n\n**Competitive Intelligence:**\n{{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.competitive_intelligence) }}\n\n**Vulnerability Data:**\n{{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.vulnerability_updates) }}\n\n**Task:** Generate personalized messaging insights for Apollo.io sequences targeting this company.\n\n**Response Format:**\n```json\n{\n  \"target_company_domain\": \"string\",\n  \"intelligence_timestamp\": \"{{ new Date().toISOString() }}\",\n  \"apollo_sequence_insights\": {\n    \"key_vulnerability_hook\": \"string\",\n    \"customer_pain_point_summary\": \"string\",\n    \"competitive_positioning_angle\": \"string\",\n    \"market_timing_message\": \"string\"\n  },\n  \"linkedin_message_variables\": {\n    \"competitor_weakness\": \"string\",\n    \"customer_frustration\": \"string\",\n    \"market_opportunity\": \"string\",\n    \"timing_urgency\": \"string\"\n  },\n  \"email_sequence_variables\": {\n    \"subject_line_hook\": \"string\",\n    \"opening_insight\": \"string\",\n    \"problem_validation\": \"string\",\n    \"solution_positioning\": \"string\"\n  },\n  \"market_forces_report_preview\": {\n    \"customer_rebellion_teaser\": \"string\",\n    \"blind_spot_headline\": \"string\",\n    \"acquisition_prediction\": \"string\"\n  },\n  \"confidence_score\": 0.0\n}\n```\n\n**Guidelines:**\n- Create specific, actionable messaging hooks\n- Focus on customer-validated pain points\n- Position insights as exclusive intelligence\n- Emphasize timing and market dynamics\n- Make it compelling for $497 report purchase"
+      },
+      "id": "generate-apollo-insights",
+      "name": "Generate Apollo Sequence Insights",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [1600, 450],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.APOLLO_INTEGRATION_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event_type\": \"competitive_intelligence_update\",\n  \"agent\": \"market_intelligence_agent\",\n  \"target_company\": \"{{ $node[\"Process Sentiment Analysis\"].json.analysis_summary.company_analyzed }}\",\n  \"intelligence_data\": {{ JSON.stringify($node[\"Generate Apollo Sequence Insights\"].json) }},\n  \"vulnerability_summary\": {{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.vulnerability_updates) }},\n  \"ma_signals\": {{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.ma_opportunity_signals) }},\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "notify-apollo-integration",
+      "name": "Notify Apollo Integration Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 450]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.ORACLE_AGENT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event_type\": \"market_intelligence_analysis_complete\",\n  \"agent\": \"market_intelligence_agent\",\n  \"summary\": {\n    \"companies_analyzed\": {{ $node[\"Prepare Sentiment Collection\"].json.companies.length }},\n    \"total_vulnerabilities_identified\": {{ $node[\"Process Sentiment Analysis\"].json.vulnerability_updates.length }},\n    \"ma_opportunities_detected\": {{ $node[\"Process Sentiment Analysis\"].json.ma_opportunity_signals.length }},\n    \"high_confidence_insights\": {{ $node[\"Process Sentiment Analysis\"].json.sentiment_records.filter(r => r.ai_processing_confidence > 0.8).length }}\n  },\n  \"competitive_intelligence\": {{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.competitive_intelligence) }},\n  \"analysis_batch\": {{ JSON.stringify($node[\"Process Sentiment Analysis\"].json.analysis_summary) }},\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "notify-oracle-agent",
+      "name": "Notify Oracle Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1800, 350]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "market-intelligence-trigger",
+        "responseMode": "responseNode"
+      },
+      "id": "manual-intelligence-trigger",
+      "name": "Manual Intelligence Collection Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 600],
+      "webhookId": "market-intelligence-trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process manual trigger request\nconst triggerData = $node[\"Manual Intelligence Collection Trigger\"].json;\nconst targetCompanies = triggerData.target_companies || [];\nconst urgencyLevel = triggerData.urgency || 'normal';\nconst analysisScope = triggerData.analysis_scope || 'standard';\n\n// Validate and format target companies\nconst formattedCompanies = targetCompanies.map(company => ({\n  domain: company.domain || company,\n  name: company.name || company.domain || company,\n  industry: company.industry || 'Software',\n  prospect_id: company.prospect_id || null,\n  company_id: company.company_id || null,\n  priority: company.priority || urgencyLevel\n}));\n\n// Create enhanced search queries for manual triggers\nconst searchQueries = formattedCompanies.map(company => {\n  const companyName = company.name.replace(/[^a-zA-Z0-9\\s]/g, '');\n  const domain = company.domain.replace('.com', '').replace('.io', '').replace('.co', '');\n  \n  return {\n    company: company,\n    reddit_query: `\"${companyName}\" OR \"${domain}\" (complaints OR issues OR switching OR alternative)`,\n    twitter_query: `\"${companyName}\" OR \"${domain}\" (disappointed OR frustrated OR looking) -is:retweet lang:en`,\n    g2_query: companyName,\n    hackernews_query: `\"${companyName}\" OR \"${domain}\" (acquisition OR funding OR competitors)`\n  };\n});\n\nreturn {\n  companies: formattedCompanies,\n  search_queries: searchQueries,\n  target_domains: formattedCompanies.map(c => c.domain),\n  collection_timestamp: new Date().toISOString(),\n  batch_size: formattedCompanies.length,\n  urgency_level: urgencyLevel,\n  analysis_scope: analysisScope,\n  trigger_source: 'manual'\n};"
+      },
+      "id": "process-manual-trigger",
+      "name": "Process Manual Trigger",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 600]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours Sentiment Collection": {
+      "main": [
+        [
+          {
+            "node": "Fetch High Priority Prospects",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch High Priority Prospects": {
+      "main": [
+        [
+          {
+            "node": "Prepare Sentiment Collection",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Sentiment Collection": {
+      "main": [
+        [
+          {
+            "node": "Collect Reddit Sentiment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect Twitter Sentiment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect G2 Reviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect HackerNews Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Reddit Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Analyze Sentiment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect Twitter Sentiment": {
+      "main": [
+        [
+          {
+            "node": "Analyze Sentiment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect G2 Reviews": {
+      "main": [
+        [
+          {
+            "node": "Analyze Sentiment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Collect HackerNews Data": {
+      "main": [
+        [
+          {
+            "node": "Analyze Sentiment Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze Sentiment Data": {
+      "main": [
+        [
+          {
+            "node": "Process Sentiment Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Sentiment Analysis": {
+      "main": [
+        [
+          {
+            "node": "Save Sentiment Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Competitor Vulnerabilities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update M&A Opportunities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check for High-Value Intelligence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for High-Value Intelligence": {
+      "main": [
+        [
+          {
+            "node": "Generate Apollo Sequence Insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Apollo Sequence Insights": {
+      "main": [
+        [
+          {
+            "node": "Notify Apollo Integration Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Sentiment Data": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Competitor Vulnerabilities": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update M&A Opportunities": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Intelligence Collection Trigger": {
+      "main": [
+        [
+          {
+            "node": "Process Manual Trigger",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Collect Reddit Sentiment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect Twitter Sentiment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect G2 Reviews",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Collect HackerNews Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "market-intelligence",
+      "name": "Market Intelligence"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

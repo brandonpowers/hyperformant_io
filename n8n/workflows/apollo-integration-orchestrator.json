@@ -1,0 +1,565 @@
+{
+  "name": "Apollo.io Integration Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "apollo-sync-schedule",
+      "name": "Every 6 Hours Apollo Sync",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/v1/contact_lists",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "X-Api-Key",
+          "value": "{{ $env.APOLLO_API_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "per_page",
+              "value": "25"
+            }
+          ]
+        }
+      },
+      "id": "fetch-apollo-smart-lists",
+      "name": "Fetch Apollo Smart Lists Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 300],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api-auth",
+          "name": "Apollo API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.apollo.io/v1/email_sequences",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "X-Api-Key",
+          "value": "{{ $env.APOLLO_API_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "per_page",
+              "value": "25"
+            }
+          ]
+        }
+      },
+      "id": "fetch-apollo-sequences",
+      "name": "Fetch Apollo Sequences Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 500],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api-auth",
+          "name": "Apollo API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/apollo_smart_lists",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id,apollo_list_id,list_name,sync_enabled,target_count,business_purpose"
+            },
+            {
+              "name": "sync_enabled",
+              "value": "eq.true"
+            }
+          ]
+        }
+      },
+      "id": "fetch-hyperformant-lists",
+      "name": "Fetch hyperformant Smart Lists Config",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [400, 700],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "claude-4-sonnet",
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 4000
+        },
+        "prompt": "=You are the Apollo.io Integration Agent orchestrating hyperformant business logic with Apollo.io native capabilities.\n\n**Apollo.io Smart Lists Performance:**\n{{ JSON.stringify($node[\"Fetch Apollo Smart Lists Performance\"].json) }}\n\n**Apollo.io Sequences Performance:**\n{{ JSON.stringify($node[\"Fetch Apollo Sequences Performance\"].json) }}\n\n**hyperformant Smart Lists Configuration:**\n{{ JSON.stringify($node[\"Fetch hyperformant Smart Lists Config\"].json) }}\n\n**Tasks:**\n1. **Performance Analysis**: Compare Apollo.io performance against hyperformant business targets\n2. **Optimization Recommendations**: Identify underperforming Smart Lists and Sequences\n3. **Business Logic Overlay**: Calculate hyperformant-specific metrics from Apollo.io data\n4. **Prioritization**: Rank prospects and opportunities based on Apollo.io engagement + business value\n5. **Sync Status**: Update hyperformant database with Apollo.io performance data\n\n**Business Targets for Evaluation:**\n- Early-Stage Software: 8% reply rate, 25% free report conversion\n- Growth-Stage Software: 6% reply rate, 15% premium conversion\n- Enterprise Software: 4% reply rate, 12% consulting conversion\n\n**Response Format:**\n```json\n{\n  \"apollo_performance_analysis\": [\n    {\n      \"list_id\": \"apollo_list_id\",\n      \"list_name\": \"string\",\n      \"performance_vs_target\": \"above|below|at_target\",\n      \"key_metrics\": {\n        \"total_contacts\": number,\n        \"sequence_sends\": number,\n        \"open_rate\": number,\n        \"reply_rate\": number,\n        \"meeting_rate\": number\n      },\n      \"hyperformant_business_value\": {\n        \"qualified_prospects\": number,\n        \"estimated_pipeline_value\": number,\n        \"conversion_opportunity_score\": number\n      }\n    }\n  ],\n  \"optimization_recommendations\": [\n    {\n      \"type\": \"smart_list|sequence|messaging\",\n      \"target\": \"list_or_sequence_id\",\n      \"issue\": \"string\",\n      \"recommendation\": \"string\",\n      \"expected_impact\": \"string\",\n      \"priority\": \"high|medium|low\"\n    }\n  ],\n  \"hyperformant_sync_updates\": [\n    {\n      \"table\": \"apollo_smart_lists|apollo_sequences\",\n      \"record_id\": \"uuid\",\n      \"updates\": {\n        \"actual_count\": number,\n        \"last_sync_at\": \"timestamp\",\n        \"performance_data\": {}\n      }\n    }\n  ],\n  \"high_priority_actions\": [\n    {\n      \"action_type\": \"pause_sequence|optimize_targeting|manual_review\",\n      \"target_id\": \"string\",\n      \"reason\": \"string\",\n      \"urgency\": \"high|medium|low\"\n    }\n  ],\n  \"business_intelligence\": {\n    \"top_performing_segments\": [\"string\"],\n    \"underperforming_segments\": [\"string\"],\n    \"apollo_to_hyperformant_conversion_rates\": {},\n    \"revenue_attribution_summary\": {}\n  }\n}\n```\n\nFocus on actionable insights that leverage Apollo.io's strengths while adding hyperformant' unique business value."
+      },
+      "id": "apollo-business-analysis",
+      "name": "Apollo Business Logic Analysis",
+      "type": "n8n-nodes-base.anthropic",
+      "typeVersion": 1,
+      "position": [600, 500],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Apollo.io analysis and prepare database updates\nconst analysis = JSON.parse($node[\"Apollo Business Logic Analysis\"].json.response);\nconst updates = [];\nconst alerts = [];\nconst metrics = [];\n\n// Process sync updates\nfor (const update of analysis.hyperformant_sync_updates) {\n  if (update.table === 'apollo_smart_lists') {\n    updates.push({\n      table: 'apollo_smart_lists',\n      id: update.record_id,\n      data: {\n        actual_count: update.updates.actual_count,\n        last_sync_at: new Date().toISOString(),\n        ...update.updates.performance_data\n      }\n    });\n  } else if (update.table === 'apollo_sequences') {\n    updates.push({\n      table: 'apollo_sequences',\n      id: update.record_id,\n      data: {\n        last_sync_at: new Date().toISOString(),\n        ...update.updates.performance_data\n      }\n    });\n  }\n}\n\n// Process high priority actions\nfor (const action of analysis.high_priority_actions) {\n  if (action.urgency === 'high') {\n    alerts.push({\n      type: 'apollo_performance_alert',\n      title: `${action.action_type} required for ${action.target_id}`,\n      description: action.reason,\n      priority: action.urgency,\n      action_required: action.action_type,\n      target_id: action.target_id\n    });\n  }\n}\n\n// Prepare daily metrics update\nconst today = new Date().toISOString().split('T')[0];\nlet totalContacts = 0;\nlet totalSends = 0;\nlet totalOpens = 0;\nlet totalReplies = 0;\nlet totalMeetings = 0;\n\nfor (const perf of analysis.apollo_performance_analysis) {\n  totalContacts += perf.key_metrics.total_contacts || 0;\n  totalSends += perf.key_metrics.sequence_sends || 0;\n  totalOpens += Math.floor((perf.key_metrics.open_rate || 0) * (perf.key_metrics.sequence_sends || 0));\n  totalReplies += Math.floor((perf.key_metrics.reply_rate || 0) * (perf.key_metrics.sequence_sends || 0));\n  totalMeetings += perf.key_metrics.meeting_rate || 0;\n}\n\nmetrics.push({\n  metric_date: today,\n  apollo_total_contacts: totalContacts,\n  apollo_sequence_sends: totalSends,\n  apollo_sequence_opens: totalOpens,\n  apollo_sequence_replies: totalReplies,\n  apollo_meetings_booked: totalMeetings\n});\n\nreturn {\n  updates: updates,\n  alerts: alerts,\n  daily_metrics: metrics,\n  analysis_summary: {\n    lists_analyzed: analysis.apollo_performance_analysis.length,\n    optimizations_identified: analysis.optimization_recommendations.length,\n    high_priority_actions: analysis.high_priority_actions.filter(a => a.urgency === 'high').length,\n    business_intelligence: analysis.business_intelligence\n  },\n  oracle_notification_data: {\n    top_performing_segments: analysis.business_intelligence.top_performing_segments,\n    underperforming_segments: analysis.business_intelligence.underperforming_segments,\n    conversion_rates: analysis.business_intelligence.apollo_to_hyperformant_conversion_rates,\n    optimization_recommendations: analysis.optimization_recommendations.filter(r => r.priority === 'high')\n  }\n};"
+      },
+      "id": "process-apollo-analysis",
+      "name": "Process Apollo Analysis Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [800, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $node[\"Process Apollo Analysis Results\"].json.updates.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-updates-needed",
+      "name": "Check if Database Updates Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [800, 700]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/apollo_smart_lists",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Apollo Analysis Results\"].json.updates.filter(u => u.table === 'apollo_smart_lists').map(u => ({id: u.id, ...u.data}))) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "neverError": true
+            }
+          }
+        }
+      },
+      "id": "update-smart-lists",
+      "name": "Update Smart Lists Performance",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1000, 600]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/daily_business_metrics",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Apollo Analysis Results\"].json.daily_metrics) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "resolution=merge-duplicates"
+            }
+          ]
+        }
+      },
+      "id": "update-daily-metrics",
+      "name": "Update Daily Business Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1000, 800]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $node[\"Process Apollo Analysis Results\"].json.alerts.filter(a => a.priority === 'high').length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-high-priority-alerts",
+      "name": "Check for High Priority Alerts",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1000, 400]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.ORACLE_AGENT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event_type\": \"apollo_integration_analysis_complete\",\n  \"agent\": \"apollo_integration_agent\",\n  \"data\": {{ JSON.stringify($node[\"Process Apollo Analysis Results\"].json.oracle_notification_data) }},\n  \"summary\": {{ JSON.stringify($node[\"Process Apollo Analysis Results\"].json.analysis_summary) }},\n  \"alerts\": {{ JSON.stringify($node[\"Process Apollo Analysis Results\"].json.alerts) }},\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "notify-oracle-agent",
+      "name": "Notify Oracle Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 500]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"text\": \"🚨 Apollo.io Performance Alert\",\n  \"attachments\": [\n    {\n      \"color\": \"warning\",\n      \"title\": \"High Priority Apollo.io Actions Required\",\n      \"fields\": [\n        {\n          \"title\": \"Actions Required\",\n          \"value\": \"{{ $node[\"Process Apollo Analysis Results\"].json.analysis_summary.high_priority_actions }}\",\n          \"short\": true\n        },\n        {\n          \"title\": \"Underperforming Segments\",\n          \"value\": \"{{ $node[\"Process Apollo Analysis Results\"].json.oracle_notification_data.underperforming_segments.join(', ') }}\",\n          \"short\": true\n        }\n      ],\n      \"text\": \"{{ $node[\"Process Apollo Analysis Results\"].json.alerts.filter(a => a.priority === 'high').map(a => `• ${a.title}: ${a.description}`).join('\\n') }}\"\n    }\n  ]\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "send-slack-alert",
+      "name": "Send Slack Alert for High Priority Issues",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apollo-webhook",
+        "responseMode": "responseNode"
+      },
+      "id": "apollo-webhook-receiver",
+      "name": "Apollo.io Webhook Receiver",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 600],
+      "webhookId": "apollo-webhook-receiver"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Apollo.io webhook event\nconst webhookData = $node[\"Apollo.io Webhook Receiver\"].json;\nconst eventType = webhookData.type || webhookData.event_type;\nconst eventData = webhookData.data || webhookData;\n\n// Prepare webhook event record for database\nconst webhookEvent = {\n  webhook_id: webhookData.webhook_id || 'apollo_webhook',\n  event_type: eventType,\n  apollo_object_type: webhookData.object_type || 'unknown',\n  apollo_object_id: webhookData.object_id || eventData.id,\n  event_data: eventData,\n  processing_status: 'pending',\n  received_at: new Date().toISOString()\n};\n\n// Determine processing priority\nconst highPriorityEvents = [\n  'sequence_replied',\n  'meeting_booked',\n  'contact_created',\n  'sequence_finished'\n];\n\nconst processingPriority = highPriorityEvents.includes(eventType) ? 'high' : 'medium';\n\n// Determine if Oracle Agent should be notified immediately\nconst oracleNotificationEvents = [\n  'sequence_replied',\n  'meeting_booked',\n  'high_value_contact_created'\n];\n\nconst shouldNotifyOracle = oracleNotificationEvents.includes(eventType);\n\nreturn {\n  webhook_event: webhookEvent,\n  processing_priority: processingPriority,\n  should_notify_oracle: shouldNotifyOracle,\n  event_type: eventType,\n  apollo_object_id: webhookEvent.apollo_object_id\n};"
+      },
+      "id": "process-apollo-webhook",
+      "name": "Process Apollo Webhook Event",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 600]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/apollo_webhook_events",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Apollo Webhook Event\"].json.webhook_event) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "save-webhook-event",
+      "name": "Save Apollo Webhook Event",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [600, 600]
+    }
+  ],
+  "connections": {
+    "Every 6 Hours Apollo Sync": {
+      "main": [
+        [
+          {
+            "node": "Fetch Apollo Smart Lists Performance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Apollo Sequences Performance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch hyperformant Smart Lists Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Apollo Smart Lists Performance": {
+      "main": [
+        [
+          {
+            "node": "Apollo Business Logic Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Apollo Sequences Performance": {
+      "main": [
+        [
+          {
+            "node": "Apollo Business Logic Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch hyperformant Smart Lists Config": {
+      "main": [
+        [
+          {
+            "node": "Apollo Business Logic Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Business Logic Analysis": {
+      "main": [
+        [
+          {
+            "node": "Process Apollo Analysis Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Apollo Analysis Results": {
+      "main": [
+        [
+          {
+            "node": "Check if Database Updates Needed",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check for High Priority Alerts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Database Updates Needed": {
+      "main": [
+        [
+          {
+            "node": "Update Smart Lists Performance",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Update Daily Business Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check for High Priority Alerts": {
+      "main": [
+        [
+          {
+            "node": "Send Slack Alert for High Priority Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Smart Lists Performance": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Daily Business Metrics": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Slack Alert for High Priority Issues": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo.io Webhook Receiver": {
+      "main": [
+        [
+          {
+            "node": "Process Apollo Webhook Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Apollo Webhook Event": {
+      "main": [
+        [
+          {
+            "node": "Save Apollo Webhook Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Save Apollo Webhook Event": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "apollo-integration",
+      "name": "Apollo Integration"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

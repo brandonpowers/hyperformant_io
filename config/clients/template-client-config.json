@@ -1,0 +1,192 @@
+{
+  "client_info": {
+    "client_name": "TEMPLATE_CLIENT_NAME",
+    "client_id": "template-client-id",
+    "industry": "TEMPLATE_INDUSTRY",
+    "company_size": "TEMPLATE_SIZE",
+    "setup_date": "YYYY-MM-DD",
+    "contact_email": "client@example.com"
+  },
+
+  "apollo_config": {
+    "api_key": "${APOLLO_API_KEY}",
+    "workspace_name": "TEMPLATE_WORKSPACE",
+    "daily_limits": {
+      "contacts_per_day": 500,
+      "sequences_per_day": 100,
+      "linkedin_connections_per_day": 20
+    }
+  },
+
+  "smart_lists": {
+    "primary_target_list": {
+      "name": "{client_name} - Primary Targets",
+      "description": "Main prospect list for {client_name}",
+      "apollo_filters": {
+        "person_titles": ["CEO", "Founder", "CTO", "VP"],
+        "organization_num_employees_ranges": ["11,50", "51,200"],
+        "organization_estimated_annual_revenue_ranges": ["1000000,10000000"],
+        "q_organization_keyword_tags": ["software", "saas", "technology"],
+        "organization_locations": ["United States", "Canada"],
+        "organization_founded_year_ranges": ["2020,2024"]
+      },
+      "target_size": 5000,
+      "sync_frequency_hours": 24,
+      "auto_refresh": true
+    },
+    "high_value_prospects": {
+      "name": "{client_name} - High Value Prospects",
+      "description": "High-value prospects for {client_name}",
+      "apollo_filters": {
+        "person_titles": ["CEO", "Founder", "President"],
+        "organization_num_employees_ranges": ["51,200", "201,500"],
+        "organization_estimated_annual_revenue_ranges": ["10000000,50000000"],
+        "q_organization_keyword_tags": ["enterprise software", "saas"],
+        "person_seniorities": ["c_suite", "founder"]
+      },
+      "target_size": 1000,
+      "sync_frequency_hours": 48,
+      "auto_refresh": true
+    }
+  },
+
+  "sequences": {
+    "primary_email_sequence": {
+      "name": "{client_name} - Primary Email Outreach",
+      "type": "email",
+      "target_list": "primary_target_list",
+      "steps": [
+        {
+          "step_number": 1,
+          "type": "email",
+          "delay_days": 0,
+          "subject": "{client_name} - {value_proposition_subject}",
+          "template": "primary_email_template_step_1"
+        },
+        {
+          "step_number": 2,
+          "type": "email",
+          "delay_days": 5,
+          "subject": "Follow-up: {value_proposition_subject}",
+          "template": "primary_email_template_step_2"
+        },
+        {
+          "step_number": 3,
+          "type": "email",
+          "delay_days": 10,
+          "subject": "Final note: {value_proposition_subject}",
+          "template": "primary_email_template_step_3"
+        }
+      ],
+      "settings": {
+        "daily_send_limit": 50,
+        "time_zone": "America/New_York",
+        "send_window": {
+          "start_time": "09:00",
+          "end_time": "17:00",
+          "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+        },
+        "auto_stop_on_reply": true,
+        "track_opens": true,
+        "track_clicks": true
+      }
+    },
+    "linkedin_sequence": {
+      "name": "{client_name} - LinkedIn Outreach",
+      "type": "linkedin",
+      "target_list": "high_value_prospects",
+      "steps": [
+        {
+          "step_number": 1,
+          "type": "linkedin_connection_request",
+          "delay_days": 0,
+          "template": "linkedin_connection_template"
+        },
+        {
+          "step_number": 2,
+          "type": "linkedin_message",
+          "delay_days": 3,
+          "template": "linkedin_followup_template"
+        }
+      ],
+      "settings": {
+        "daily_send_limit": 15,
+        "auto_stop_on_reply": true
+      }
+    }
+  },
+
+  "message_templates": {
+    "primary_email_template_step_1": {
+      "subject": "Quick question about {company_name}'s {industry} strategy",
+      "body": "Hi {first_name},\n\nI noticed {company_name} is growing in the {industry} space. We help companies like yours {client_value_proposition}.\n\n{client_specific_value_message}\n\nWould you be interested in a brief conversation about how this could apply to {company_name}?\n\nBest regards,\n{sender_name}\n{client_signature}"
+    },
+    "primary_email_template_step_2": {
+      "subject": "Re: {company_name}'s {industry} strategy",
+      "body": "Hi {first_name},\n\nFollowing up on my previous email about {client_value_proposition} for {company_name}.\n\n{client_success_story}\n\nWould you be open to a 15-minute call to discuss how this could work for {company_name}?\n\nBest,\n{sender_name}"
+    },
+    "primary_email_template_step_3": {
+      "subject": "Final note: {company_name} opportunity",
+      "body": "Hi {first_name},\n\nLast note on this - if {client_value_proposition} isn't a priority for {company_name} right now, no worries at all.\n\nIf it is something you'd like to explore, I'm happy to share some insights specific to the {industry} space.\n\nBest,\n{sender_name}"
+    },
+    "linkedin_connection_template": {
+      "message": "Hi {first_name}, I help {industry} companies like {company_name} with {client_value_proposition}. Would love to connect and share some insights!"
+    },
+    "linkedin_followup_template": {
+      "message": "Thanks for connecting, {first_name}! {client_specific_linkedin_message}\n\nWould you be interested in hearing about how this could apply to {company_name}?"
+    }
+  },
+
+  "client_branding": {
+    "value_proposition_subject": "TEMPLATE_VALUE_PROP_SUBJECT",
+    "client_value_proposition": "TEMPLATE_VALUE_PROPOSITION",
+    "client_specific_value_message": "TEMPLATE_SPECIFIC_VALUE_MESSAGE",
+    "client_success_story": "TEMPLATE_SUCCESS_STORY",
+    "client_specific_linkedin_message": "TEMPLATE_LINKEDIN_MESSAGE",
+    "sender_name": "TEMPLATE_SENDER_NAME",
+    "client_signature": "TEMPLATE_CLIENT_SIGNATURE"
+  },
+
+  "analytics_config": {
+    "tracking_metrics": [
+      "email_open_rate",
+      "email_reply_rate",
+      "linkedin_connection_rate",
+      "linkedin_reply_rate",
+      "meeting_booking_rate",
+      "sequence_completion_rate"
+    ],
+    "performance_targets": {
+      "email_open_rate": 0.25,
+      "email_reply_rate": 0.05,
+      "linkedin_connection_rate": 0.3,
+      "linkedin_reply_rate": 0.08,
+      "meeting_booking_rate": 0.02
+    },
+    "reporting_frequency": "weekly",
+    "alert_thresholds": {
+      "low_performance_threshold": 0.5,
+      "high_unsubscribe_threshold": 0.02
+    }
+  },
+
+  "automation_settings": {
+    "auto_create_lists": true,
+    "auto_create_sequences": true,
+    "auto_start_sequences": false,
+    "auto_optimize_underperforming": true,
+    "auto_pause_high_unsubscribe": true,
+    "backup_before_changes": true,
+    "dry_run_mode": true
+  },
+
+  "integration_settings": {
+    "supabase_sync": true,
+    "n8n_webhooks": true,
+    "custom_field_mapping": {
+      "apollo_custom_field_1": "client_industry_score",
+      "apollo_custom_field_2": "client_qualification_score",
+      "apollo_custom_field_3": "client_engagement_stage"
+    }
+  }
+}

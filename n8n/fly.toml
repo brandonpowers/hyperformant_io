@@ -1,0 +1,51 @@
+# Fly.io configuration for n8n workflow automation
+app = "hyperformant-n8n"
+primary_region = "ord"
+
+[build]
+  image = "n8nio/n8n:latest"
+
+[env]
+  N8N_HOST = "0.0.0.0"
+  N8N_PORT = "5678"
+  N8N_PROTOCOL = "https"
+  N8N_ENCRYPTION_KEY = "hyperformant-n8n-production-key"
+  DB_TYPE = "postgresdb"
+  EXECUTIONS_DATA_SAVE_ON_ERROR = "all"
+  EXECUTIONS_DATA_SAVE_ON_SUCCESS = "all"
+  EXECUTIONS_DATA_SAVE_ON_PROGRESS = "true"
+  EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS = "true"
+
+[http_service]
+  internal_port = 5678
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 1
+
+  [http_service.concurrency]
+    type = "connections"
+    hard_limit = 25
+    soft_limit = 20
+
+[[services]]
+  protocol = "tcp"
+  internal_port = 5678
+
+  [[services.ports]]
+    port = 80
+    handlers = ["http"]
+    force_https = true
+
+  [[services.ports]]
+    port = 443
+    handlers = ["tls", "http"]
+
+[machine]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 1024
+
+[[mounts]]
+  source = "n8n_data"
+  destination = "/home/node/.n8n"

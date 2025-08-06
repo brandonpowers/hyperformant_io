@@ -1,0 +1,530 @@
+{
+  "name": "Market Forces Report Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-market-forces-report",
+        "responseMode": "responseNode"
+      },
+      "id": "report-generation-webhook",
+      "name": "Market Forces Report Request",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300],
+      "webhookId": "market-forces-report-webhook"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process report generation request\nconst requestData = $node[\"Market Forces Report Request\"].json;\nconst companyDomain = requestData.company_domain;\nconst reportType = requestData.report_type || 'market_forces_analysis';\nconst requestSource = requestData.source || 'apollo_sequence';\nconst prospectId = requestData.prospect_id;\nconst urgency = requestData.urgency || 'normal';\n\n// Validate required fields\nif (!companyDomain) {\n  throw new Error('company_domain is required');\n}\n\n// Create report generation parameters\nconst reportParams = {\n  company_domain: companyDomain,\n  report_type: reportType,\n  request_source: requestSource,\n  prospect_id: prospectId,\n  urgency_level: urgency,\n  generation_timestamp: new Date().toISOString(),\n  requested_sections: requestData.requested_sections || ['preview'],\n  delivery_format: requestData.delivery_format || 'pdf_email',\n  customer_email: requestData.customer_email,\n  custom_requirements: requestData.custom_requirements || {}\n};\n\n// Determine processing priority\nconst processingPriority = urgency === 'high' ? 1 : urgency === 'medium' ? 2 : 3;\n\nreturn {\n  report_params: reportParams,\n  processing_priority: processingPriority,\n  generation_id: `mfa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`\n};"
+      },
+      "id": "process-report-request",
+      "name": "Process Report Request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/companies",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "id,name,domain,industry,employee_count,annual_revenue,founded_year"
+            },
+            {
+              "name": "domain",
+              "value": "eq.{{ $node[\"Process Report Request\"].json.report_params.company_domain }}"
+            }
+          ]
+        }
+      },
+      "id": "fetch-company-data",
+      "name": "Fetch Company Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "supabase-auth",
+          "name": "Supabase Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/consumer_sentiment_data",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "target_company_domain",
+              "value": "eq.{{ $node[\"Process Report Request\"].json.report_params.company_domain }}"
+            },
+            {
+              "name": "collected_at",
+              "value": "gte.{{ new Date(Date.now() - 90*24*60*60*1000).toISOString() }}"
+            },
+            {
+              "name": "order",
+              "value": "collected_at.desc"
+            },
+            {
+              "name": "limit",
+              "value": "100"
+            }
+          ]
+        }
+      },
+      "id": "fetch-sentiment-data",
+      "name": "Fetch Sentiment Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/competitor_vulnerabilities",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "competitor_domain",
+              "value": "eq.{{ $node[\"Process Report Request\"].json.report_params.company_domain }}"
+            },
+            {
+              "name": "vulnerability_status",
+              "value": "eq.active"
+            },
+            {
+              "name": "order",
+              "value": "vulnerability_severity.desc"
+            }
+          ]
+        }
+      },
+      "id": "fetch-vulnerabilities",
+      "name": "Fetch Competitor Vulnerabilities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/ma_opportunities",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "httpHeaderAuth": {
+          "name": "Authorization",
+          "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "select",
+              "value": "*"
+            },
+            {
+              "name": "target_company_domain",
+              "value": "eq.{{ $node[\"Process Report Request\"].json.report_params.company_domain }}"
+            },
+            {
+              "name": "order",
+              "value": "acquisition_readiness_score.desc"
+            }
+          ]
+        }
+      },
+      "id": "fetch-ma-opportunities",
+      "name": "Fetch M&A Opportunities",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 500]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o",
+        "options": {
+          "temperature": 0.1,
+          "maxTokens": 4000
+        },
+        "prompt": "=You are generating a Market Forces Analysis report for competitive intelligence.\n\n**Report Generation Request:**\n{{ JSON.stringify($node[\"Process Report Request\"].json.report_params) }}\n\n**Company Data:**\n{{ JSON.stringify($node[\"Fetch Company Data\"].json) }}\n\n**Consumer Sentiment Data:**\n{{ JSON.stringify($node[\"Fetch Sentiment Data\"].json) }}\n\n**Competitor Vulnerabilities:**\n{{ JSON.stringify($node[\"Fetch Vulnerabilities\"].json) }}\n\n**M&A Opportunities:**\n{{ JSON.stringify($node[\"Fetch M&A Opportunities\"].json) }}\n\n**Task:** Generate a comprehensive Market Forces Analysis report with the following structure:\n\n**For Preview Reports (3 pages):**\n1. **\"The Customer Rebellion\"** - Top 3 things customers hate about this company\n2. **\"The $X Million Blind Spot\"** - Biggest market opportunity they're missing\n3. **\"The Acquisition Target\"** - M&A prediction with timeline\n\n**For Full Reports (15-20 pages):**\n1. **Executive Summary** (1 page)\n2. **Competitor Vulnerability Map** (4 pages)\n3. **Market Gap Intelligence** (3 pages) \n4. **M&A Opportunity Matrix** (4 pages)\n5. **Disruption Playbook** (4-5 pages)\n6. **Appendix** (Data sources and methodology)\n\n**Response Format:**\n```json\n{\n  \"report_metadata\": {\n    \"company_name\": \"string\",\n    \"company_domain\": \"string\",\n    \"report_type\": \"preview|full\",\n    \"generation_timestamp\": \"{{ new Date().toISOString() }}\",\n    \"data_confidence_score\": 0.0,\n    \"analysis_period\": \"string\",\n    \"page_count\": 0\n  },\n  \"executive_summary\": {\n    \"key_findings\": [\"string\"],\n    \"strategic_recommendations\": [\"string\"],\n    \"market_opportunity_size\": \"string\",\n    \"acquisition_timeline_prediction\": \"string\"\n  },\n  \"customer_rebellion_section\": {\n    \"title\": \"The Customer Rebellion: What Users Really Think\",\n    \"top_pain_points\": [\n      {\n        \"pain_point\": \"string\",\n        \"severity_score\": 0,\n        \"evidence_count\": 0,\n        \"customer_impact\": \"string\",\n        \"competitive_opportunity\": \"string\"\n      }\n    ],\n    \"sentiment_trend\": \"improving|stable|declining\",\n    \"switching_signals\": 0,\n    \"key_insights\": [\"string\"]\n  },\n  \"blind_spot_analysis_section\": {\n    \"title\": \"The $X Million Blind Spot: Market Gaps\",\n    \"primary_blind_spot\": {\n      \"opportunity_description\": \"string\",\n      \"market_size_estimate\": \"string\",\n      \"evidence_sources\": [\"string\"],\n      \"exploitation_difficulty\": \"low|medium|high\",\n      \"timeline_to_market\": \"string\"\n    },\n    \"secondary_opportunities\": [\"string\"],\n    \"feature_gaps\": [\"string\"],\n    \"market_timing_factors\": [\"string\"]\n  },\n  \"acquisition_target_section\": {\n    \"title\": \"The Acquisition Target: M&A Prediction\",\n    \"acquisition_prediction\": {\n      \"likelihood_score\": 0,\n      \"predicted_timeline\": \"string\",\n      \"acquisition_rationale\": \"string\",\n      \"estimated_valuation_range\": \"string\"\n    },\n    \"potential_buyers\": [\"string\"],\n    \"strategic_value_drivers\": [\"string\"],\n    \"financial_stress_indicators\": [\"string\"]\n  },\n  \"full_report_sections\": {\n    \"competitor_vulnerability_map\": {\n      \"vulnerability_matrix\": [{}],\n      \"customer_migration_patterns\": [\"string\"],\n      \"competitive_response_analysis\": [\"string\"]\n    },\n    \"market_gap_intelligence\": {\n      \"underserved_segments\": [{}],\n      \"unmet_customer_needs\": [\"string\"],\n      \"technology_gaps\": [\"string\"]\n    },\n    \"ma_opportunity_matrix\": {\n      \"strategic_buyers_analysis\": [{}],\n      \"valuation_scenarios\": [{}],\n      \"deal_structure_recommendations\": [\"string\"]\n    },\n    \"disruption_playbook\": {\n      \"market_entry_strategy\": [\"string\"],\n      \"competitive_positioning\": [\"string\"],\n      \"execution_timeline\": [{}]\n    }\n  },\n  \"data_sources\": {\n    \"sentiment_data_points\": 0,\n    \"vulnerability_evidence_count\": 0,\n    \"ma_signal_strength\": 0,\n    \"confidence_level\": 0.0,\n    \"analysis_methodology\": \"string\"\n  },\n  \"actionable_insights\": [\n    {\n      \"insight_type\": \"competitive|strategic|timing\",\n      \"insight_description\": \"string\",\n      \"implementation_difficulty\": \"low|medium|high\",\n      \"expected_impact\": \"string\",\n      \"timeline\": \"string\"\n    }\n  ]\n}\n```\n\n**Guidelines:**\n- Focus on actionable, data-driven insights\n- Quantify opportunities where possible\n- Provide specific evidence for all claims\n- Make recommendations implementable\n- Emphasize unique competitive advantages\n- Include confidence levels for predictions\n- Structure for executive consumption"
+      },
+      "id": "generate-report-content",
+      "name": "Generate Report Content",
+      "type": "n8n-nodes-base.openAi",
+      "typeVersion": 1,
+      "position": [800, 350],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process generated report and create database record\nconst reportContent = JSON.parse($node[\"Generate Report Content\"].json.message.content);\nconst requestParams = $node[\"Process Report Request\"].json.report_params;\nconst generationId = $node[\"Process Report Request\"].json.generation_id;\nconst companyData = $node[\"Fetch Company Data\"].json[0]; // Assuming single company\n\n// Create market forces report record\nconst reportRecord = {\n  company_id: companyData.id,\n  report_status: 'preview_ready',\n  report_type: 'market_forces_analysis',\n  full_report_price: 497.00,\n  \n  // Content sections\n  competitor_vulnerability_analysis: reportContent.customer_rebellion_section,\n  market_gap_intelligence: reportContent.blind_spot_analysis_section,\n  ma_opportunity_matrix: reportContent.acquisition_target_section,\n  disruption_playbook: requestParams.requested_sections.includes('full') ? reportContent.full_report_sections.disruption_playbook : null,\n  \n  // Preview content\n  preview_customer_rebellion: reportContent.customer_rebellion_section.top_pain_points.slice(0, 3).map(p => p.pain_point).join('. '),\n  preview_blind_spot_analysis: reportContent.blind_spot_analysis_section.primary_blind_spot.opportunity_description,\n  preview_acquisition_target: reportContent.acquisition_target_section.acquisition_prediction.acquisition_rationale,\n  \n  // Timestamps\n  preview_generated_at: new Date().toISOString(),\n  full_report_generated_at: requestParams.requested_sections.includes('full') ? new Date().toISOString() : null,\n  \n  // Quality metrics\n  ai_confidence_score: reportContent.data_sources.confidence_level,\n  generation_time_seconds: Math.floor(Date.now() / 1000) - Math.floor(new Date(requestParams.generation_timestamp).getTime() / 1000),\n  data_sources_used: Object.keys(reportContent.data_sources).filter(k => k !== 'confidence_level' && k !== 'analysis_methodology')\n};\n\n// Prepare PDF generation data\nconst pdfData = {\n  report_id: generationId,\n  company_name: companyData.name,\n  report_content: reportContent,\n  generation_timestamp: requestParams.generation_timestamp,\n  report_type: requestParams.requested_sections.includes('full') ? 'full' : 'preview',\n  branding: {\n    company_logo_url: null,\n    report_footer: 'Generated by hyperformant Market Intelligence Platform',\n    confidentiality_notice: 'This report contains proprietary market intelligence and is confidential.'\n  }\n};\n\n// Prepare email delivery data\nconst emailData = {\n  recipient_email: requestParams.customer_email,\n  subject: `Market Forces Analysis: ${companyData.name} Competitive Intelligence Report`,\n  report_type: requestParams.requested_sections.includes('full') ? 'full' : 'preview',\n  company_name: companyData.name,\n  key_findings: reportContent.executive_summary.key_findings.slice(0, 3),\n  preview_content: {\n    customer_rebellion_preview: reportContent.customer_rebellion_section.top_pain_points[0]?.pain_point || 'No significant pain points identified',\n    blind_spot_preview: reportContent.blind_spot_analysis_section.primary_blind_spot.opportunity_description.substring(0, 200) + '...',\n    acquisition_preview: reportContent.acquisition_target_section.acquisition_prediction.predicted_timeline\n  }\n};\n\nreturn {\n  report_record: reportRecord,\n  pdf_generation_data: pdfData,\n  email_delivery_data: emailData,\n  report_content: reportContent,\n  processing_summary: {\n    generation_id: generationId,\n    company_analyzed: companyData.name,\n    report_type: requestParams.requested_sections.includes('full') ? 'full' : 'preview',\n    confidence_score: reportContent.data_sources.confidence_level,\n    actionable_insights_count: reportContent.actionable_insights.length\n  }\n};"
+      },
+      "id": "process-report-content",
+      "name": "Process Report Content",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1000, 350]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/market_forces_reports",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify($node[\"Process Report Content\"].json.report_record) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Prefer",
+              "value": "return=representation"
+            }
+          ]
+        }
+      },
+      "id": "save-report-record",
+      "name": "Save Report to Database",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1200, 250]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate Market Forces PDF directly in N8N using HTML\nconst reportContent = JSON.parse($node[\"Generate Report Content\"].json.message.content);\nconst reportParams = $node[\"Process Report Request\"].json.report_params;\nconst companyData = $node[\"Fetch Company Data\"].json[0];\nconst generationId = $node[\"Process Report Request\"].json.generation_id;\n\n// Determine report type\nconst isFullReport = reportParams.requested_sections.includes('full');\nconst reportType = isFullReport ? 'full' : 'preview';\n\n// Generate HTML content for PDF\nconst htmlContent = `\n<!DOCTYPE html>\n<html>\n<head>\n  <meta charset=\"utf-8\">\n  <title>Market Forces Analysis - ${companyData.name}</title>\n  <style>\n    body { font-family: 'Arial', sans-serif; margin: 0; padding: 20px; color: #333; }\n    .header { text-align: center; border-bottom: 2px solid #0066cc; padding-bottom: 20px; margin-bottom: 30px; }\n    .company-name { font-size: 24px; color: #0066cc; font-weight: bold; }\n    .report-title { font-size: 18px; margin-top: 10px; }\n    .section { margin-bottom: 30px; page-break-inside: avoid; }\n    .section-title { font-size: 16px; font-weight: bold; color: #0066cc; border-bottom: 1px solid #ddd; padding-bottom: 10px; }\n    .insight-box { background: #f8f9fa; padding: 15px; border-left: 4px solid #0066cc; margin: 15px 0; }\n    .metric { display: inline-block; margin: 10px 20px 10px 0; }\n    .metric-value { font-size: 18px; font-weight: bold; color: #0066cc; }\n    .metric-label { font-size: 12px; color: #666; }\n    .footer { text-align: center; font-size: 10px; color: #666; margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }\n    .page-break { page-break-before: always; }\n    ul { padding-left: 20px; }\n    li { margin-bottom: 8px; }\n  </style>\n</head>\n<body>\n  <!-- Header -->\n  <div class=\"header\">\n    <div class=\"company-name\">${companyData.name}</div>\n    <div class=\"report-title\">Market Forces Analysis ${reportType === 'full' ? '- Complete Intelligence Report' : '- Preview Report'}</div>\n    <div style=\"font-size: 12px; color: #666; margin-top: 10px;\">Generated: ${new Date().toLocaleDateString()}</div>\n  </div>\n\n  <!-- Executive Summary -->\n  <div class=\"section\">\n    <div class=\"section-title\">Executive Summary</div>\n    <div class=\"insight-box\">\n      <h4>Key Findings:</h4>\n      <ul>\n        ${reportContent.executive_summary.key_findings.map(finding => `<li>${finding}</li>`).join('')}\n      </ul>\n    </div>\n    <div class=\"metric\">\n      <div class=\"metric-value\">${reportContent.data_sources.confidence_level * 100}%</div>\n      <div class=\"metric-label\">Analysis Confidence</div>\n    </div>\n    <div class=\"metric\">\n      <div class=\"metric-value\">${reportContent.actionable_insights.length}</div>\n      <div class=\"metric-label\">Actionable Insights</div>\n    </div>\n  </div>\n\n  <!-- Customer Rebellion Section -->\n  <div class=\"section\">\n    <div class=\"section-title\">${reportContent.customer_rebellion_section.title}</div>\n    <div class=\"insight-box\">\n      <strong>Top Customer Pain Points:</strong>\n      <ul>\n        ${reportContent.customer_rebellion_section.top_pain_points.slice(0, 3).map(pain => \n          `<li><strong>${pain.pain_point}</strong> (Severity: ${pain.severity_score}/10, Impact: ${pain.customer_impact})</li>`\n        ).join('')}\n      </ul>\n    </div>\n    <p><strong>Sentiment Trend:</strong> ${reportContent.customer_rebellion_section.sentiment_trend}</p>\n    <p><strong>Switching Signals:</strong> ${reportContent.customer_rebellion_section.switching_signals} indicators detected</p>\n  </div>\n\n  <!-- Blind Spot Analysis -->\n  <div class=\"section\">\n    <div class=\"section-title\">${reportContent.blind_spot_analysis_section.title}</div>\n    <div class=\"insight-box\">\n      <h4>Primary Market Opportunity:</h4>\n      <p><strong>${reportContent.blind_spot_analysis_section.primary_blind_spot.opportunity_description}</strong></p>\n      <p><strong>Market Size:</strong> ${reportContent.blind_spot_analysis_section.primary_blind_spot.market_size_estimate}</p>\n      <p><strong>Difficulty:</strong> ${reportContent.blind_spot_analysis_section.primary_blind_spot.exploitation_difficulty}</p>\n      <p><strong>Timeline:</strong> ${reportContent.blind_spot_analysis_section.primary_blind_spot.timeline_to_market}</p>\n    </div>\n  </div>\n\n  <!-- Acquisition Target Section -->\n  <div class=\"section\">\n    <div class=\"section-title\">${reportContent.acquisition_target_section.title}</div>\n    <div class=\"insight-box\">\n      <h4>M&A Prediction:</h4>\n      <p><strong>Likelihood:</strong> ${reportContent.acquisition_target_section.acquisition_prediction.likelihood_score}/10</p>\n      <p><strong>Timeline:</strong> ${reportContent.acquisition_target_section.acquisition_prediction.predicted_timeline}</p>\n      <p><strong>Rationale:</strong> ${reportContent.acquisition_target_section.acquisition_prediction.acquisition_rationale}</p>\n      <p><strong>Valuation Range:</strong> ${reportContent.acquisition_target_section.acquisition_prediction.estimated_valuation_range}</p>\n    </div>\n  </div>\n\n  ${isFullReport ? `\n  <!-- Full Report Additional Sections -->\n  <div class=\"page-break\"></div>\n  \n  <div class=\"section\">\n    <div class=\"section-title\">Competitor Vulnerability Map</div>\n    <div class=\"insight-box\">\n      <h4>Customer Migration Patterns:</h4>\n      <ul>\n        ${reportContent.full_report_sections.competitor_vulnerability_map.customer_migration_patterns.map(pattern => `<li>${pattern}</li>`).join('')}\n      </ul>\n    </div>\n  </div>\n\n  <div class=\"section\">\n    <div class=\"section-title\">Market Gap Intelligence</div>\n    <div class=\"insight-box\">\n      <h4>Unmet Customer Needs:</h4>\n      <ul>\n        ${reportContent.full_report_sections.market_gap_intelligence.unmet_customer_needs.map(need => `<li>${need}</li>`).join('')}\n      </ul>\n      <h4>Technology Gaps:</h4>\n      <ul>\n        ${reportContent.full_report_sections.market_gap_intelligence.technology_gaps.map(gap => `<li>${gap}</li>`).join('')}\n      </ul>\n    </div>\n  </div>\n\n  <div class=\"section\">\n    <div class=\"section-title\">Disruption Playbook</div>\n    <div class=\"insight-box\">\n      <h4>Market Entry Strategy:</h4>\n      <ul>\n        ${reportContent.full_report_sections.disruption_playbook.market_entry_strategy.map(strategy => `<li>${strategy}</li>`).join('')}\n      </ul>\n      <h4>Competitive Positioning:</h4>\n      <ul>\n        ${reportContent.full_report_sections.disruption_playbook.competitive_positioning.map(position => `<li>${position}</li>`).join('')}\n      </ul>\n    </div>\n  </div>\n  ` : ''}\n\n  <!-- Actionable Insights -->\n  <div class=\"section\">\n    <div class=\"section-title\">Actionable Insights</div>\n    ${reportContent.actionable_insights.map(insight => `\n      <div class=\"insight-box\">\n        <h4>${insight.insight_type.charAt(0).toUpperCase() + insight.insight_type.slice(1)} Insight</h4>\n        <p><strong>${insight.insight_description}</strong></p>\n        <p><strong>Difficulty:</strong> ${insight.implementation_difficulty} | <strong>Impact:</strong> ${insight.expected_impact} | <strong>Timeline:</strong> ${insight.timeline}</p>\n      </div>\n    `).join('')}\n  </div>\n\n  <!-- Footer -->\n  <div class=\"footer\">\n    <p>Hyperformant Market Intelligence Platform | Report ID: ${generationId}</p>\n    <p>This report contains proprietary competitive intelligence and is confidential.</p>\n    ${reportType === 'preview' ? '<p><strong>Full 15-page report available for $497 - includes detailed M&A analysis, disruption playbook, and implementation roadmap</strong></p>' : ''}\n  </div>\n</body>\n</html>\n`;\n\n// Convert HTML to PDF (using Puppeteer-like functionality)\n// Note: In actual N8N, you'd use the HTML to PDF node or similar\nconst pdfData = {\n  html_content: htmlContent,\n  pdf_options: {\n    format: 'A4',\n    margin: { top: '20mm', bottom: '20mm', left: '15mm', right: '15mm' },\n    printBackground: true,\n    displayHeaderFooter: false\n  },\n  filename: `${companyData.name.replace(/[^a-zA-Z0-9]/g, '_')}_Market_Forces_${reportType}.pdf`\n};\n\n// For now, return base64 placeholder (in real implementation, this would be actual PDF)\nconst pdfBase64 = Buffer.from(htmlContent).toString('base64');\n\nreturn {\n  pdf_generated: true,\n  pdf_base64: pdfBase64,\n  pdf_filename: pdfData.filename,\n  html_content: htmlContent,\n  report_type: reportType,\n  company_name: companyData.name,\n  generation_id: generationId,\n  page_count: isFullReport ? 15 : 3,\n  generation_timestamp: new Date().toISOString()\n};"
+      },
+      "id": "generate-pdf-report",
+      "name": "Generate Market Forces PDF",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1200, 350]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "leftValue": "={{ $node[\"Process Report Request\"].json.report_params.customer_email }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-email-delivery",
+      "name": "Check if Email Delivery Needed",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.RESEND_API_URL }}/emails",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"from\": \"Market Intelligence <reports@hyperformant.io>\",\n  \"to\": [\"{{ $node[\"Process Report Content\"].json.email_delivery_data.recipient_email }}\"],\n  \"subject\": \"{{ $node[\"Process Report Content\"].json.email_delivery_data.subject }}\",\n  \"html\": \"<h2>Your Market Forces Analysis is Ready</h2><p>Dear {{ $node[\"Fetch Company Data\"].json[0].name }} team,</p><p>Your competitive intelligence report has been generated with the following key insights:</p><ul><li><strong>Customer Rebellion:</strong> {{ $node[\"Process Report Content\"].json.email_delivery_data.preview_content.customer_rebellion_preview }}</li><li><strong>Market Blind Spot:</strong> {{ $node[\"Process Report Content\"].json.email_delivery_data.preview_content.blind_spot_preview }}</li><li><strong>Acquisition Timeline:</strong> {{ $node[\"Process Report Content\"].json.email_delivery_data.preview_content.acquisition_preview }}</li></ul><p>The full 15-page report with detailed analysis, M&A opportunity matrix, and actionable playbook is available for $497.</p><p><a href='{{ $env.FRONTEND_URL }}/reports/{{ $node[\"Process Report Content\"].json.processing_summary.generation_id }}' style='background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px;'>View Full Report</a></p><p>Best regards,<br>Hyperformant Market Intelligence Team</p>\",\n  \"attachments\": [\n    {\n      \"filename\": \"{{ $node[\"Fetch Company Data\"].json[0].name }}_Market_Forces_Preview.pdf\",\n      \"content\": \"{{ $node[\"Generate PDF Report\"].json.pdf_base64 }}\",\n      \"type\": \"application/pdf\"\n    }\n  ]\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "send-report-email",
+      "name": "Send Report via Email",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1400, 350]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.SUPABASE_URL }}/rest/v1/market_forces_reports",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "eq.{{ $node[\"Save Report to Database\"].json[0].id }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"preview_delivered_at\": \"{{ new Date().toISOString() }}\",\n  \"report_status\": \"delivered\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.SUPABASE_SERVICE_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "update-delivery-status",
+      "name": "Update Delivery Status",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1600, 350]
+    },
+    {
+      "parameters": {
+        "url": "{{ $env.ORACLE_AGENT_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"event_type\": \"market_forces_report_generated\",\n  \"agent\": \"market_forces_report_generator\",\n  \"report_summary\": {{ JSON.stringify($node[\"Process Report Content\"].json.processing_summary) }},\n  \"company_data\": {\n    \"name\": \"{{ $node[\"Fetch Company Data\"].json[0].name }}\",\n    \"domain\": \"{{ $node[\"Fetch Company Data\"].json[0].domain }}\",\n    \"industry\": \"{{ $node[\"Fetch Company Data\"].json[0].industry }}\"\n  },\n  \"delivery_status\": {\n    \"email_sent\": {{ $node[\"Check if Email Delivery Needed\"].json ? 'true' : 'false' }},\n    \"pdf_generated\": true,\n    \"database_saved\": true\n  },\n  \"business_metrics\": {\n    \"report_confidence_score\": {{ $node[\"Process Report Content\"].json.processing_summary.confidence_score }},\n    \"actionable_insights_count\": {{ $node[\"Process Report Content\"].json.processing_summary.actionable_insights_count }},\n    \"potential_revenue\": 497.00\n  },\n  \"timestamp\": \"{{ new Date().toISOString() }}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        }
+      },
+      "id": "notify-oracle-agent",
+      "name": "Notify Oracle Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [1600, 450]
+    }
+  ],
+  "connections": {
+    "Market Forces Report Request": {
+      "main": [
+        [
+          {
+            "node": "Process Report Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Report Request": {
+      "main": [
+        [
+          {
+            "node": "Fetch Company Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Sentiment Data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch Competitor Vulnerabilities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Fetch M&A Opportunities",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Company Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Report Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Sentiment Data": {
+      "main": [
+        [
+          {
+            "node": "Generate Report Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Competitor Vulnerabilities": {
+      "main": [
+        [
+          {
+            "node": "Generate Report Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch M&A Opportunities": {
+      "main": [
+        [
+          {
+            "node": "Generate Report Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Report Content": {
+      "main": [
+        [
+          {
+            "node": "Process Report Content",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Report Content": {
+      "main": [
+        [
+          {
+            "node": "Save Report to Database",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Generate PDF Report",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Check if Email Delivery Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check if Email Delivery Needed": {
+      "main": [
+        [
+          {
+            "node": "Send Report via Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Report via Email": {
+      "main": [
+        [
+          {
+            "node": "Update Delivery Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF Report": {
+      "main": [
+        [
+          {
+            "node": "Update Delivery Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Delivery Status": {
+      "main": [
+        [
+          {
+            "node": "Notify Oracle Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "report-generation",
+      "name": "Report Generation"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

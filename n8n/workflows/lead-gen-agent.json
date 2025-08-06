@@ -1,0 +1,743 @@
+{
+  "name": "Apollo Sync Agent - Data Synchronization",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "lead-gen-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Lead Gen Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "lead-gen-main"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $json.orchestration_id }}",
+              "type": "string"
+            },
+            {
+              "id": "action",
+              "name": "action",
+              "value": "={{ $json.action || 'find_new_companies' }}",
+              "type": "string"
+            },
+            {
+              "id": "batch-size",
+              "name": "batch_size",
+              "value": "={{ $json.batch_size || 50 }}",
+              "type": "number"
+            },
+            {
+              "id": "test-mode",
+              "name": "test_mode",
+              "value": "={{ $json.test_mode || true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "execution-start",
+              "name": "execution_start",
+              "value": "={{ $now }}",
+              "type": "dateTime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "initialize-lead-gen",
+      "name": "Initialize Lead Gen",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO agent_performance (agent_name, workflow_name, execution_date, status, performance_metrics) VALUES ('Apollo Sync Agent', 'Data Synchronization', NOW(), 'started', '{\"orchestration_id\": \"{{ $json.orchestration_id }}\", \"action\": \"{{ $json.action }}\", \"batch_size\": {{ $json.batch_size }}}')",
+        "options": {}
+      },
+      "id": "log-start",
+      "name": "Log Start",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-type",
+              "leftValue": "={{ $json.action }}",
+              "rightValue": "find_new_companies",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT DISTINCT industry FROM companies WHERE industry IS NOT NULL GROUP BY industry ORDER BY COUNT(*) DESC LIMIT 10",
+        "options": {}
+      },
+      "id": "get-target-industries",
+      "name": "Get Target Industries",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT domain FROM companies WHERE domain IS NOT NULL",
+        "options": {}
+      },
+      "id": "get-existing-domains",
+      "name": "Get Existing Domains",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1340, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "existing-domains-set",
+              "name": "existing_domains",
+              "value": "={{ $json.map(item => item.domain) }}",
+              "type": "array"
+            },
+            {
+              "id": "target-industries-list",
+              "name": "target_industries",
+              "value": "={{ $('Get Target Industries').all().map(item => item.industry) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "prepare-search-criteria",
+      "name": "Prepare Search Criteria",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "multipleMessages",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a lead generation specialist for Hyperformant, a B2B technology company. Your task is to identify high-potential companies that would benefit from our strategy, collaboration, and research tools to maximize their impact, valuation, and attractiveness to investors or acquirers.\n\nFocus on:\n- Technology companies with 10-500 employees\n- Companies in growth stage (Series A-C)\n- Industries: SaaS, FinTech, HealthTech, EdTech, E-commerce, AI/ML\n- Companies that might be preparing for acquisition or investment\n\nGenerate a list of company search queries that would help find these prospects."
+            },
+            {
+              "role": "user",
+              "content": "Based on our existing portfolio industries: {{ $json.target_industries.join(', ') }}\n\nGenerate 10 specific search queries for finding new companies. Each query should target companies that:\n1. Are in growth stage\n2. Could benefit from valuation optimization\n3. Might be acquisition targets\n4. Are in complementary industries to our existing portfolio\n\nReturn as JSON array of search query strings."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.7
+        }
+      },
+      "id": "generate-search-queries",
+      "name": "Generate Search Queries",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [1780, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-main",
+          "name": "OpenAI Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Parse AI response and create search queries\nconst aiResponse = $input.first().json.choices[0].message.content;\nlet searchQueries;\n\ntry {\n  // Try to parse as JSON\n  searchQueries = JSON.parse(aiResponse);\n} catch (e) {\n  // If not valid JSON, extract queries from text\n  const lines = aiResponse.split('\\n').filter(line => line.trim());\n  searchQueries = lines.map(line => line.replace(/^\\d+\\.\\s*/, '').replace(/^\"|\"$/g, '').trim()).filter(q => q.length > 0);\n}\n\n// Ensure we have an array\nif (!Array.isArray(searchQueries)) {\n  searchQueries = [searchQueries].filter(q => q);\n}\n\n// Limit to batch size\nconst batchSize = $('Initialize Lead Gen').first().json.batch_size;\nsearchQueries = searchQueries.slice(0, Math.min(10, batchSize));\n\nreturn searchQueries.map((query, index) => ({\n  query: query,\n  search_id: `search_${index + 1}`,\n  orchestration_id: $('Initialize Lead Gen').first().json.orchestration_id\n}));"
+      },
+      "id": "process-search-queries",
+      "name": "Process Search Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2000, 200]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "multipleMessages",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a company research specialist. For each search query, generate a list of real company names that match the criteria. Focus on:\n\n1. Real companies (not fictional)\n2. Companies in growth stage (10-500 employees)\n3. Technology companies\n4. Companies that might benefit from valuation optimization services\n5. Companies not in our existing database\n\nFor each company, provide:\n- Company name\n- Estimated domain (company.com format)\n- Industry\n- Brief reason why they're a good prospect\n\nReturn as JSON array with this structure:\n[\n  {\n    \"name\": \"Company Name\",\n    \"domain\": \"company.com\",\n    \"industry\": \"Industry\",\n    \"prospect_reason\": \"Why they're a good prospect\"\n  }\n]"
+            },
+            {
+              "role": "user",
+              "content": "Search Query: {{ $json.query }}\n\nFind 5-8 companies that match this search criteria. Avoid these existing domains: {{ $('Prepare Search Criteria').first().json.existing_domains.slice(0, 100).join(', ') }}\n\nReturn only the JSON array, no additional text."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "research-companies",
+      "name": "Research Companies",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [2220, 200],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-main",
+          "name": "OpenAI Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI response to extract company data\nconst aiResponse = $input.first().json.choices[0].message.content;\nconst searchQuery = $input.first().json.query;\nconst orchestrationId = $input.first().json.orchestration_id;\nconst existingDomains = $('Prepare Search Criteria').first().json.existing_domains;\n\nlet companies;\ntry {\n  // Clean the response and parse JSON\n  const cleanResponse = aiResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n  companies = JSON.parse(cleanResponse);\n} catch (e) {\n  console.log('Failed to parse JSON, attempting text extraction:', e);\n  companies = [];\n}\n\n// Validate and clean company data\nconst validCompanies = companies\n  .filter(company => {\n    return company.name && \n           company.domain && \n           company.industry &&\n           !existingDomains.includes(company.domain.toLowerCase()) &&\n           company.domain.includes('.') &&\n           company.name.length > 2;\n  })\n  .map(company => ({\n    name: company.name.trim(),\n    domain: company.domain.toLowerCase().replace(/^https?:\\/\\//, '').replace(/^www\\./, ''),\n    industry: company.industry.trim(),\n    prospect_reason: company.prospect_reason || 'AI-identified growth stage company',\n    search_query: searchQuery,\n    orchestration_id: orchestrationId,\n    apollo_id: null,\n    size: 'medium', // Default assumption for AI-found companies\n    is_active: true,\n    research_score: 0\n  }));\n\nreturn validCompanies;"
+      },
+      "id": "process-company-data",
+      "name": "Process Company Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [2440, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-companies",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-companies-found",
+      "name": "Check Companies Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2660, 200]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "companies",
+        "records": "={{ $json }}",
+        "options": {
+          "upsert": true,
+          "onConflict": "domain"
+        }
+      },
+      "id": "insert-companies",
+      "name": "Insert Companies",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2880, 120],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "multipleMessages",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a contact research specialist. For each company, find key decision makers (C-suite, VPs, Directors) who would be interested in valuation optimization, strategic planning, and acquisition preparation services.\n\nFor each contact, provide:\n- Full name\n- Title\n- Estimated email (use common patterns: firstname.lastname@domain, firstname@domain, etc.)\n- LinkedIn URL (estimated)\n\nReturn as JSON array:\n[\n  {\n    \"company_domain\": \"company.com\",\n    \"full_name\": \"John Smith\",\n    \"title\": \"CEO\",\n    \"email\": \"john.smith@company.com\",\n    \"linkedin_url\": \"https://linkedin.com/in/john-smith\"\n  }\n]"
+            },
+            {
+              "role": "user",
+              "content": "Find 2-3 key decision makers for these companies:\n{{ $json.map(c => `${c.name} (${c.domain}) - ${c.industry}`).join('\\n') }}\n\nFocus on C-suite executives, VPs of Strategy/Business Development, and other senior decision makers who would be interested in valuation optimization services."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3
+        }
+      },
+      "id": "research-contacts",
+      "name": "Research Contacts",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [3100, 120],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-main",
+          "name": "OpenAI Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI response to extract contact data\nconst aiResponse = $input.first().json.choices[0].message.content;\nconst companies = $('Process Company Data').all();\nconst orchestrationId = $('Initialize Lead Gen').first().json.orchestration_id;\n\nlet contacts;\ntry {\n  const cleanResponse = aiResponse.replace(/```json\\n?|```\\n?/g, '').trim();\n  contacts = JSON.parse(cleanResponse);\n} catch (e) {\n  console.log('Failed to parse contacts JSON:', e);\n  contacts = [];\n}\n\n// Create a domain to company ID mapping\nconst domainToCompany = {};\ncompanies.forEach(company => {\n  domainToCompany[company.domain] = company;\n});\n\n// Process and validate contacts\nconst validContacts = contacts\n  .filter(contact => {\n    return contact.full_name && \n           contact.email && \n           contact.company_domain &&\n           domainToCompany[contact.company_domain] &&\n           contact.email.includes('@') &&\n           contact.full_name.length > 2;\n  })\n  .map(contact => {\n    const company = domainToCompany[contact.company_domain];\n    const nameParts = contact.full_name.split(' ');\n    \n    return {\n      company_domain: contact.company_domain,\n      first_name: nameParts[0] || '',\n      last_name: nameParts.slice(1).join(' ') || '',\n      full_name: contact.full_name.trim(),\n      title: contact.title || 'Executive',\n      email: contact.email.toLowerCase(),\n      linkedin_url: contact.linkedin_url || null,\n      is_decision_maker: true,\n      is_verified: false,\n      orchestration_id: orchestrationId\n    };\n  });\n\nreturn validContacts;"
+      },
+      "id": "process-contact-data",
+      "name": "Process Contact Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [3320, 120]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO contacts (company_id, first_name, last_name, full_name, title, email, linkedin_url, is_decision_maker, is_verified) SELECT c.id, '{{ $json.first_name }}', '{{ $json.last_name }}', '{{ $json.full_name }}', '{{ $json.title }}', '{{ $json.email }}', '{{ $json.linkedin_url }}', {{ $json.is_decision_maker }}, {{ $json.is_verified }} FROM companies c WHERE c.domain = '{{ $json.company_domain }}' ON CONFLICT (email) DO NOTHING",
+        "options": {}
+      },
+      "id": "insert-contacts",
+      "name": "Insert Contacts",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3540, 120],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE agent_performance SET status = 'completed', execution_time_seconds = EXTRACT(EPOCH FROM (NOW() - execution_date)), success_count = {{ $('Insert Companies').first().json.length || 0 }}, performance_metrics = performance_metrics || '{\"companies_found\": {{ $('Insert Companies').first().json.length || 0 }}, \"contacts_found\": {{ $('Insert Contacts').all().length || 0 }}, \"search_queries_used\": {{ $('Process Search Queries').all().length || 0 }}}' WHERE agent_name = 'Apollo Sync Agent' AND workflow_name = 'Data Synchronization' AND execution_date >= NOW() - INTERVAL '1 hour'",
+        "options": {}
+      },
+      "id": "log-completion",
+      "name": "Log Completion",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3760, 120],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "companies-found",
+              "name": "companies_found",
+              "value": "={{ $('Insert Companies').first().json.length || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "contacts-found",
+              "name": "contacts_found",
+              "value": "={{ $('Insert Contacts').all().length || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Lead Gen').first().json.orchestration_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3980, 120]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "no-companies-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "No new companies found matching criteria",
+              "type": "string"
+            },
+            {
+              "id": "companies-found",
+              "name": "companies_found",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "no-companies-response",
+      "name": "No Companies Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2880, 280]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [4200, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "enrichment-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "action-performed",
+              "name": "action",
+              "value": "contact_enrichment",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "enrichment-response",
+      "name": "Enrichment Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 400]
+    }
+  ],
+  "connections": {
+    "Lead Gen Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initialize Lead Gen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Lead Gen": {
+      "main": [
+        [
+          {
+            "node": "Log Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Start": {
+      "main": [
+        [
+          {
+            "node": "Action Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Router": {
+      "main": [
+        [
+          {
+            "node": "Get Target Industries",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Enrichment Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Target Industries": {
+      "main": [
+        [
+          {
+            "node": "Get Existing Domains",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Existing Domains": {
+      "main": [
+        [
+          {
+            "node": "Prepare Search Criteria",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare Search Criteria": {
+      "main": [
+        [
+          {
+            "node": "Generate Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Process Search Queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Search Queries": {
+      "main": [
+        [
+          {
+            "node": "Research Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Companies": {
+      "main": [
+        [
+          {
+            "node": "Process Company Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Company Data": {
+      "main": [
+        [
+          {
+            "node": "Check Companies Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Companies Found": {
+      "main": [
+        [
+          {
+            "node": "Insert Companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Companies Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Companies": {
+      "main": [
+        [
+          {
+            "node": "Research Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Research Contacts": {
+      "main": [
+        [
+          {
+            "node": "Process Contact Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Contact Data": {
+      "main": [
+        [
+          {
+            "node": "Insert Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert Contacts": {
+      "main": [
+        [
+          {
+            "node": "Log Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Completion": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Companies Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Enrichment Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T02:13:00.000Z",
+      "updatedAt": "2025-01-27T02:13:00.000Z",
+      "id": "lead-gen-agent",
+      "name": "Lead Gen Agent"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-27T02:13:00.000Z",
+  "versionId": "1"
+}

@@ -1,0 +1,130 @@
+/* Dashboard and Admin Panel Specific Styles */
+
+/* DM Sans font for dashboard */
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400;1,500;1,700&display=swap');
+
+/* Dashboard body and form styling */
+body {
+  font-family: 'DM Sans', sans-serif;
+}
+
+option {
+  color: black;
+}
+
+/* React Kanban styling for dashboard */
+body .react-kanban-column {
+  background-color: #fff; /* Gray/Gray-100 */
+  box-shadow: 14px 17px 40px 4px rgba(112, 144, 176, 0.08);
+  border-radius: 30px;
+}
+
+body.dark .react-kanban-column {
+  background-color: #111c44; /* Gray/Gray-100 */
+  border-radius: 30px;
+}
+
+.react-kanban-column {
+  width: 500px;
+}
+
+.react-kanban-card-adder-form {
+  width: 100%;
+  border-radius: 15px;
+}
+
+.react-kanban-card-adder-button {
+  display: none;
+  border-radius: 15px;
+}
+
+/* Full Calendar styling for dashboard */
+a.fc-daygrid-day-number {
+  width: 100%;
+  text-align: center;
+}
+
+div.fc-daygrid-event-harness {
+  top: unset;
+}
+
+
+.fc-daygrid-event-harness .fc-daygrid-event-harness-abs {
+  top: 0px;
+  bottom: unset;
+}
+
+.fc-daygrid-block-event .fc-event-title {
+  font-weight: 500;
+}
+
+.fc-daygrid-event {
+  border-radius: 10px !important;
+  height: 44px;
+  display: flex !important;
+  overflow: hidden;
+  justify-content: center;
+  align-items: center;
+}
+
+.fc-daygrid-event .fc-event-main {
+  margin-top: auto;
+  margin-bottom: auto;
+}
+
+/* Dark mode calendar styling */
+body.chakra-ui-dark .fc-theme-standard td {
+  border-color: #ffffff1a !important;
+}
+
+.fc .fc-scrollgrid-section-header > *,
+.fc .fc-scrollgrid-section-footer > * {
+  border-right: 0px !important;
+}
+
+.fc-theme-standard .fc-scrollgrid {
+  border: 1px solid #e0e5f2 !important;
+  border-radius: 10px;
+}
+
+body.chakra-ui-dark .fc-theme-standard .fc-scrollgrid {
+  border-color: #ffffff1a !important;
+}
+
+/* Calendar day styling for light mode */
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-mon,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-tue,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-wed,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-thu,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-fri,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-sat,
+body.chakra-ui-light .fc-col-header-cell.fc-day.fc-day-sun {
+  border-left: 0px;
+  border-right: 0px;
+}
+
+/* Calendar day styling for dark mode */
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-mon,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-tue,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-wed,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-thu,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-fri,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-sat,
+body.chakra-ui-dark .fc-col-header-cell.fc-day.fc-day-sun {
+  border-left: 0px;
+  border-right: 0px;
+  border-color: #ffffff1a;
+}
+
+body.chakra-ui-light .fc-scrollgrid.fc-scrollgrid-liquid > td {
+  border: 0px;
+}
+
+body.chakra-ui-dark .fc-scrollgrid.fc-scrollgrid-liquid > td {
+  border: 0px;
+  border-color: #ffffff1a;
+}
+
+.fc .fc-scrollgrid-section > td {
+  border: 0;
+}

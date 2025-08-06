@@ -1,0 +1,777 @@
+{
+  "name": "Apollo Sync Agent - CRM Integration",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apollo-sync-agent",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Apollo Sync Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "apollo-sync-main"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $json.orchestration_id }}",
+              "type": "string"
+            },
+            {
+              "id": "sync-action",
+              "name": "sync_action",
+              "value": "={{ $json.action || 'sync_companies' }}",
+              "type": "string"
+            },
+            {
+              "id": "batch-size",
+              "name": "batch_size",
+              "value": "={{ $json.batch_size || 50 }}",
+              "type": "number"
+            },
+            {
+              "id": "test-mode",
+              "name": "test_mode",
+              "value": "={{ $json.test_mode || true }}",
+              "type": "boolean"
+            },
+            {
+              "id": "execution-start",
+              "name": "execution_start",
+              "value": "={{ $now }}",
+              "type": "dateTime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "initialize-sync",
+      "name": "Initialize Apollo Sync",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO agent_performance (agent_name, workflow_name, execution_date, status, performance_metrics) VALUES ('Apollo Sync Agent', 'CRM Integration', NOW(), 'started', '{\"orchestration_id\": \"{{ $json.orchestration_id }}\", \"action\": \"{{ $json.sync_action }}\", \"batch_size\": {{ $json.batch_size }}}')",
+        "options": {}
+      },
+      "id": "log-start",
+      "name": "Log Start",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [680, 300],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "sync-action-type",
+              "leftValue": "={{ $json.sync_action }}",
+              "rightValue": "sync_companies",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT value FROM system_config WHERE key = 'apollo_api_enabled' AND value::BOOLEAN = true",
+        "options": {}
+      },
+      "id": "check-apollo-enabled",
+      "name": "Check Apollo Enabled",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "apollo-enabled",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "validate-apollo-config",
+      "name": "Validate Apollo Config",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.apollo.io/v1/organizations/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "={{ $env.APOLLO_API_KEY }}"
+            },
+            {
+              "name": "page",
+              "value": "1"
+            },
+            {
+              "name": "per_page",
+              "value": "{{ $('Initialize Apollo Sync').first().json.batch_size }}"
+            },
+            {
+              "name": "organization_locations",
+              "value": "United States"
+            },
+            {
+              "name": "organization_num_employees_ranges",
+              "value": "11-50,51-200,201-500"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-apollo-companies",
+      "name": "Fetch Apollo Companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1560, 120],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api-auth",
+          "name": "Apollo API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process Apollo.io API response and prepare for database sync\nconst apolloResponse = $input.first().json;\nconst orchestrationId = $('Initialize Apollo Sync').first().json.orchestration_id;\n\nif (!apolloResponse.organizations || !Array.isArray(apolloResponse.organizations)) {\n  throw new Error('Invalid Apollo.io API response format');\n}\n\nconst companies = apolloResponse.organizations.map(org => {\n  return {\n    apollo_id: org.id,\n    name: org.name,\n    domain: org.primary_domain,\n    industry: org.industry,\n    employee_count: org.estimated_num_employees || 0,\n    annual_revenue: org.annual_revenue || null,\n    headquarters: org.headquarters_address,\n    apollo_url: `https://app.apollo.io/#/companies/${org.id}`,\n    linkedin_url: org.linkedin_url,\n    website_url: org.website_url,\n    phone: org.phone,\n    founded_year: org.founded_year,\n    description: org.short_description,\n    orchestration_id: orchestrationId,\n    sync_timestamp: new Date().toISOString()\n  };\n}).filter(company => {\n  // Filter out companies without essential data\n  return company.apollo_id && \n         company.name && \n         company.name.length > 2 &&\n         company.domain &&\n         company.domain.includes('.');\n});\n\nconsole.log(`Processed ${companies.length} companies from Apollo.io`);\n\nreturn companies;"
+      },
+      "id": "process-apollo-companies",
+      "name": "Process Apollo Companies",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1780, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "has-companies",
+              "leftValue": "={{ $json.length }}",
+              "rightValue": 0,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-companies-found",
+      "name": "Check Companies Found",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2000, 120]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT sync_apollo_company('{{ $json.apollo_id }}', '{{ $json | jsonStringify }}') as company_id",
+        "options": {}
+      },
+      "id": "sync-companies-to-db",
+      "name": "Sync Companies to DB",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2220, 60],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT auto_generate_research_tasks() as research_tasks",
+        "options": {}
+      },
+      "id": "trigger-research-tasks",
+      "name": "Trigger Research Tasks",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2440, 60],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Initialize Apollo Sync').first().json.webhook_base_url }}/webhook/deep-research-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Apollo Sync').first().json.orchestration_id }}"
+            },
+            {
+              "name": "action",
+              "value": "research_apollo_companies"
+            },
+            {
+              "name": "apollo_companies",
+              "value": "={{ $('Sync Companies to DB').all() }}"
+            },
+            {
+              "name": "test_mode",
+              "value": "={{ $('Initialize Apollo Sync').first().json.test_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-deep-research",
+      "name": "Trigger Deep Research",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2660, 60],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "n8n-webhook-auth",
+          "name": "N8N Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE agent_performance SET status = 'completed', execution_time_seconds = EXTRACT(EPOCH FROM (NOW() - execution_date)), success_count = {{ $('Sync Companies to DB').all().length || 0 }}, apollo_syncs_performed = {{ $('Sync Companies to DB').all().length || 0 }}, apollo_sync_success_rate = 100.0, performance_metrics = performance_metrics || '{\"companies_synced\": {{ $('Sync Companies to DB').all().length || 0 }}, \"research_tasks_created\": {{ $('Trigger Research Tasks').all().length || 0 }}}' WHERE agent_name = 'Apollo Sync Agent' AND workflow_name = 'CRM Integration' AND execution_date >= NOW() - INTERVAL '1 hour'",
+        "options": {}
+      },
+      "id": "log-completion",
+      "name": "Log Completion",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2880, 60],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "success-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "companies-synced",
+              "name": "companies_synced",
+              "value": "={{ $('Sync Companies to DB').all().length || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "research-tasks-created",
+              "name": "research_tasks_created",
+              "value": "={{ $('Trigger Research Tasks').all().length || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Apollo Sync').first().json.orchestration_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3100, 60]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "no-companies-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "No companies found in Apollo.io response",
+              "type": "string"
+            },
+            {
+              "id": "companies-synced",
+              "name": "companies_synced",
+              "value": 0,
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "no-companies-response",
+      "name": "No Companies Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2220, 180]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "apollo-disabled-response",
+              "name": "status",
+              "value": "skipped",
+              "type": "string"
+            },
+            {
+              "id": "message",
+              "name": "message",
+              "value": "Apollo.io integration is disabled in system configuration",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "apollo-disabled-response",
+      "name": "Apollo Disabled Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1560, 280]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3320, 180]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.apollo.io/v1/people/search",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "api_key",
+              "value": "={{ $env.APOLLO_API_KEY }}"
+            },
+            {
+              "name": "organization_ids",
+              "value": "{{ $json.apollo_companies.map(c => c.apollo_id).join(',') }}"
+            },
+            {
+              "name": "person_titles",
+              "value": "CEO,CTO,CFO,COO,President,Founder,VP"
+            },
+            {
+              "name": "per_page",
+              "value": "25"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "fetch-apollo-contacts",
+      "name": "Fetch Apollo Contacts",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 400],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "apollo-api-auth",
+          "name": "Apollo API Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "contact-sync-response",
+              "name": "status",
+              "value": "completed",
+              "type": "string"
+            },
+            {
+              "id": "action-performed",
+              "name": "action",
+              "value": "sync_contacts",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "contact-sync-response",
+      "name": "Contact Sync Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 400]
+    }
+  ],
+  "connections": {
+    "Apollo Sync Webhook": {
+      "main": [
+        [
+          {
+            "node": "Initialize Apollo Sync",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Apollo Sync": {
+      "main": [
+        [
+          {
+            "node": "Log Start",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Start": {
+      "main": [
+        [
+          {
+            "node": "Action Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Router": {
+      "main": [
+        [
+          {
+            "node": "Check Apollo Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Apollo Contacts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Apollo Enabled": {
+      "main": [
+        [
+          {
+            "node": "Validate Apollo Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Apollo Config": {
+      "main": [
+        [
+          {
+            "node": "Fetch Apollo Companies",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Apollo Disabled Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Apollo Companies": {
+      "main": [
+        [
+          {
+            "node": "Process Apollo Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Apollo Companies": {
+      "main": [
+        [
+          {
+            "node": "Check Companies Found",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Companies Found": {
+      "main": [
+        [
+          {
+            "node": "Sync Companies to DB",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Companies Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Companies to DB": {
+      "main": [
+        [
+          {
+            "node": "Trigger Research Tasks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Research Tasks": {
+      "main": [
+        [
+          {
+            "node": "Trigger Deep Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Deep Research": {
+      "main": [
+        [
+          {
+            "node": "Log Completion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Completion": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Success Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "No Companies Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Apollo Disabled Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Apollo Contacts": {
+      "main": [
+        [
+          {
+            "node": "Contact Sync Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Contact Sync Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-06-01T18:30:00.000Z",
+      "updatedAt": "2025-06-01T18:30:00.000Z",
+      "id": "apollo-sync-agent",
+      "name": "Apollo Sync Agent"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-06-01T18:30:00.000Z",
+  "versionId": "1"
+}

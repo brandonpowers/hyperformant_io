@@ -1,0 +1,80 @@
+{
+  "name": "hyperformant",
+  "version": "2.0.0",
+  "description": "AI-powered market intelligence platform with simplified Wasp + PostgreSQL + n8n architecture",
+  "main": "dist/cli.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "ts-node src/cli.ts dev",
+    "dev:cli": "ts-node src/cli.ts",
+    "dev:infra": "docker-compose up -d",
+    "dev:web": "cd web && npm run dev",
+    "build": "cd web && npm run build",
+    "build:cli": "tsc -p tsconfig.json",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "lint": "./node_modules/.bin/eslint src/ --ext .ts,.tsx",
+    "lint:fix": "./node_modules/.bin/eslint src/ --ext .ts,.tsx --fix",
+    "format": "./node_modules/.bin/prettier --write \"src/**/*.{ts,tsx,json,md}\"",
+    "format:check": "./node_modules/.bin/prettier --check \"src/**/*.{ts,tsx,json,md}\"",
+    "check": "npm run lint && npm run format:check",
+    "fix": "npm run lint:fix && npm run format",
+    "validate": "ts-node src/cli.ts validate",
+    "setup": "ts-node src/cli.ts setup",
+    "db:migrate": "cd web && npx prisma migrate dev",
+    "db:seed": "cd web && npx prisma db seed",
+    "db:reset": "cd web && npx prisma migrate reset",
+    "db:studio": "cd web && npx prisma studio",
+    "import:dev": "ts-node src/cli.ts import-n8n dev",
+    "import:prod": "ts-node src/cli.ts import-n8n prod",
+    "deploy:dev": "npm run validate && npm run db:migrate && npm run import:dev",
+    "deploy:prod": "npm run validate && npm run db:migrate && npm run import:prod",
+    "deploy:cli": "flyctl deploy --config fly.toml",
+    "start": "npm run deploy:dev",
+    "clean": "rm -rf dist/ coverage/ && cd web && rm -rf .next/",
+    "reset": "npm run clean && npm install && npm run dev:infra",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "ai",
+    "automation",
+    "apollo",
+    "business-intelligence",
+    "market-forces",
+    "wasp",
+    "n8n"
+  ],
+  "author": "hyperformant",
+  "license": "PROPRIETARY",
+  "dependencies": {
+    "@types/node": "^22.15.30",
+    "@types/yargs": "^17.0.33",
+    "ajv": "^8.17.1",
+    "dotenv": "^16.5.0",
+    "react-map-gl": "^8.0.4",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3",
+    "yargs": "^17.7.2",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.8",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "concurrently": "^9.2.0",
+    "eslint": "^8.55.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-prettier": "^5.5.1",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "prettier": "^3.1.0",
+    "ts-jest": "^29.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

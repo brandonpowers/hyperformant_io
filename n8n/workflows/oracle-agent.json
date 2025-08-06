@@ -1,0 +1,839 @@
+{
+  "name": "Oracle Agent - Main Orchestrator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "oracle-webhook",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-trigger",
+      "name": "Oracle Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "oracle-main"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "test-mode-check",
+              "leftValue": "={{ $json.test_mode || $('Get System Config').first().json.test_mode }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "test-mode-check",
+      "name": "Test Mode Check",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT key, value FROM system_config WHERE key IN ('test_mode', 'max_daily_ai_requests', 'max_companies_per_batch')",
+        "options": {}
+      },
+      "id": "get-system-config",
+      "name": "Get System Config",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [240, 180],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $now.format('yyyy-MM-dd-HH-mm-ss') }}-{{ $randomInt(1000, 9999) }}",
+              "type": "string"
+            },
+            {
+              "id": "execution-start",
+              "name": "execution_start",
+              "value": "={{ $now }}",
+              "type": "dateTime"
+            },
+            {
+              "id": "requested-action",
+              "name": "requested_action",
+              "value": "={{ $json.action || 'daily_orchestration' }}",
+              "type": "string"
+            },
+            {
+              "id": "batch-size",
+              "name": "batch_size",
+              "value": "={{ $json.batch_size || $('Get System Config').first().json.max_companies_per_batch || 50 }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "initialize-orchestration",
+      "name": "Initialize Orchestration",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "action-type",
+              "leftValue": "={{ $json.requested_action }}",
+              "rightValue": "daily_orchestration",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "action-router",
+      "name": "Action Router",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO agent_performance (agent_name, workflow_name, execution_date, status, performance_metrics) VALUES ('Oracle', 'Daily Orchestration', NOW(), 'started', '{\"orchestration_id\": \"{{ $json.orchestration_id }}\", \"action\": \"{{ $json.requested_action }}\"}')",
+        "options": {}
+      },
+      "id": "log-orchestration-start",
+      "name": "Log Orchestration Start",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1120, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Initialize Orchestration').first().json.webhook_base_url }}/webhook/apollo-sync-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orchestration_id",
+              "value": "={{ $json.orchestration_id }}"
+            },
+            {
+              "name": "action",
+              "value": "find_new_companies"
+            },
+            {
+              "name": "batch_size",
+              "value": "={{ $json.batch_size }}"
+            },
+            {
+              "name": "test_mode",
+              "value": "={{ $('Get System Config').first().json.test_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-lead-gen",
+      "name": "Trigger Apollo Sync Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "n8n-webhook-auth",
+          "name": "N8N Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": 5
+      },
+      "id": "wait-for-lead-gen",
+      "name": "Wait for Lead Gen",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, name, domain FROM companies WHERE last_researched_date IS NULL OR last_researched_date < NOW() - INTERVAL '30 days' ORDER BY created_at DESC LIMIT {{ $json.batch_size }}",
+        "options": {}
+      },
+      "id": "get-companies-for-research",
+      "name": "Get Companies for Research",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [1780, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Initialize Orchestration').first().json.webhook_base_url }}/webhook/company-research-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Orchestration').first().json.orchestration_id }}"
+            },
+            {
+              "name": "companies",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "research_depth",
+              "value": "={{ $('Get System Config').first().json.research_depth_level || 3 }}"
+            },
+            {
+              "name": "test_mode",
+              "value": "={{ $('Get System Config').first().json.test_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-deep-research",
+      "name": "Trigger Company Research Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2000, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "n8n-webhook-auth",
+          "name": "N8N Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": 15
+      },
+      "id": "wait-for-research",
+      "name": "Wait for Research",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2220, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT id, name FROM companies WHERE last_researched_date >= NOW() - INTERVAL '1 hour' AND id NOT IN (SELECT company_id FROM reports WHERE created_at >= NOW() - INTERVAL '1 day')",
+        "options": {}
+      },
+      "id": "get-companies-for-reports",
+      "name": "Get Companies for Reports",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [2440, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Initialize Orchestration').first().json.webhook_base_url }}/webhook/reporting-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Orchestration').first().json.orchestration_id }}"
+            },
+            {
+              "name": "companies",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "report_types",
+              "value": ["basic", "premium"]
+            },
+            {
+              "name": "test_mode",
+              "value": "={{ $('Get System Config').first().json.test_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-reporting",
+      "name": "Trigger Reporting Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [2660, 200],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "n8n-webhook-auth",
+          "name": "N8N Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "unit": "minutes",
+        "amount": 10
+      },
+      "id": "wait-for-reports",
+      "name": "Wait for Reports",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [2880, 200]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT c.id, c.name, r.id as report_id, r.file_url FROM companies c JOIN reports r ON c.id = r.company_id WHERE r.status = 'completed' AND r.created_at >= NOW() - INTERVAL '1 hour' AND c.id NOT IN (SELECT DISTINCT contact_id FROM engagements WHERE created_at >= NOW() - INTERVAL '1 day')",
+        "options": {}
+      },
+      "id": "get-companies-for-outreach",
+      "name": "Get Companies for Outreach",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3100, 200],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "outbound-enabled",
+              "leftValue": "={{ $('Get System Config').first().json.enable_outbound_communications }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-outbound-enabled",
+      "name": "Check Outbound Enabled",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3320, 200]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $('Initialize Orchestration').first().json.webhook_base_url }}/webhook/social-media-outreach-agent",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Orchestration').first().json.orchestration_id }}"
+            },
+            {
+              "name": "companies",
+              "value": "={{ $json }}"
+            },
+            {
+              "name": "action",
+              "value": "start_email_sequences"
+            },
+            {
+              "name": "test_mode",
+              "value": "={{ $('Get System Config').first().json.test_mode }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "trigger-social-media-manager",
+      "name": "Trigger Social Media Outreach Agent",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [3540, 120],
+      "credentials": {
+        "httpHeaderAuth": {
+          "id": "n8n-webhook-auth",
+          "name": "N8N Webhook Auth"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "UPDATE agent_performance SET status = 'completed', execution_time_seconds = EXTRACT(EPOCH FROM (NOW() - execution_date)), performance_metrics = performance_metrics || '{\"companies_processed\": {{ $('Get Companies for Research').all().length }}, \"reports_generated\": {{ $('Get Companies for Reports').all().length }}, \"outreach_initiated\": {{ $('Get Companies for Outreach').all().length }}}' WHERE agent_name = 'Oracle' AND workflow_name = 'Daily Orchestration' AND execution_date >= NOW() - INTERVAL '1 hour'",
+        "options": {}
+      },
+      "id": "log-orchestration-complete",
+      "name": "Log Orchestration Complete",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [3760, 120],
+      "credentials": {
+        "supabaseApi": {
+          "id": "supabase-main",
+          "name": "Supabase Main"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "test-mode-response",
+              "name": "message",
+              "value": "Test mode enabled - no outbound communications sent",
+              "type": "string"
+            },
+            {
+              "id": "companies-processed",
+              "name": "companies_processed",
+              "value": "={{ $('Get Companies for Research').all().length }}",
+              "type": "number"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "test-mode-response",
+      "name": "Test Mode Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3540, 280]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ $json }}"
+      },
+      "id": "response",
+      "name": "Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [3980, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "manual-action",
+              "leftValue": "={{ $json.requested_action }}",
+              "rightValue": "manual_trigger",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "manual-action-handler",
+      "name": "Manual Action Handler",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [900, 500]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "manual-response",
+              "name": "message",
+              "value": "Manual action triggered: {{ $json.manual_action }}",
+              "type": "string"
+            },
+            {
+              "id": "orchestration-id",
+              "name": "orchestration_id",
+              "value": "={{ $('Initialize Orchestration').first().json.orchestration_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "manual-response",
+      "name": "Manual Response",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 500]
+    }
+  ],
+  "connections": {
+    "Oracle Webhook": {
+      "main": [
+        [
+          {
+            "node": "Get System Config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get System Config": {
+      "main": [
+        [
+          {
+            "node": "Test Mode Check",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Mode Check": {
+      "main": [
+        [
+          {
+            "node": "Initialize Orchestration",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Initialize Orchestration": {
+      "main": [
+        [
+          {
+            "node": "Action Router",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Action Router": {
+      "main": [
+        [
+          {
+            "node": "Log Orchestration Start",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Manual Action Handler",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Orchestration Start": {
+      "main": [
+        [
+          {
+            "node": "Trigger Lead Gen Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Lead Gen Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait for Lead Gen",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Lead Gen": {
+      "main": [
+        [
+          {
+            "node": "Get Companies for Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Companies for Research": {
+      "main": [
+        [
+          {
+            "node": "Trigger Deep Research Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Deep Research Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait for Research",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Research": {
+      "main": [
+        [
+          {
+            "node": "Get Companies for Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Companies for Reports": {
+      "main": [
+        [
+          {
+            "node": "Trigger Reporting Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Reporting Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait for Reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Reports": {
+      "main": [
+        [
+          {
+            "node": "Get Companies for Outreach",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Companies for Outreach": {
+      "main": [
+        [
+          {
+            "node": "Check Outbound Enabled",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Outbound Enabled": {
+      "main": [
+        [
+          {
+            "node": "Trigger Social Media Manager",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Test Mode Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Trigger Social Media Manager": {
+      "main": [
+        [
+          {
+            "node": "Log Orchestration Complete",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Orchestration Complete": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Test Mode Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Action Handler": {
+      "main": [
+        [
+          {
+            "node": "Manual Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Manual Response": {
+      "main": [
+        [
+          {
+            "node": "Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T02:09:00.000Z",
+      "updatedAt": "2025-01-27T02:09:00.000Z",
+      "id": "oracle-agent",
+      "name": "Oracle Agent"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-27T02:09:00.000Z",
+  "versionId": "1"
+}

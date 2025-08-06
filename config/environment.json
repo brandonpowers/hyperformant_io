@@ -1,0 +1,169 @@
+{
+  "shared": {
+    "database": {
+      "supabase_url": "${SUPABASE_URL}",
+      "supabase_anon_key": "${SUPABASE_ANON_KEY}",
+      "supabase_service_key": "${SUPABASE_SERVICE_KEY}"
+    },
+    "ai_services": {
+      "openai": {
+        "api_key": "${OPENAI_API_KEY}",
+        "cost_optimized_model": "gpt-4o-mini",
+        "balanced_model": "gpt-4o",
+        "premium_model": "gpt-4o",
+        "reasoning_model": "o1-preview",
+        "max_tokens": 4000,
+        "temperature": 0.7,
+        "purpose_mapping": {
+          "lead_generation": "gpt-4o-mini",
+          "email_outreach": "gpt-4o-mini",
+          "company_research": "gpt-4o",
+          "market_analysis": "gpt-4o",
+          "report_generation": "gpt-4o",
+          "strategic_analysis": "o1-preview",
+          "upsell_optimization": "gpt-4o"
+        }
+      },
+      "anthropic": {
+        "api_key": "${ANTHROPIC_API_KEY}",
+        "cost_optimized_model": "claude-4-haiku",
+        "balanced_model": "claude-4-sonnet",
+        "premium_model": "claude-4-opus",
+        "max_tokens": 8192,
+        "purpose_mapping": {
+          "quality_assurance": "claude-4-opus",
+          "content_review": "claude-4-sonnet",
+          "strategic_thinking": "claude-4-opus",
+          "risk_assessment": "claude-4-opus",
+          "news_analysis": "claude-4-haiku"
+        }
+      },
+      "google": {
+        "api_key": "${GOOGLE_AI_API_KEY}",
+        "cost_optimized_model": "gemini-2.5-flash",
+        "balanced_model": "gemini-2.5-pro",
+        "premium_model": "gemini-2.5-ultra",
+        "max_tokens": 8192,
+        "purpose_mapping": {
+          "data_processing": "gemini-2.5-flash",
+          "web_search_analysis": "gemini-2.5-flash",
+          "competitive_analysis": "gemini-2.5-pro",
+          "market_intelligence": "gemini-2.5-ultra"
+        }
+      }
+    },
+    "storage": {
+      "provider": "supabase",
+      "base_url": "${SUPABASE_URL}/storage/v1",
+      "buckets": {
+        "reports": "reports",
+        "research_data": "research-data",
+        "agent_logs": "agent-logs",
+        "templates": "templates",
+        "exports": "exports",
+        "assets": "assets"
+      },
+      "authentication": {
+        "service_key": "${SUPABASE_SERVICE_KEY}"
+      },
+      "file_size_limits": {
+        "reports": 52428800,
+        "research_data": 104857600,
+        "agent_logs": 10485760,
+        "templates": 26214400,
+        "exports": 524288000,
+        "assets": 10485760
+      },
+      "retention_policies": {
+        "reports": "permanent",
+        "research_data": "2_years",
+        "agent_logs": "90_days",
+        "templates": "permanent",
+        "exports": "30_days",
+        "assets": "permanent"
+      }
+    },
+    "n8n": {
+      "webhook_base_url": "${N8N_WEBHOOK_URL}",
+      "api_key": "${N8N_API_KEY}"
+    },
+    "external_apis": {
+      "apollo": {
+        "api_key": "${APOLLO_API_KEY}",
+        "base_url": "https://api.apollo.io/v1",
+        "sync_frequency": "hourly",
+        "purpose": "lead_generation_and_crm"
+      },
+      "news_api": {
+        "api_key": "${NEWS_API_KEY}",
+        "base_url": "https://newsapi.org/v2",
+        "priority": "medium",
+        "purpose": "real_time_news_and_press_releases"
+      },
+      "google_search": {
+        "api_key": "${GOOGLE_SEARCH_API_KEY}",
+        "search_engine_id": "${GOOGLE_SEARCH_ENGINE_ID}",
+        "base_url": "https://www.googleapis.com/customsearch/v1",
+        "priority": "medium",
+        "purpose": "web_search_and_company_intelligence"
+      }
+    },
+    "email": {
+      "provider": "resend",
+      "resend_api_key": "${RESEND_API_KEY}",
+      "from_email": "${RESEND_FROM_EMAIL}",
+      "from_name": "${RESEND_FROM_NAME}",
+      "reply_to_email": "${RESEND_REPLY_TO_EMAIL}",
+      "template_dir": "${EMAIL_TEMPLATE_DIR}",
+      "attachment_max_size_mb": "${EMAIL_ATTACHMENT_MAX_SIZE_MB}"
+    }
+  },
+  "development": {
+    "external_apis": {
+      "apollo": {
+        "rate_limit": 100,
+        "batch_size": 50
+      },
+      "news_api": {
+        "rate_limit": 1000
+      },
+      "google_search": {
+        "rate_limit": 100
+      }
+    },
+    "system": {
+      "test_mode": true,
+      "max_daily_ai_requests": 1000,
+      "max_companies_per_batch": 50,
+      "research_depth_level": 3,
+      "enable_outbound_communications": false,
+      "enable_apollo_sync": true,
+      "enable_apollo_sequences": false,
+      "enable_apollo_enrichment": true
+    }
+  },
+  "production": {
+    "external_apis": {
+      "apollo": {
+        "rate_limit": 500,
+        "batch_size": 100
+      },
+      "news_api": {
+        "rate_limit": 5000
+      },
+      "google_search": {
+        "rate_limit": 500
+      }
+    },
+    "system": {
+      "test_mode": false,
+      "max_daily_ai_requests": 10000,
+      "max_companies_per_batch": 100,
+      "research_depth_level": 5,
+      "enable_outbound_communications": true,
+      "enable_apollo_sync": true,
+      "enable_apollo_sequences": true,
+      "enable_apollo_enrichment": true
+    }
+  }
+}
