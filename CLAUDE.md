@@ -406,3 +406,179 @@ The main CLI (`src/cli.ts`) handles:
 - Competitive positioning as "anti-big consulting" with 48-hour delivery vs 6-week projects
 
 Always check `docs/setup-guide.md` for setup instructions and `docs/business-engine-architecture.md` for business model context.
+
+## Component Inventory
+
+**🚨 CRITICAL: Always use existing components instead of creating new ones or writing inline components. Check this inventory first!**
+
+### UI Primitives (`components/ui/`)
+
+#### Buttons & Actions
+- **`Button`** - Main button component with variants: `primary`, `secondary`, `light`, `ghost`. Supports `asChild` and `href` props
+  ```typescript
+  import { Button } from 'components/ui/Button'
+  <Button variant="primary" href="/dashboard" asChild>Get Started</Button>
+  ```
+- **`ActionButtons`** - Horizon UI action buttons with date/sum display
+- **`Follow`**, **`SeeStory`**, **`SetUp`** - Specialized action components
+
+#### Form Inputs & Fields
+- **`Input`** - Basic input component with focus states
+- **`InputField`** - Horizon UI input with label, supports variants: `auth`, states: `error`, `success`
+  ```typescript
+  import InputField from 'components/ui/fields/InputField'
+  <InputField id="email" label="Email" type="email" variant="auth" />
+  ```
+- **`SwitchField`** - Toggle switch component
+- **`TagsField`** - Input field for tag/chip selection
+- **`TextField`** - Multi-line text input
+- **`VerificationCodeInput`** - Specialized input for verification codes
+- **`Checkbox`** - Checkbox component
+- **`Radio`** - Radio button component
+
+#### Cards & Containers
+- **`Card`** - Base card component
+- **`MiniStatistics`** - Statistical cards with icon, name, and value
+  ```typescript
+  import MiniStatistics from 'components/ui/card/MiniStatistics'
+  <MiniStatistics name="Total Users" value="1,234" icon={<UserIcon />} iconBg="bg-blue-100" />
+  ```
+- **`NftCard`** - Card component for NFT/product displays
+- **`Course`** - Course display card
+- **`Mastercard`** - Payment card display
+
+#### Charts & Visualizations
+- **`BarChart`** - Bar chart component
+- **`LineChart`** - Line chart visualization
+- **`LineAreaChart`** - Area chart component
+- **`PieChart`** - Pie chart component
+- **`CircularProgress`** - Circular progress indicator
+- **`CircularProgressMini`** - Smaller circular progress
+
+#### Navigation & Links
+- **`NavLink`** - Navigation link component
+- **`Dropdown`** - Dropdown menu component
+- **`Popover`** - Popover/tooltip component
+- **`Tooltip`** - Tooltip component
+
+#### Data Display
+- **`Badge`** - Status/label badges
+- **`Event`** - Event display component
+- **`OrderStep`** - Step indicator for processes
+- **`SessionBadge`** - Session status badge
+- **`TimelineItem`** - Timeline entry component
+- **`Transaction`** - Transaction display
+- **`Transfer`** - Transfer/payment display
+
+#### Media & Images
+- **`Avatar`** - User avatar component
+- **`Image`** - Enhanced image component
+
+#### Layout Components
+- **`Scrollbar`** - Custom scrollbar component
+
+### Dashboard Components (`components/dashboard/`)
+
+#### Core Dashboard
+- **`DashboardHeader`** - Main dashboard header
+- **`CompanyCard`** - Company information card
+- **`CompanyList`** - List of companies
+- **`ReportsDashboard`** - Reports overview
+- **`StreamingMetrics`** - Real-time metrics display
+
+#### Default Dashboard Widgets
+- **`Balance`** - Balance display widget
+- **`DailyTraffic`** - Daily traffic statistics
+- **`MostVisited`** / **`MostVisitedTable`** - Most visited pages table
+- **`OverallRevenue`** - Revenue overview widget
+- **`ProfitEstimation`** - Profit estimation display
+- **`ProjectStatus`** - Project status widget
+- **`YourCard`** - User card information
+- **`YourTransfers`** - Transfer history
+
+#### Specialized Dashboards
+- **Car Interface**: `EagleView`, `MapCard`, `Phone`
+- **Smart Home**: `AddDevice`, `Consumption`, `Controller`, `General`, `Home`, `Light`, `Plan`, `Temperature`, `Weather`
+
+### Marketing Components (`components/marketing/`)
+
+- **`Hero`** - Landing page hero section
+- **`Cta`** - Call-to-action section with email capture
+- **`Features`** - Features showcase section
+- **`Pricing`** - Pricing table/cards
+- **`LogoCloud`** - Logo display section
+- **`GlobalDatabase`** - Database feature section
+- **`Navigation`** - Marketing site navigation
+- **`Footer`** - Marketing site footer
+
+### Authentication Components (`components/auth/`)
+
+- **`CenteredAuthLayout`** - Centered auth page layout
+- **`DefaultAuthLayout`** - Default auth page layout
+- **`PricingAuthLayout`** - Pricing-focused auth layout
+
+### Provider Components (`components/providers/`)
+
+- **`QueryProvider`** - React Query provider
+- **`SessionProvider`** - NextAuth session provider
+- **`TRPCProvider`** - tRPC client provider
+
+### Icons (`components/ui/icons/`)
+
+Available icons: `ClockIcon`, `CloseIcon`, `DarkmodeIcon`, `DashIcon`, `DotIcon`, `HorizonLogo`, `KanbanIcon`, `MarketIcon`, `NotificationIcon`, `ProfileIcon`, `SearchIcon`, `SignIn`, `TablesIcon`, and many more.
+
+### Calendar Components
+- **`EventCalendar`** - Full event calendar
+- **`MiniCalendar`** - Compact calendar widget
+
+### Sidebar & Navigation
+- **`CompanySelector`** - Company selection dropdown for sidebar
+- **`Links`** - Sidebar navigation links
+- **`SidebarCard`** - Promotional cards in sidebar
+- **`NavbarAuth`** - Authenticated navbar
+- **`Configurator`** - Theme/layout configurator
+
+## Component Usage Guidelines
+
+### 🔧 Before Creating New Components
+
+1. **Check this inventory first** - 99% of UI needs are already covered
+2. **Check Horizon UI components** - Extensive pre-built component library
+3. **Look for similar patterns** - Adapt existing components rather than creating new ones
+4. **Consider composition** - Combine existing components instead of building from scratch
+
+### 📝 When Adding New Components
+
+**🤖 CLAUDE: When you create any new component, you MUST update this inventory section with:**
+- Component name, location, and purpose
+- Key props and usage example
+- Import path example
+- Add to appropriate category above
+
+### 🎯 Import Patterns
+
+```typescript
+// UI Primitives
+import { Button } from 'components/ui/Button'
+import InputField from 'components/ui/fields/InputField'
+import MiniStatistics from 'components/ui/card/MiniStatistics'
+
+// Dashboard Components  
+import Balance from 'components/dashboard/dashboards/default/Balance'
+import DashboardHeader from 'components/dashboard/DashboardHeader'
+
+// Marketing Components
+import Hero from 'components/marketing/Hero'
+import { Navigation } from 'components/marketing/Navigation'
+
+// Charts
+import BarChart from 'components/ui/charts/BarChart'
+import LineChart from 'components/ui/charts/LineChart'
+```
+
+### 🎨 Horizon UI Styling
+
+Most components use Horizon UI's styling system:
+- **Colors**: `brand-500`, `navy-700`, `lightPrimary`
+- **Classes**: `linear` for buttons, rounded corners with `rounded-xl`
+- **Dark mode**: All components support dark mode variants

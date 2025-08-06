@@ -1,6 +1,6 @@
 import React from 'react';
-import NavbarAuth from 'components/navbar/NavbarAuth';
-import Footer from 'components/footer/FooterAuthCentered';
+import NavbarAuth from 'components/ui/navbar/NavbarAuth';
+import Footer from 'components/ui/footer/FooterAuthCentered';
 
 const Centered = (props: { maincard: JSX.Element }) => {
   const { maincard } = props;

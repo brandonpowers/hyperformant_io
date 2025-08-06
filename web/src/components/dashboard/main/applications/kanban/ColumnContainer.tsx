@@ -1,10 +1,10 @@
-import { SortableContext, useSortable } from "@dnd-kit/sortable";
-import { Column, Id, Task } from "types/hui-types";
-import { CSS } from "@dnd-kit/utilities";
-import { useMemo, useState } from "react";
-import { AiOutlinePlus } from "react-icons/ai";
-import TaskCard from "./TaskCard";
-import Card from "components/ui/card";
+import { SortableContext, useSortable } from '@dnd-kit/sortable';
+import { Column, Id, Task } from 'types/hui-types';
+import { CSS } from '@dnd-kit/utilities';
+import { useMemo, useState } from 'react';
+import { AiOutlinePlus } from 'react-icons/ai';
+import TaskCard from './TaskCard';
+import Card from 'components/ui/card';
 
 interface Props {
   column: Column;
@@ -20,8 +20,8 @@ interface Props {
 
 function ColumnContainer({
   column,
-  deleteColumn,
-  updateColumn,
+  deleteColumn: _deleteColumn,
+  updateColumn: _updateColumn,
   createTask,
   tasks,
   deleteTask,
@@ -30,7 +30,7 @@ function ColumnContainer({
 }: Props) {
   const [editMode, setEditMode] = useState(false);
 
-  let tasksIds = useMemo(() => {
+  const tasksIds = useMemo(() => {
     return tasks.map((task) => task.id);
   }, [tasks]);
 
@@ -44,7 +44,7 @@ function ColumnContainer({
   } = useSortable({
     id: column.id,
     data: {
-      type: "Column",
+      type: 'Column',
       column,
     },
     disabled: editMode,

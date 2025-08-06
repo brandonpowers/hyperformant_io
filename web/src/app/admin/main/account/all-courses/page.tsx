@@ -6,8 +6,8 @@ import { useState } from 'react';
 import { IoLogoInstagram } from 'react-icons/io5';
 import { MdOutlineUpgrade } from 'react-icons/md';
 
-import Schedule from 'components/admin/main/account/all-courses/Schedule';
-import Hours from 'components/admin/main/account/all-courses/Hours';
+import Schedule from 'components/dashboard/main/account/all-courses/Schedule';
+import Hours from 'components/dashboard/main/account/all-courses/Hours';
 import Card from 'components/ui/card';
 
 const Courses = () => {

@@ -1,6 +1,12 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  ReactNode,
+} from 'react';
 import { useSession } from 'next-auth/react';
 
 interface Company {
@@ -26,7 +32,9 @@ const CompanyContext = createContext<CompanyContextType | undefined>(undefined);
 
 export function CompanyProvider({ children }: { children: ReactNode }) {
   const { data: session } = useSession();
-  const [selectedCompany, setSelectedCompanyState] = useState<Company | null>(null);
+  const [selectedCompany, setSelectedCompanyState] = useState<Company | null>(
+    null,
+  );
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -36,11 +44,13 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
       if (response.ok) {
         const data = await response.json();
         setCompanies(data);
-        
+
         // Set selected company from localStorage or use first company
         const savedCompanyId = localStorage.getItem('selectedCompanyId');
         if (savedCompanyId) {
-          const savedCompany = data.find((c: Company) => c.id === savedCompanyId);
+          const savedCompany = data.find(
+            (c: Company) => c.id === savedCompanyId,
+          );
           if (savedCompany) {
             setSelectedCompanyState(savedCompany);
           } else if (data.length > 0) {
@@ -75,13 +85,11 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
     companies,
     setSelectedCompany,
     refreshCompanies: fetchCompanies,
-    loading
+    loading,
   };
 
   return (
-    <CompanyContext.Provider value={value}>
-      {children}
-    </CompanyContext.Provider>
+    <CompanyContext.Provider value={value}>{children}</CompanyContext.Provider>
   );
 }
 

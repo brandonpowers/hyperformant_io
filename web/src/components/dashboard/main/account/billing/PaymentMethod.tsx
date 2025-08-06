@@ -40,7 +40,7 @@ const PaymentMethod = () => {
           <MdEdit className="h-5 w-5" />
         </div>
       </div>
-      
+
       {/* Add Button */}
       <div className="mt-12 flex w-full justify-end">
         <button className="linear rounded-xl bg-brand-500 px-4 py-2 text-base font-medium text-white transition duration-200 hover:cursor-pointer hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200">

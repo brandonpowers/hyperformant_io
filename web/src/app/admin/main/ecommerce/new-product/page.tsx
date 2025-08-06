@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import Stepper from 'components/admin/main/ecommerce/new-product/components/Stepper';
-import StepperControl from 'components/admin/main/ecommerce/new-product/components/StepperControl';
-import { UseContextProvider } from 'components/admin/main/ecommerce/new-product/contexts/StepperContext';
-import Product from 'components/admin/main/ecommerce/new-product/components/steps/Product';
-import Media from 'components/admin/main/ecommerce/new-product/components/steps/Media';
-import Pricing from 'components/admin/main/ecommerce/new-product/components/steps/Pricing';
+import Stepper from 'components/dashboard/main/ecommerce/new-product/components/Stepper';
+import StepperControl from 'components/dashboard/main/ecommerce/new-product/components/StepperControl';
+import { UseContextProvider } from 'components/dashboard/main/ecommerce/new-product/contexts/StepperContext';
+import Product from 'components/dashboard/main/ecommerce/new-product/components/steps/Product';
+import Media from 'components/dashboard/main/ecommerce/new-product/components/steps/Media';
+import Pricing from 'components/dashboard/main/ecommerce/new-product/components/steps/Pricing';
 import Card from 'components/ui/card';
 
 const ProductNew = () => {

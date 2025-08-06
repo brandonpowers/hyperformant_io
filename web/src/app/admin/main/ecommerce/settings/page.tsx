@@ -1,10 +1,10 @@
 'use client';
 import ChairDef from '/public/img/ecommerce/ChairDef.png';
-import Delete from 'components/admin/main/ecommerce/settings-product/Delete';
-import Details from 'components/admin/main/ecommerce/settings-product/Details';
-import DropeZone from 'components/admin/main/ecommerce/settings-product/Dropzone';
-import Information from 'components/admin/main/ecommerce/settings-product/Info';
-import Socials from 'components/admin/main/ecommerce/settings-product/Socials';
+import Delete from 'components/dashboard/main/ecommerce/settings-product/Delete';
+import Details from 'components/dashboard/main/ecommerce/settings-product/Details';
+import DropeZone from 'components/dashboard/main/ecommerce/settings-product/Dropzone';
+import Information from 'components/dashboard/main/ecommerce/settings-product/Info';
+import Socials from 'components/dashboard/main/ecommerce/settings-product/Socials';
 import Image from 'next/image';
 const SettingsProduct = () => {
   return (

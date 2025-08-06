@@ -11,7 +11,6 @@ import { signIn } from 'next-auth/react';
 function Verification() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [code, setCode] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
@@ -20,7 +19,7 @@ function Verification() {
 
   const email = searchParams?.get('email');
   const registrationMessage = searchParams?.get('message');
-  
+
   // Check if verification code is provided in URL (for future email link functionality)
   const urlCode = searchParams?.get('code');
 
@@ -44,14 +43,14 @@ function Verification() {
       if (response.ok) {
         setMessage(data.message || 'Email verified successfully!');
         setIsSuccess(true);
-        
+
         // Always attempt auto-login after successful verification
         if (data.autoLogin && email) {
           try {
             // Try to sign in using NextAuth
             // First, get the stored password or try without password (since email is now verified)
-            let storedPassword = sessionStorage.getItem('temp_password');
-            
+            const storedPassword = sessionStorage.getItem('temp_password');
+
             if (storedPassword) {
               // If we have stored password, use it
               const signInResult = await signIn('credentials', {
@@ -59,26 +58,29 @@ function Verification() {
                 password: storedPassword,
                 redirect: false,
               });
-              
+
               if (!signInResult?.error) {
                 sessionStorage.removeItem('temp_password');
                 router.push('/dashboard');
                 return;
               }
             }
-            
-            // If stored password didn't work or doesn't exist, 
+
+            // If stored password didn't work or doesn't exist,
             // create a manual session redirect approach
-            setMessage('Email verified successfully! Setting up your account...');
+            setMessage(
+              'Email verified successfully! Setting up your account...',
+            );
             setTimeout(() => {
               router.push('/onboarding/goals');
             }, 1500);
-            
           } catch (signInError) {
             console.error('Auto sign-in failed:', signInError);
             // Fall back to sign-in page
             setTimeout(() => {
-              router.push('/auth/sign-in?message=Email verified! Please sign in.');
+              router.push(
+                '/auth/sign-in?message=Email verified! Please sign in.',
+              );
             }, 2000);
           } finally {
             // Always clean up stored password
@@ -87,7 +89,9 @@ function Verification() {
         } else {
           // Fallback: redirect to sign-in page
           setTimeout(() => {
-            router.push('/auth/sign-in?message=Email verified! You can now sign in.');
+            router.push(
+              '/auth/sign-in?message=Email verified! You can now sign in.',
+            );
           }, 2000);
         }
       } else {
@@ -142,7 +146,9 @@ function Verification() {
                 Verify Your Email
               </h3>
               <p className="mt-2 text-center text-base text-gray-600">
-                We've sent a verification code to {email ? email : 'your email address'}. Please enter the code below.
+                We've sent a verification code to{' '}
+                {email ? email : 'your email address'}. Please enter the code
+                below.
               </p>
             </div>
 
@@ -153,15 +159,17 @@ function Verification() {
             )}
 
             {message && (
-              <div className={`mb-4 rounded-lg p-3 text-sm ${
-                isSuccess 
-                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                  : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-              }`}>
+              <div
+                className={`mb-4 rounded-lg p-3 text-sm ${
+                  isSuccess
+                    ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                    : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                }`}
+              >
                 {message}
               </div>
             )}
-            
+
             <div className="mb-6">
               <label className="mb-3 block text-sm font-medium text-navy-700 dark:text-white">
                 Verification Code*
@@ -174,7 +182,7 @@ function Verification() {
                 initialValue={urlCode || ''}
               />
             </div>
-            
+
             {isLoading && (
               <div className="text-center mb-4">
                 <div className="inline-flex items-center gap-2 text-sm text-brand-500">
@@ -183,12 +191,12 @@ function Verification() {
                 </div>
               </div>
             )}
-            
+
             <div className="mt-6 text-center">
               <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
                 Didn't receive the code?
               </span>
-              <button 
+              <button
                 type="button"
                 onClick={handleResendCode}
                 disabled={isResending || !email}
@@ -197,7 +205,7 @@ function Verification() {
                 {isResending ? 'Sending...' : 'Resend Code'}
               </button>
             </div>
-            
+
             <div className="mt-3 text-center">
               <Link
                 href="/auth/sign-in"

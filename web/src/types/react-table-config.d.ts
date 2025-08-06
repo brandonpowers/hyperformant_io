@@ -117,7 +117,7 @@ declare module 'react-table' {
 
   export interface Cell<
     D extends Record<string, unknown> = Record<string, unknown>,
-    V = any
+    V = any // V is intentionally unused but kept for react-table API compatibility
   > extends UseGroupByCellProps<D>,
       UseRowStateCellProps<D> {}
 

@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 function Transaction(props: {
   title: string;
@@ -17,16 +17,16 @@ function Transaction(props: {
         </div>
         <div>
           <h5 className="text-base font-bold text-navy-700 dark:text-white">
-            {" "}
-            {title}{" "}
+            {' '}
+            {title}{' '}
           </h5>
           <p className="text-sm font-medium text-gray-600"> {date} </p>
         </div>
       </div>
       <div>
         <p className="mr-1 text-sm font-bold text-navy-700 dark:text-white">
-          {" "}
-          {sum}{" "}
+          {' '}
+          {sum}{' '}
         </p>
       </div>
     </div>

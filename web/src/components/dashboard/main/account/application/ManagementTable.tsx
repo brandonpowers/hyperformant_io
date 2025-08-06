@@ -25,7 +25,7 @@ const columnHelper = createColumnHelper<RowObj>();
 export default function ComplexTable(props: { tableData: any }) {
   const { tableData } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  let defaultData = tableData;
+  const defaultData = tableData;
   const columns = [
     columnHelper.accessor('name', {
       id: 'name',
@@ -121,7 +121,7 @@ export default function ComplexTable(props: { tableData: any }) {
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white sm:max-w-[40px] md:max-w-[4å0px] lg:max-w-[unset]"></p>
       ),
-      cell: (info) => (
+      cell: (_info) => (
         <button className="flex max-h-fit w-full max-w-max cursor-pointer items-end justify-center text-xl text-gray-600">
           <MdEdit />
         </button>

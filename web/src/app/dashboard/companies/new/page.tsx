@@ -2,11 +2,9 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 
 export default function NewCompanyPage() {
   const router = useRouter();
-  const { data: session } = useSession();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [formData, setFormData] = useState({
@@ -16,7 +14,7 @@ export default function NewCompanyPage() {
     employees: '',
     revenue: '',
     founded: '',
-    description: ''
+    description: '',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -52,17 +50,21 @@ export default function NewCompanyPage() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => {
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     });
   };
 
   return (
     <div className="mx-auto max-w-2xl p-6">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-navy-700 dark:text-white">Add New Company</h1>
+        <h1 className="text-3xl font-bold text-navy-700 dark:text-white">
+          Add New Company
+        </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
           Add a company to track and analyze in your dashboard.
         </p>
@@ -76,7 +78,10 @@ export default function NewCompanyPage() {
         )}
 
         <div>
-          <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="name"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Company Name *
           </label>
           <input
@@ -91,7 +96,10 @@ export default function NewCompanyPage() {
         </div>
 
         <div>
-          <label htmlFor="domain" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="domain"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Website Domain
           </label>
           <input
@@ -106,7 +114,10 @@ export default function NewCompanyPage() {
         </div>
 
         <div>
-          <label htmlFor="industry" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="industry"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Industry
           </label>
           <input
@@ -122,7 +133,10 @@ export default function NewCompanyPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="employees" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="employees"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Number of Employees
             </label>
             <input
@@ -136,7 +150,10 @@ export default function NewCompanyPage() {
           </div>
 
           <div>
-            <label htmlFor="revenue" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label
+              htmlFor="revenue"
+              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
               Annual Revenue
             </label>
             <input
@@ -152,7 +169,10 @@ export default function NewCompanyPage() {
         </div>
 
         <div>
-          <label htmlFor="founded" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="founded"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Founded Date
           </label>
           <input
@@ -166,7 +186,10 @@ export default function NewCompanyPage() {
         </div>
 
         <div>
-          <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="description"
+            className="block text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Description
           </label>
           <textarea

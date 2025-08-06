@@ -1,8 +1,8 @@
-import BarChart from "components/ui/charts/BarChart";
-import { barChartDataDailyTraffic } from "variables/charts";
-import { barChartOptionsDailyTraffic } from "variables/charts";
-import { MdArrowDropUp } from "react-icons/md";
-import Card from "components/ui/card";
+import BarChart from 'components/ui/charts/BarChart';
+import { barChartDataDailyTraffic } from 'variables/charts';
+import { barChartOptionsDailyTraffic } from 'variables/charts';
+import { MdArrowDropUp } from 'react-icons/md';
+import Card from 'components/ui/card';
 const DailyTraffic = () => {
   return (
     <Card extra="pb-7 p-5">
@@ -12,7 +12,7 @@ const DailyTraffic = () => {
             Daily Traffic
           </p>
           <p className="text-[34px] font-bold text-navy-700 dark:text-white">
-            2.579{" "}
+            2.579{' '}
             <span className="text-sm font-medium leading-6 text-gray-600">
               Visitors
             </span>

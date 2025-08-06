@@ -126,7 +126,7 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
           <div className="flex items-center">
             {task.members
               ? task.members.map((member, index) => {
-                  let membersNumber = task.members.length;
+                  const membersNumber = task.members.length;
                   console.log(membersNumber);
                   return (
                     <Image
@@ -149,12 +149,12 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
                 task.status === 'ERRORS'
                   ? ' bg-red-500'
                   : task.status === 'PENDING'
-                  ? ' bg-yellow-500'
-                  : task.status === 'DONE'
-                  ? ' bg-green-500'
-                  : task.status === 'UPDATES'
-                  ? ' bg-[#3965FF]'
-                  : ' bg-teal-400'
+                    ? ' bg-yellow-500'
+                    : task.status === 'DONE'
+                      ? ' bg-green-500'
+                      : task.status === 'UPDATES'
+                        ? ' bg-[#3965FF]'
+                        : ' bg-teal-400'
               } `}
             >
               {task.status}
@@ -235,7 +235,7 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
           <div className="flex items-center">
             {task.members
               ? task.members.map((member, index) => {
-                  let membersNumber = task.members.length;
+                  const membersNumber = task.members.length;
                   console.log(membersNumber);
                   return (
                     <Image
@@ -258,12 +258,12 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
                 task.status === 'ERRORS'
                   ? ' bg-red-500'
                   : task.status === 'PENDING'
-                  ? ' bg-yellow-500'
-                  : task.status === 'DONE'
-                  ? ' bg-green-500'
-                  : task.status === 'UPDATES'
-                  ? ' bg-[#3965FF]'
-                  : ' bg-teal-400'
+                    ? ' bg-yellow-500'
+                    : task.status === 'DONE'
+                      ? ' bg-green-500'
+                      : task.status === 'UPDATES'
+                        ? ' bg-[#3965FF]'
+                        : ' bg-teal-400'
               } `}
             >
               {task.status}
@@ -334,7 +334,7 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
         <div className="flex items-center">
           {task.members
             ? task.members.map((member, index) => {
-                let membersNumber = task.members.length;
+                const membersNumber = task.members.length;
                 console.log(membersNumber);
                 return (
                   <Image
@@ -357,12 +357,12 @@ function TaskCard({ task, deleteTask, updateTask, updateTaskTitle }: Props) {
               task.status === 'ERRORS'
                 ? ' bg-red-500'
                 : task.status === 'PENDING'
-                ? ' bg-yellow-500'
-                : task.status === 'DONE'
-                ? ' bg-green-500'
-                : task.status === 'UPDATES'
-                ? ' bg-[#3965FF]'
-                : ' bg-teal-400'
+                  ? ' bg-yellow-500'
+                  : task.status === 'DONE'
+                    ? ' bg-green-500'
+                    : task.status === 'UPDATES'
+                      ? ' bg-[#3965FF]'
+                      : ' bg-teal-400'
             } `}
           >
             {task.status}

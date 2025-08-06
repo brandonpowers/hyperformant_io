@@ -1,4 +1,4 @@
-import InputField from "components/ui/fields/InputField";
+import InputField from 'components/ui/fields/InputField';
 
 const Address = () => {
   return (

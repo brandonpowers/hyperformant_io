@@ -5,10 +5,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -22,11 +22,11 @@ export async function GET(request: NextRequest) {
           {
             members: {
               some: {
-                userId: session.user.id
-              }
-            }
-          }
-        ]
+                userId: session.user.id,
+              },
+            },
+          },
+        ],
       },
       include: {
         members: {
@@ -35,49 +35,56 @@ export async function GET(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
-                email: true
-              }
-            }
-          }
+                email: true,
+              },
+            },
+          },
         },
         createdBy: {
           select: {
             id: true,
             name: true,
-            email: true
-          }
+            email: true,
+          },
         },
         _count: {
           select: {
-            reports: true
-          }
-        }
+            reports: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
     return NextResponse.json(companies);
   } catch (error) {
     console.error('Error fetching companies:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
-    const { name, domain, industry, employees, revenue, founded, description } = body;
+    const { name, domain, industry, employees, revenue, founded, description } =
+      body;
 
     if (!name) {
-      return NextResponse.json({ error: 'Company name is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Company name is required' },
+        { status: 400 },
+      );
     }
 
     const company = await prisma.company.create({
@@ -89,13 +96,16 @@ export async function POST(request: NextRequest) {
         revenue,
         founded: founded ? new Date(founded) : null,
         description,
-        userId: session.user.id
-      }
+        userId: session.user.id,
+      },
     });
 
     return NextResponse.json(company, { status: 201 });
   } catch (error) {
     console.error('Error creating company:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

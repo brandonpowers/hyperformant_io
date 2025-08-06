@@ -1,4 +1,4 @@
-// @ts-nocheck
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { MdOutlineFavoriteBorder } from 'react-icons/md';
 import { IoPaperPlaneOutline } from 'react-icons/io5';
 import {

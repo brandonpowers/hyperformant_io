@@ -1,11 +1,11 @@
 'use client';
 import { useState } from 'react';
-import Stepper from 'components/admin/main/users/new-user/Stepper';
-import StepperControl from 'components/admin/main/users/new-user/StepperControl';
-import { UseContextProvider } from 'components/admin/main/users/new-user/contexts/StepperContext';
-import UserInfo from 'components/admin/main/users/new-user/steps/UserInfo';
-import Address from 'components/admin/main/users/new-user/steps/Address';
-import Profile from 'components/admin/main/users/new-user/steps/Profile';
+import Stepper from 'components/dashboard/main/users/new-user/Stepper';
+import StepperControl from 'components/dashboard/main/users/new-user/StepperControl';
+import { UseContextProvider } from 'components/dashboard/main/users/new-user/contexts/StepperContext';
+import UserInfo from 'components/dashboard/main/users/new-user/steps/UserInfo';
+import Address from 'components/dashboard/main/users/new-user/steps/Address';
+import Profile from 'components/dashboard/main/users/new-user/steps/Profile';
 import Card from 'components/ui/card';
 
 const NewUser = () => {

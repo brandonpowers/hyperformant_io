@@ -2,7 +2,7 @@
 import { IoMdAdd } from 'react-icons/io';
 import { useMemo, useState } from 'react';
 import { Column, Id, Task } from 'types/hui-types';
-import ColumnContainer from 'components/admin/main/applications/kanban/ColumnContainer';
+import ColumnContainer from 'components/dashboard/main/applications/kanban/ColumnContainer';
 import avatar2 from '/public/img/avatars/avatar2.png';
 import avatar3 from '/public/img/avatars/avatar3.png';
 import avatar4 from '/public/img/avatars/avatar4.png';
@@ -26,7 +26,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, arrayMove } from '@dnd-kit/sortable';
 import { createPortal } from 'react-dom';
-import TaskCard from 'components/admin/main/applications/kanban/TaskCard';
+import TaskCard from 'components/dashboard/main/applications/kanban/TaskCard';
 
 const defaultCols: Column[] = [
   {
@@ -143,14 +143,14 @@ function KanbanBoard() {
   return (
     <div className="mt-20 flex flex-col overflow-hidden rounded-md xl:mt-3">
       <div className="max-w-full">
-        {/* @ts-ignore */}
+        {/* @ts-expect-error: Scrollbars library has incorrect type definitions */}
         <Scrollbars
           autoHide
           renderTrackHorizontal={kanbanRenderTrack}
           renderThumbHorizontal={kanbanRenderThumb}
           renderView={kanbanRenderView}
         >
-          {/* @ts-ignore */}
+          {/* @ts-expect-error: DndContext types conflict with our implementation */}
           <DndContext
             sensors={sensors}
             onDragStart={onDragStart}

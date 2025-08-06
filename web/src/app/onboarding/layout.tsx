@@ -25,7 +25,7 @@ interface StepProgressProps {
 const StepProgress = ({ steps }: StepProgressProps) => {
   const pathname = usePathname();
   const currentStepIndex = steps.findIndex((step) =>
-    pathname.startsWith(step.href)
+    pathname.startsWith(step.href),
   );
 
   return (
@@ -38,7 +38,7 @@ const StepProgress = ({ steps }: StepProgressProps) => {
               'h-1 w-12 rounded-full transition-colors duration-300',
               index <= currentStepIndex
                 ? 'bg-brand-500'
-                : 'bg-gray-300 dark:bg-gray-700'
+                : 'bg-gray-300 dark:bg-gray-700',
             )}
           >
             <span className="sr-only">
@@ -46,8 +46,8 @@ const StepProgress = ({ steps }: StepProgressProps) => {
               {index < currentStepIndex
                 ? 'completed'
                 : index === currentStepIndex
-                ? 'current'
-                : ''}
+                  ? 'current'
+                  : ''}
             </span>
           </li>
         ))}
@@ -56,11 +56,7 @@ const StepProgress = ({ steps }: StepProgressProps) => {
   );
 };
 
-const OnboardingLayout = ({
-  children,
-}: {
-  children: React.ReactNode;
-}) => {
+const OnboardingLayout = ({ children }: { children: React.ReactNode }) => {
   const { data: session } = useSession();
   const router = useRouter();
 
@@ -92,9 +88,7 @@ const OnboardingLayout = ({
         </Link>
       </header>
       <main className="mx-auto mb-20 mt-24 max-w-2xl px-4">
-        <Card extra="p-6 md:p-8">
-          {children}
-        </Card>
+        <Card extra="p-6 md:p-8">{children}</Card>
       </main>
     </div>
   );

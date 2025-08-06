@@ -1,19 +1,19 @@
-import { PrismaClient } from '@prisma/client'
-import { getServerSession } from 'next-auth/next'
-import { authOptions } from '../../app/api/auth/[...nextauth]/route'
-import CompanyCard from './CompanyCard'
+import { PrismaClient } from '@prisma/client';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '../../app/api/auth/[...nextauth]/route';
+import CompanyCard from './CompanyCard';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 export default async function CompanyList() {
-  const session = await getServerSession(authOptions)
-  
+  const session = await getServerSession(authOptions);
+
   if (!session?.user) {
     return (
       <div className="flex items-center justify-center h-64">
         <p className="text-gray-500">Please sign in to view your companies</p>
       </div>
-    )
+    );
   }
 
   const companies = await prisma.company.findMany({
@@ -24,7 +24,7 @@ export default async function CompanyList() {
       createdAt: 'desc',
     },
     take: 10, // Limit for initial load
-  })
+  });
 
   if (companies.length === 0) {
     return (
@@ -36,7 +36,7 @@ export default async function CompanyList() {
           </button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -45,8 +45,8 @@ export default async function CompanyList() {
         <CompanyCard key={company.id} company={company} />
       ))}
     </div>
-  )
+  );
 }
 
 // This ensures the component is always rendered on the server
-export const dynamic = 'force-dynamic'
+export const dynamic = 'force-dynamic';

@@ -78,7 +78,7 @@ function Lock() {
                 {error}
               </div>
             )}
-            
+
             <InputField
               variant="auth"
               extra="mb-6"
@@ -89,15 +89,15 @@ function Lock() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
             />
-            
-            <button 
+
+            <button
               type="submit"
               disabled={isLoading}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
             >
               {isLoading ? 'Unlocking...' : 'Unlock'}
             </button>
-            
+
             <div className="mt-6 text-center">
               <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
                 Not your account?

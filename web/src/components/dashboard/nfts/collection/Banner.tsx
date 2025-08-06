@@ -79,9 +79,10 @@ const Banner = () => {
           The Abstractus® project is an online art show and the First Art NFTs
           on Ethereum, launched on May 9, 2017. Abstractus® features 28 unique
           series of cards from 7 different artists. Abstractus® are referenced
-          with CryptoAbstractus® and Crypto in the original ERC-721 Non-Fungible
-          Token Standard, and pre-dates them both. Join the Abstractus® Discord
-          and check out theAbstractus® Docs to find out more.
+          with CryptoAbstractus® and Crypto in the original ERC-721
+          Non-Fungible Token Standard, and pre-dates them both. Join the
+          Abstractus® Discord and check out theAbstractus® Docs to find out
+          more.
         </p>
       </div>
     </div>

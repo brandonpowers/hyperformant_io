@@ -1,20 +1,20 @@
-import React from "react"
-import { Badge } from "../ui/Badge"
+import React from 'react';
+import { Badge } from '../ui/Badge';
 
 const stats = [
   {
-    name: "Faster market insights",
-    value: "+95%"
+    name: 'Faster market insights',
+    value: '+95%',
   },
   {
-    name: "Revenue acceleration",
-    value: "3-5x"
+    name: 'Revenue acceleration',
+    value: '3-5x',
   },
   {
-    name: "Contacts analyzed",
-    value: "Up to 275M"
+    name: 'Contacts analyzed',
+    value: 'Up to 275M',
   },
-]
+];
 
 export default function Features() {
   return (
@@ -30,9 +30,11 @@ export default function Features() {
         Disruption intelligence at scale
       </h2>
       <p className="mt-6 max-w-3xl text-lg leading-7 text-gray-600 dark:text-gray-400">
-        Hyperformant&rsquo;s AI-powered platform analyzes consumer sentiment across Reddit, Twitter, G2, and HackerNews 
-        to identify competitor vulnerabilities and market disruption opportunities. Transform raw market data into 
-        actionable business intelligence that drives revenue growth.
+        Hyperformant&rsquo;s AI-powered platform analyzes consumer sentiment
+        across Reddit, Twitter, G2, and HackerNews to identify competitor
+        vulnerabilities and market disruption opportunities. Transform raw
+        market data into actionable business intelligence that drives revenue
+        growth.
       </p>
       <dl className="mt-12 grid grid-cols-1 gap-y-8 md:grid-cols-3 md:border-y md:border-gray-200 md:py-14 dark:border-gray-800">
         {stats.map((stat, index) => (
@@ -49,5 +51,5 @@ export default function Features() {
         ))}
       </dl>
     </section>
-  )
+  );
 }

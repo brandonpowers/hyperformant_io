@@ -30,7 +30,7 @@ export default function MarketPage() {
     setSelectedIndustries((prev) =>
       prev.includes(industry)
         ? prev.filter((i) => i !== industry)
-        : [...prev, industry]
+        : [...prev, industry],
     );
   };
 
@@ -43,9 +43,9 @@ export default function MarketPage() {
       await fetch('/api/user/preferences', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           targetRevenue: selectedRevenue,
-          targetIndustries: selectedIndustries 
+          targetIndustries: selectedIndustries,
         }),
       });
 
@@ -145,7 +145,9 @@ export default function MarketPage() {
         </Link>
         <button
           type="submit"
-          disabled={!selectedRevenue || selectedIndustries.length === 0 || isLoading}
+          disabled={
+            !selectedRevenue || selectedIndustries.length === 0 || isLoading
+          }
           className="linear rounded-xl bg-brand-500 px-6 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-400 dark:hover:bg-brand-300"
         >
           {isLoading ? 'Saving...' : 'Continue'}

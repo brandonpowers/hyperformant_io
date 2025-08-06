@@ -1,5 +1,4 @@
 import { IRoute } from 'types/navigation';
-import Router from 'next/router';
 
 // NextJS Requirement
 export const isWindowAvailable = () => typeof window !== 'undefined';
@@ -10,10 +9,10 @@ export const findCurrentRoute = (
 ): IRoute => {
   if (!isWindowAvailable()) return null;
 
-  for (let route of routes) {
-    if (!!route.items) {
+  for (const route of routes) {
+    if (route.items) {
       const found = findCurrentRoute(route.items, pathname);
-      if (!!found) return found;
+      if (found) return found;
     }
     if (pathname?.match(route.path) && route) return route;
   }

@@ -1,5 +1,5 @@
-import { z } from 'zod'
-import { createTRPCRouter, protectedProcedure } from '../trpc'
+import { z } from 'zod';
+import { createTRPCRouter, protectedProcedure } from '../trpc';
 
 export const companiesRouter = createTRPCRouter({
   getAll: protectedProcedure.query(async ({ ctx }) => {
@@ -10,7 +10,7 @@ export const companiesRouter = createTRPCRouter({
       orderBy: {
         createdAt: 'desc',
       },
-    })
+    });
   }),
 
   getById: protectedProcedure
@@ -28,13 +28,13 @@ export const companiesRouter = createTRPCRouter({
             },
           },
         },
-      })
+      });
 
       if (!company) {
-        throw new Error('Company not found')
+        throw new Error('Company not found');
       }
 
-      return company
+      return company;
     }),
 
   create: protectedProcedure
@@ -47,7 +47,7 @@ export const companiesRouter = createTRPCRouter({
         revenue: z.string().optional(),
         founded: z.date().optional(),
         description: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
       return ctx.prisma.company.create({
@@ -55,7 +55,7 @@ export const companiesRouter = createTRPCRouter({
           ...input,
           userId: ctx.session.user.id,
         },
-      })
+      });
     }),
 
   update: protectedProcedure
@@ -69,10 +69,10 @@ export const companiesRouter = createTRPCRouter({
         revenue: z.string().optional(),
         founded: z.date().optional(),
         description: z.string().optional(),
-      })
+      }),
     )
     .mutation(async ({ ctx, input }) => {
-      const { id, ...updateData } = input
+      const { id, ...updateData } = input;
 
       return ctx.prisma.company.update({
         where: {
@@ -80,7 +80,7 @@ export const companiesRouter = createTRPCRouter({
           userId: ctx.session.user.id,
         },
         data: updateData,
-      })
+      });
     }),
 
   delete: protectedProcedure
@@ -91,6 +91,6 @@ export const companiesRouter = createTRPCRouter({
           id: input.id,
           userId: ctx.session.user.id,
         },
-      })
+      });
     }),
-})
+});

@@ -6,7 +6,6 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint",
     "predeploy": "npm run build",
     "preinstall": "npx npm-force-resolutions",
     "db:migrate": "prisma migrate dev",
@@ -124,7 +123,7 @@
     "eslint-config-next": "^15.1.5",
     "gh-pages": "^5.0.0",
     "postcss": "^8.4.30",
-    "prettier": "^2.8.3",
+    "prettier": "^2.8.8",
     "prettier-plugin-tailwindcss": "^0.2.1",
     "tailwindcss": "^3.3.3"
   },

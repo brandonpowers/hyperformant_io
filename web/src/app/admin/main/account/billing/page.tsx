@@ -1,11 +1,11 @@
 'use client';
-import Balance from 'components/admin/main/account/billing/Balance';
-import Invoice from 'components/admin/main/account/billing/Invoices';
-import Market from 'components/admin/main/account/billing/Market';
-import PaymentMethod from 'components/admin/main/account/billing/PaymentMethod';
-import YourCard from 'components/admin/main/account/billing/YourCard';
-import YourTransaction from 'components/admin/main/account/billing/YourTransactions';
-import YourTransfers from 'components/admin/main/account/billing/YourTransfers';
+import Balance from 'components/dashboard/main/account/billing/Balance';
+import Invoice from 'components/dashboard/main/account/billing/Invoices';
+import Market from 'components/dashboard/main/account/billing/Market';
+import PaymentMethod from 'components/dashboard/main/account/billing/PaymentMethod';
+import YourCard from 'components/dashboard/main/account/billing/YourCard';
+import YourTransaction from 'components/dashboard/main/account/billing/YourTransactions';
+import YourTransfers from 'components/dashboard/main/account/billing/YourTransfers';
 
 const Billing = () => {
   return (

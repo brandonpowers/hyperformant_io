@@ -1,5 +1,5 @@
 'use client';
-import Banner from 'components/admin/nfts/marketplace/Banner';
+import Banner from 'components/dashboard/nfts/marketplace/Banner';
 import NFt2 from '/public/img/nfts/Nft2.png';
 import NFt4 from '/public/img/nfts/Nft4.png';
 import NFt3 from '/public/img/nfts/Nft3.png';
@@ -10,8 +10,8 @@ import avatar2 from '/public/img/avatars/avatar2.png';
 import avatar3 from '/public/img/avatars/avatar3.png';
 
 import tableDataTopCreators from 'variables/nfts/marketplace/tableDataTopCreators';
-import HistoryItem from 'components/admin/nfts/marketplace/HistoryItem';
-import TopCreatorTable from 'components/admin/nfts/marketplace/TableTopCreators';
+import HistoryItem from 'components/dashboard/nfts/marketplace/HistoryItem';
+import TopCreatorTable from 'components/dashboard/nfts/marketplace/TableTopCreators';
 import NftCard from 'components/ui/card/NftCard';
 
 const Marketplace = () => {

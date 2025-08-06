@@ -21,7 +21,7 @@ const Information = () => {
         type="email"
         extra="mb-2 mt-7"
       />
-      
+
       {/* Name fields - grid */}
       <div className="mb-2 grid grid-cols-2 gap-3">
         <InputField
@@ -37,7 +37,7 @@ const Information = () => {
           type="text"
         />
       </div>
-      
+
       {/* Job - full width */}
       <InputField
         label="Job"

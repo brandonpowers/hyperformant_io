@@ -1,6 +1,6 @@
 'use client';
 import { Navigation } from 'components/marketing/Navigation';
-import TemplateFooter from 'components/marketing/TemplateFooter';
+import Footer from 'components/marketing/Footer';
 import Hero from 'components/marketing/Hero';
 import LogoCloud from 'components/marketing/LogoCloud';
 import { GlobalDatabase } from 'components/marketing/GlobalDatabase';
@@ -21,7 +21,7 @@ export default function Home() {
         <Pricing />
         <Cta />
       </main>
-      <TemplateFooter />
+      <Footer />
     </>
   );
 }

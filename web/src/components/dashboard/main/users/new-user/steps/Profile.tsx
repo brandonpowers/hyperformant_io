@@ -1,5 +1,5 @@
-import TextField from "components/ui/fields/TextField";
-import InputField from "components/ui/fields/InputField";
+import TextField from 'components/ui/fields/TextField';
+import InputField from 'components/ui/fields/InputField';
 const Profile = () => {
   return (
     <div className="h-full w-full rounded-[20px] px-3 pt-7 md:px-8">

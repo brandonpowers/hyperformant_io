@@ -1,5 +1,5 @@
-import React from "react";
-import { AiOutlineClose } from "react-icons/ai";
+import React from 'react';
+import { AiOutlineClose } from 'react-icons/ai';
 
 function SolidSubtleAlert(props: {
   icon: JSX.Element;
@@ -33,8 +33,8 @@ function SolidSubtleAlert(props: {
         <h5
           className={`pb-[3px] text-base ${
             solid
-              ? "text-white dark:!text-navy-900"
-              : "text-navy-700 dark:!text-white"
+              ? 'text-white dark:!text-navy-900'
+              : 'text-navy-700 dark:!text-white'
           } `}
         >
           <span className="pr-[5px] font-bold"> {title} </span> {description}

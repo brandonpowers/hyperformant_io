@@ -11,14 +11,13 @@ import {
 } from 'utils/navigation';
 import React from 'react';
 import { Portal } from '@chakra-ui/portal';
-import Navbar from 'components/navbar';
-import Sidebar from 'components/sidebar';
-import Footer from 'components/footer/Footer';
+import Navbar from 'components/ui/navbar';
+import Sidebar from 'components/ui/sidebar';
+import Footer from 'components/ui/footer/Footer';
 import '../../styles/dashboard.css';
 
 export default function Admin({ children }: { children: React.ReactNode }) {
   // states and functions
-  const [fixed] = useState(false);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState(false);
   const pathname = usePathname();
@@ -44,8 +43,8 @@ export default function Admin({ children }: { children: React.ReactNode }) {
             mini === false
               ? 'xl:ml-[313px]'
               : mini === true && hovered === true
-              ? 'xl:ml-[313px]'
-              : 'ml-0 xl:ml-[142px]'
+                ? 'xl:ml-[313px]'
+                : 'ml-0 xl:ml-[142px]'
           } `}
         >
           {/* Routes */}

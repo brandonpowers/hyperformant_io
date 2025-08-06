@@ -1,4 +1,4 @@
-import { Popover, PopoverTrigger, PopoverContent } from "@chakra-ui/popover";
+import { Popover, PopoverTrigger, PopoverContent } from '@chakra-ui/popover';
 const PopoverHorizon = (props: {
   extra: string;
   trigger: JSX.Element;

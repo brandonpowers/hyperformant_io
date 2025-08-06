@@ -1,12 +1,12 @@
-"use client"
-import createGlobe from "cobe"
-import { FunctionComponent, useEffect, useRef } from "react"
+'use client';
+import createGlobe from 'cobe';
+import { FunctionComponent, useEffect, useRef } from 'react';
 
 export const GlobalDatabase: FunctionComponent = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    let phi = 4.7
+    let phi = 4.7;
 
     const globe = createGlobe(canvasRef.current!, {
       devicePixelRatio: 2,
@@ -29,31 +29,31 @@ export const GlobalDatabase: FunctionComponent = () => {
         // { location: [28.7041, 77.1025], size: 0.03 }, // Delhi
       ],
       onRender: (state: { phi?: number }) => {
-        state.phi = phi
-        phi += 0.0002
+        state.phi = phi;
+        phi += 0.0002;
       },
-    })
+    });
 
     return () => {
-      globe.destroy()
-    }
-  }, [])
+      globe.destroy();
+    };
+  }, []);
 
   const features = [
     {
-      name: "Global Clusters",
-      description: "Enable low-latency global access, enhancing performance.",
+      name: 'Global Clusters',
+      description: 'Enable low-latency global access, enhancing performance.',
     },
     {
-      name: "Serverless Triggers",
-      description: "Trigger functions automatically for dynamic app behavior.",
+      name: 'Serverless Triggers',
+      description: 'Trigger functions automatically for dynamic app behavior.',
     },
     {
-      name: "Monitoring & Alerts",
+      name: 'Monitoring & Alerts',
       description:
-        "Monitor health with key metrics or integrate third-party tools.",
+        'Monitor health with key metrics or integrate third-party tools.',
     },
-  ]
+  ];
 
   return (
     <div className="px-3">
@@ -97,5 +97,5 @@ export const GlobalDatabase: FunctionComponent = () => {
         </div>
       </section>
     </div>
-  )
-}
+  );
+};

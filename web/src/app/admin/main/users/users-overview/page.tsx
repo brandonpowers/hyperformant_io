@@ -1,5 +1,5 @@
 'use client';
-import SearchTableUsers from 'components/admin/main/users/users-overview/SearchTableUsersOverivew';
+import SearchTableUsers from 'components/dashboard/main/users/users-overview/SearchTableUsersOverivew';
 import tableDataUsersOverview from 'variables/users/users-overview/tableDataUsersOverview';
 import Card from 'components/ui/card';
 

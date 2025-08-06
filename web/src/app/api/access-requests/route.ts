@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -17,7 +17,10 @@ export async function POST(request: NextRequest) {
     const { companyId, message, requestedRole = 'VIEWER' } = body;
 
     if (!companyId) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Company ID is required' },
+        { status: 400 },
+      );
     }
 
     // Check if user already has access to this company
@@ -25,15 +28,18 @@ export async function POST(request: NextRequest) {
       where: {
         companyId_userId: {
           companyId,
-          userId: session.user.id
-        }
-      }
+          userId: session.user.id,
+        },
+      },
     });
 
     if (existingMember) {
-      return NextResponse.json({ 
-        error: 'You already have access to this company' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'You already have access to this company',
+        },
+        { status: 400 },
+      );
     }
 
     // Check if there's already a pending request
@@ -41,15 +47,18 @@ export async function POST(request: NextRequest) {
       where: {
         companyId_requesterId: {
           companyId,
-          requesterId: session.user.id
-        }
-      }
+          requesterId: session.user.id,
+        },
+      },
     });
 
     if (existingRequest && existingRequest.status === 'PENDING') {
-      return NextResponse.json({ 
-        error: 'You already have a pending request for this company' 
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          error: 'You already have a pending request for this company',
+        },
+        { status: 400 },
+      );
     }
 
     // Create or update the access request
@@ -57,33 +66,39 @@ export async function POST(request: NextRequest) {
       where: {
         companyId_requesterId: {
           companyId,
-          requesterId: session.user.id
-        }
+          requesterId: session.user.id,
+        },
       },
       update: {
         status: 'PENDING',
         message,
         requestedRole,
-        updatedAt: new Date()
+        updatedAt: new Date(),
       },
       create: {
         companyId,
         requesterId: session.user.id,
         message,
         requestedRole,
-        status: 'PENDING'
-      }
+        status: 'PENDING',
+      },
     });
 
     // TODO: Send notification email to company admins
 
-    return NextResponse.json({
-      message: 'Access request sent successfully',
-      accessRequest
-    }, { status: 201 });
+    return NextResponse.json(
+      {
+        message: 'Access request sent successfully',
+        accessRequest,
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error('Error creating access request:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }
 
@@ -91,7 +106,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
+
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -100,7 +115,10 @@ export async function GET(request: NextRequest) {
     const companyId = searchParams.get('companyId');
 
     if (!companyId) {
-      return NextResponse.json({ error: 'Company ID is required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Company ID is required' },
+        { status: 400 },
+      );
     }
 
     // Check if user is an admin of the company
@@ -108,9 +126,9 @@ export async function GET(request: NextRequest) {
       where: {
         companyId_userId: {
           companyId,
-          userId: session.user.id
-        }
-      }
+          userId: session.user.id,
+        },
+      },
     });
 
     if (!memberRole || memberRole.role !== 'ADMIN') {
@@ -121,7 +139,7 @@ export async function GET(request: NextRequest) {
     const accessRequests = await prisma.companyAccessRequest.findMany({
       where: {
         companyId,
-        status: 'PENDING'
+        status: 'PENDING',
       },
       include: {
         requester: {
@@ -129,18 +147,21 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             email: true,
-            image: true
-          }
-        }
+            image: true,
+          },
+        },
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        createdAt: 'desc',
+      },
     });
 
     return NextResponse.json(accessRequests);
   } catch (error) {
     console.error('Error fetching access requests:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 },
+    );
   }
 }

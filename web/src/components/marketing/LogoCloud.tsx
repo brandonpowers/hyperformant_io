@@ -1,15 +1,21 @@
 export default function LogoCloud() {
   const companies = [
-    "Apollo.io", "Reddit", "Twitter", "G2", 
-    "HackerNews", "OpenAI", "Anthropic", "Google AI"
-  ]
+    'Apollo.io',
+    'Reddit',
+    'Twitter',
+    'G2',
+    'HackerNews',
+    'OpenAI',
+    'Anthropic',
+    'Google AI',
+  ];
 
   return (
     <section
       id="logo-cloud"
       aria-label="Platform integrations"
       className="mt-24 flex animate-slide-up-fade flex-col items-center justify-center gap-y-6 text-center sm:mt-32"
-      style={{ animationDuration: "1500ms" }}
+      style={{ animationDuration: '1500ms' }}
     >
       <p className="text-lg font-medium tracking-tighter text-gray-800 dark:text-gray-200">
         Powered by industry-leading platforms and AI models
@@ -24,5 +30,5 @@ export default function LogoCloud() {
         ))}
       </div>
     </section>
-  )
+  );
 }

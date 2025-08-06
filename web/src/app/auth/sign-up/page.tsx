@@ -4,7 +4,6 @@ import InputField from 'components/ui/fields/InputField';
 import Centered from 'components/auth/variants/CenteredAuthLayout';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
-import Checkbox from 'components/ui/checkbox';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
@@ -15,24 +14,25 @@ function SignUpDefault() {
     firstName: '',
     lastName: '',
     email: '',
-    password: ''
+    password: '',
   });
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-    // Clear error when user starts typing
-    if (error) setError('');
-  };
+  const handleInputChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+      // Clear error when user starts typing
+      if (error) setError('');
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!agreedToTerms) {
       setError('Please agree to the Terms and Conditions');
       return;
@@ -62,16 +62,19 @@ function SignUpDefault() {
         const params = new URLSearchParams({
           companyId: data.company.id,
           companyName: data.company.name,
-          companyDomain: data.company.domain || ''
+          companyDomain: data.company.domain || '',
         });
         router.push(`/auth/request-access?${params.toString()}`);
       } else if (data.requiresVerification) {
         // Normal verification flow
-        router.push(`/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(data.message)}`);
+        router.push(
+          `/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(data.message)}`,
+        );
       } else {
-        router.push(`/auth/sign-in?message=${encodeURIComponent(data.message)}`);
+        router.push(
+          `/auth/sign-in?message=${encodeURIComponent(data.message)}`,
+        );
       }
-      
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
@@ -110,7 +113,7 @@ function SignUpDefault() {
               </div>
             )}
             <div className="mt-9">
-              <button 
+              <button
                 type="button"
                 onClick={handleGoogleSignUp}
                 disabled={isLoading}
@@ -123,7 +126,7 @@ function SignUpDefault() {
                   Sign Up with Google
                 </p>
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={handleMicrosoftSignUp}
                 disabled={isLoading}
@@ -137,11 +140,11 @@ function SignUpDefault() {
                 </p>
               </button>
             </div>
-          <div className="mb-4 flex items-center gap-3">
-            <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
-            <p className="text-base font-medium text-gray-600"> or </p>
-            <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
-          </div>
+            <div className="mb-4 flex items-center gap-3">
+              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+              <p className="text-base font-medium text-gray-600"> or </p>
+              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+            </div>
             {/* user info */}
             <div className="mb-3 flex w-full items-center justify-center gap-4">
               <div className="w-1/2">
@@ -202,14 +205,17 @@ function SignUpDefault() {
                   onChange={(e) => setAgreedToTerms(e.target.checked)}
                   className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
-                <label htmlFor="terms" className="ml-2 text-sm font-medium text-navy-700 dark:text-white">
+                <label
+                  htmlFor="terms"
+                  className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
+                >
                   By creating an account means you agree to the Terms and
                   Conditions, and our Privacy Policy
                 </label>
               </div>
             </div>
 
-            <button 
+            <button
               type="submit"
               disabled={isLoading}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"

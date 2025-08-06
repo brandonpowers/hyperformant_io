@@ -1,6 +1,6 @@
 // Custom components
-import { useState } from "react";
-import { MdClose } from "react-icons/md";
+import { useState } from 'react';
+import { MdClose } from 'react-icons/md';
 
 function TagsField(props: {
   id?: string;
@@ -13,15 +13,15 @@ function TagsField(props: {
   const { label, id, onChange, placeholderTags, placeholder, ...rest } = props;
   let initialTags = [
     {
-      name: "chakra-ui",
+      name: 'chakra-ui',
       id: 1,
     },
     {
-      name: "react",
+      name: 'react',
       id: 2,
     },
     {
-      name: "javascript",
+      name: 'javascript',
       id: 3,
     },
   ];
@@ -37,13 +37,13 @@ function TagsField(props: {
           id: tags.length === 0 ? 1 : tags[tags.length - 1].id + 1,
         },
       ]);
-      e.target.value = "";
+      e.target.value = '';
     }
   };
 
   return (
     <div>
-      <label htmlFor={id} className={"mb-2 text-sm font-bold"}>
+      <label htmlFor={id} className={'mb-2 text-sm font-bold'}>
         {label}
       </label>
       <div

@@ -59,7 +59,7 @@ export function validateEnvironment(): Environment {
   } catch (error) {
     if (error instanceof z.ZodError) {
       const missingVars = error.issues
-        .map((issue: any) => `${issue.path.join('.')}: ${issue.message}`)
+        .map(issue => `${issue.path.join('.')}: ${issue.message}`)
         .join('\n');
 
       throw new Error(`Environment validation failed:\n${missingVars}`);

@@ -1,8 +1,8 @@
-import Card from "components/ui/card";
+import Card from 'components/ui/card';
 
 const General = () => {
   return (
-    <Card extra={"w-full h-full p-3"}>
+    <Card extra={'w-full h-full p-3'}>
       {/* Header */}
       <div className="mt-2 mb-8 w-full">
         <h4 className="px-2 text-xl font-bold text-navy-700 dark:text-white">

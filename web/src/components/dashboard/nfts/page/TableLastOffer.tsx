@@ -20,7 +20,7 @@ type RowObj = {
 function CheckTable(props: { tableData: any }) {
   const { tableData } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  let defaultData = tableData;
+  const defaultData = tableData;
   const columns = [
     columnHelper.accessor('price', {
       id: 'price',

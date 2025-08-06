@@ -1,9 +1,9 @@
 'use client';
-import SingleChat from 'components/admin/main/others/messages/SingleChat';
+import SingleChat from 'components/dashboard/main/others/messages/SingleChat';
 import CardMenu from 'components/ui/card/CardMenu';
 import { BsPencilSquare } from 'react-icons/bs';
 import { FiSearch } from 'react-icons/fi';
-import Chat from 'components/admin/main/others/messages/Chat';
+import Chat from 'components/dashboard/main/others/messages/Chat';
 import avatar1 from '/public/img/profile/avatar1.png';
 import avatar2 from '/public/img/profile/avatar2.png';
 import avatar4 from '/public/img/profile/avatar4.png';

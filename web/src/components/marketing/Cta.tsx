@@ -1,21 +1,20 @@
-"use client"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import Balancer from "react-wrap-balancer"
-import InputField from 'components/ui/fields/InputField';
+'use client';
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Balancer from 'react-wrap-balancer';
 
 export default function Cta() {
-  const router = useRouter()
-  const [email, setEmail] = useState("")
-  
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (email) {
       // Store email in sessionStorage for the onboarding flow
-      sessionStorage.setItem('onboarding_email', email)
-      router.push('/onboarding/goals')
+      sessionStorage.setItem('onboarding_email', email);
+      router.push('/onboarding/goals');
     }
-  }
+  };
 
   return (
     <section
@@ -85,7 +84,7 @@ export default function Cta() {
               </div>
             </div>
             <p className="mt-4 text-xs text-gray-600 sm:text-sm dark:text-gray-400">
-              Not sure where to start?{" "}
+              Not sure where to start?{' '}
               <a
                 href="#"
                 className="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-500 dark:hover:text-indigo-400"
@@ -97,5 +96,5 @@ export default function Cta() {
         </div>
       </div>
     </section>
-  )
+  );
 }

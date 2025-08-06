@@ -55,15 +55,17 @@ function ForgotPassword() {
             </p>
 
             {message && (
-              <div className={`mb-4 rounded-lg p-3 text-sm ${
-                isSuccess 
-                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                  : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-              }`}>
+              <div
+                className={`mb-4 rounded-lg p-3 text-sm ${
+                  isSuccess
+                    ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                    : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                }`}
+              >
                 {message}
               </div>
             )}
-            
+
             <InputField
               variant="auth"
               extra="mb-6"
@@ -74,15 +76,19 @@ function ForgotPassword() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-            
-            <button 
+
+            <button
               type="submit"
               disabled={isLoading || isSuccess}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
             >
-              {isLoading ? 'Sending...' : isSuccess ? 'Email Sent' : 'Send Reset Link'}
+              {isLoading
+                ? 'Sending...'
+                : isSuccess
+                  ? 'Email Sent'
+                  : 'Send Reset Link'}
             </button>
-            
+
             <div className="mt-6 text-center">
               <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
                 Remember your password?

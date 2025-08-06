@@ -21,7 +21,7 @@ type RowObj = {
 function ColumnsTable(props: { tableData: any }) {
   const { tableData } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  let defaultData = tableData;
+  const defaultData = tableData;
   const columns = [
     columnHelper.accessor('name', {
       id: 'name',

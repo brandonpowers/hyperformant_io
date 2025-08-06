@@ -1,7 +1,7 @@
 'use client';
 import Card from 'components/ui/card';
-import Banner from 'components/admin/main/account/invoice/Banner';
-import Content from 'components/admin/main/account/invoice/Content';
+import Banner from 'components/dashboard/main/account/invoice/Banner';
+import Content from 'components/dashboard/main/account/invoice/Content';
 
 const Invoice = () => {
   return (

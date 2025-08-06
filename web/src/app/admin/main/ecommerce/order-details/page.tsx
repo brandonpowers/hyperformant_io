@@ -1,7 +1,7 @@
 'use client';
-import Details from 'components/admin/main/ecommerce/order-details/Details';
-import OrderStatus from 'components/admin/main/ecommerce/order-details/OrderStatus';
-import Receipt from 'components/admin/main/ecommerce/order-details/Receipt';
+import Details from 'components/dashboard/main/ecommerce/order-details/Details';
+import OrderStatus from 'components/dashboard/main/ecommerce/order-details/OrderStatus';
+import Receipt from 'components/dashboard/main/ecommerce/order-details/Receipt';
 
 const OrderDetails = () => {
   return (

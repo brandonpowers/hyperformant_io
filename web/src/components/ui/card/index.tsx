@@ -5,6 +5,7 @@ function Card(props: {
   [x: string]: any;
 }) {
   const { variant, extra, children, ...rest } = props;
+  // variant is intentionally unused but kept for future API compatibility
   return (
     <div
       className={`!z-5 relative flex flex-col rounded-[20px] bg-white bg-clip-border shadow-3xl ${

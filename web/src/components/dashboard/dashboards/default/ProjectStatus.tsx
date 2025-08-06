@@ -1,14 +1,14 @@
-import CardMenu from "components/ui/card/CardMenu";
-import LineChart from "components/ui/charts/LineChart";
-import React from "react";
-import { MdOutlineShoppingBasket } from "react-icons/md";
-import { lineChartDataProjectStatus } from "variables/charts";
-import { lineChartOptionsProjectStatus } from "variables/charts";
-import Card from "components/ui/card";
+import CardMenu from 'components/ui/card/CardMenu';
+import LineChart from 'components/ui/charts/LineChart';
+import React from 'react';
+import { MdOutlineShoppingBasket } from 'react-icons/md';
+import { lineChartDataProjectStatus } from 'variables/charts';
+import { lineChartOptionsProjectStatus } from 'variables/charts';
+import Card from 'components/ui/card';
 
 function ProjectStatus() {
   return (
-    <Card extra={"p-5 text-dm lg:h-full"}>
+    <Card extra={'p-5 text-dm lg:h-full'}>
       <div className="relative flex items-center justify-between">
         <p className="text-lg font-bold text-navy-700 dark:text-white">
           Project Status

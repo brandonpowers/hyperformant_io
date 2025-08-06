@@ -1,6 +1,6 @@
 'use client';
-import PhotoGallery from 'components/admin/main/ecommerce/page-example/PhotoGallery';
-import ProductInfo from 'components/admin/main/ecommerce/page-example/ProductInfo';
+import PhotoGallery from 'components/dashboard/main/ecommerce/page-example/PhotoGallery';
+import ProductInfo from 'components/dashboard/main/ecommerce/page-example/ProductInfo';
 
 const ProductPage = () => {
   return (

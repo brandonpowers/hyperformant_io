@@ -16,7 +16,9 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
   initialValue = '',
 }) => {
   const [values, setValues] = useState<string[]>(new Array(length).fill(''));
-  const inputRefs = useRef<(HTMLInputElement | null)[]>(new Array(length).fill(null));
+  const inputRefs = useRef<(HTMLInputElement | null)[]>(
+    new Array(length).fill(null),
+  );
 
   // Initialize with pre-filled value if provided
   useEffect(() => {
@@ -50,12 +52,15 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
     }
 
     // Check if all fields are filled
-    if (newValues.every(v => v !== '')) {
+    if (newValues.every((v) => v !== '')) {
       onComplete(newValues.join(''));
     }
   };
 
-  const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleKeyDown = (
+    index: number,
+    e: React.KeyboardEvent<HTMLInputElement>,
+  ) => {
     // Handle backspace
     if (e.key === 'Backspace') {
       if (!values[index] && index > 0) {
@@ -81,20 +86,23 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
     }
 
     // Handle Enter key to submit if all fields are filled
-    if (e.key === 'Enter' && values.every(v => v !== '')) {
+    if (e.key === 'Enter' && values.every((v) => v !== '')) {
       onComplete(values.join(''));
     }
   };
 
   const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData('text/plain').replace(/\\D/g, '').slice(0, length);
-    
+    const pastedData = e.clipboardData
+      .getData('text/plain')
+      .replace(/\\D/g, '')
+      .slice(0, length);
+
     if (pastedData.length === length) {
       const newValues = pastedData.split('');
       setValues(newValues);
       onComplete(pastedData);
-      
+
       // Focus the last input
       inputRefs.current[length - 1]?.focus();
     }
@@ -125,17 +133,20 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
             h-12 w-12 text-center text-xl font-mono font-semibold
             border-2 rounded-lg
             transition-all duration-200
-            ${error 
-              ? 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-900/20' 
-              : 'border-gray-300 dark:border-navy-600'
+            ${
+              error
+                ? 'border-red-400 bg-red-50 dark:border-red-500 dark:bg-red-900/20'
+                : 'border-gray-300 dark:border-navy-600'
             }
-            ${!disabled && !error 
-              ? 'focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 hover:border-brand-400' 
-              : ''
+            ${
+              !disabled && !error
+                ? 'focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20 hover:border-brand-400'
+                : ''
             }
-            ${disabled 
-              ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-navy-800' 
-              : 'bg-white dark:bg-navy-700'
+            ${
+              disabled
+                ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-navy-800'
+                : 'bg-white dark:bg-navy-700'
             }
             text-navy-700 dark:text-white
             placeholder-gray-400 dark:placeholder-gray-500

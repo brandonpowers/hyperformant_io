@@ -1,67 +1,67 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useAppStore } from '../../stores/useAppStore'
-import { trpc } from '../../utils/trpc'
+import { useState } from 'react';
+import { useAppStore } from '../../stores/useAppStore';
+import { trpc } from '../../utils/trpc';
 
 interface Company {
-  id: string
-  name: string
-  domain: string
-  description: string | null
-  industry: string | null
-  employeeCount: number | null
-  revenue: string | null
-  createdAt: Date
-  updatedAt: Date
+  id: string;
+  name: string;
+  domain: string;
+  description: string | null;
+  industry: string | null;
+  employeeCount: number | null;
+  revenue: string | null;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface CompanyCardProps {
-  company: Company
+  company: Company;
 }
 
 export default function CompanyCard({ company }: CompanyCardProps) {
-  const [isExpanded, setIsExpanded] = useState(false)
-  const { addNotification } = useAppStore()
-  
+  const [isExpanded, setIsExpanded] = useState(false);
+  const { addNotification } = useAppStore();
+
   const deleteCompanyMutation = trpc.companies.delete.useMutation({
     onSuccess: () => {
       addNotification({
         type: 'success',
         title: 'Company Deleted',
-        message: `${company.name} has been successfully deleted.`
-      })
+        message: `${company.name} has been successfully deleted.`,
+      });
       // Trigger a refetch of the companies list
-      window.location.reload()
+      window.location.reload();
     },
     onError: (error) => {
       addNotification({
         type: 'error',
         title: 'Delete Failed',
-        message: error.message || 'Failed to delete company'
-      })
-    }
-  })
+        message: error.message || 'Failed to delete company',
+      });
+    },
+  });
 
   const handleDelete = async () => {
     if (confirm(`Are you sure you want to delete ${company.name}?`)) {
-      deleteCompanyMutation.mutate({ id: company.id })
+      deleteCompanyMutation.mutate({ id: company.id });
     }
-  }
+  };
 
   const formatRevenue = (revenue: string | null) => {
-    if (!revenue) return 'Not disclosed'
-    return revenue.includes('$') ? revenue : `$${revenue}`
-  }
+    if (!revenue) return 'Not disclosed';
+    return revenue.includes('$') ? revenue : `$${revenue}`;
+  };
 
   const formatEmployeeCount = (count: number | null) => {
-    if (!count) return 'Unknown'
-    if (count < 10) return '1-10'
-    if (count < 50) return '11-50'
-    if (count < 200) return '51-200'
-    if (count < 1000) return '201-1000'
-    return '1000+'
-  }
+    if (!count) return 'Unknown';
+    if (count < 10) return '1-10';
+    if (count < 50) return '11-50';
+    if (count < 200) return '51-200';
+    if (count < 1000) return '201-1000';
+    return '1000+';
+  };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md border border-gray-200 dark:border-gray-700 p-6 hover:shadow-lg transition-shadow">
@@ -72,7 +72,11 @@ export default function CompanyCard({ company }: CompanyCardProps) {
             {company.name}
           </h3>
           <p className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-            <a href={`https://${company.domain}`} target="_blank" rel="noopener noreferrer">
+            <a
+              href={`https://${company.domain}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
               {company.domain}
             </a>
           </p>
@@ -89,7 +93,12 @@ export default function CompanyCard({ company }: CompanyCardProps) {
               stroke="currentColor"
               viewBox="0 0 24 24"
             >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </button>
           <button
@@ -99,13 +108,38 @@ export default function CompanyCard({ company }: CompanyCardProps) {
             title="Delete company"
           >
             {deleteCompanyMutation.isLoading ? (
-              <svg className="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              <svg
+                className="w-5 h-5 animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                />
               </svg>
             )}
           </button>
@@ -148,7 +182,7 @@ export default function CompanyCard({ company }: CompanyCardProps) {
               </p>
             </div>
           </div>
-          
+
           <div className="mt-4 flex space-x-2">
             <button className="flex-1 bg-blue-500 hover:bg-blue-600 text-white text-sm py-2 px-4 rounded transition-colors">
               Generate Report
@@ -163,5 +197,5 @@ export default function CompanyCard({ company }: CompanyCardProps) {
       {/* Status Indicator */}
       <div className="absolute top-2 right-2 w-3 h-3 bg-green-400 rounded-full opacity-75"></div>
     </div>
-  )
+  );
 }

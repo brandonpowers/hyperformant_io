@@ -24,10 +24,10 @@ export default function StepperControl(props: {
       )}
 
       <button
-        onClick={() => handleClick("next")}
+        onClick={() => handleClick('next')}
         className="cursor-pointer rounded-xl bg-brand-900 px-16 py-2 font-medium text-white transition duration-200 hover:bg-brand-800 active:bg-brand-700 dark:bg-brand-400 dark:hover:bg-brand-300 dark:active:opacity-90 md:ml-2"
       >
-        {currentStep === steps.length ? "Submit" : "Next"}
+        {currentStep === steps.length ? 'Submit' : 'Next'}
       </button>
     </div>
   );

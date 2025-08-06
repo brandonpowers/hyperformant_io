@@ -9,40 +9,40 @@ const openApiSpec = {
     contact: {
       name: 'Hyperformant Support',
       url: 'https://hyperformant.io',
-      email: 'support@hyperformant.io'
-    }
+      email: 'support@hyperformant.io',
+    },
   },
   servers: [
     {
       url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000/api',
-      description: 'Development server'
+      description: 'Development server',
     },
     {
       url: 'https://api.hyperformant.io',
-      description: 'Production server'
-    }
+      description: 'Production server',
+    },
   ],
   tags: [
     {
       name: 'Authentication',
-      description: 'User authentication and registration'
+      description: 'User authentication and registration',
     },
     {
       name: 'Reports',
-      description: 'Market Forces report generation and management'
+      description: 'Market Forces report generation and management',
     },
     {
       name: 'AI',
-      description: 'AI intelligence and sentiment analysis'
+      description: 'AI intelligence and sentiment analysis',
     },
     {
       name: 'Marketing',
-      description: 'Apollo.io integration and CRM operations'
+      description: 'Apollo.io integration and CRM operations',
     },
     {
       name: 'Billing',
-      description: 'Payment processing and subscriptions'
-    }
+      description: 'Payment processing and subscriptions',
+    },
   ],
   paths: {
     '/auth/register': {
@@ -61,22 +61,22 @@ const openApiSpec = {
                   email: {
                     type: 'string',
                     format: 'email',
-                    description: 'User email address'
+                    description: 'User email address',
                   },
                   password: {
                     type: 'string',
                     format: 'password',
                     minLength: 8,
-                    description: 'User password (min 8 characters)'
+                    description: 'User password (min 8 characters)',
                   },
                   name: {
                     type: 'string',
-                    description: 'User full name'
-                  }
-                }
-              }
-            }
-          }
+                    description: 'User full name',
+                  },
+                },
+              },
+            },
+          },
         },
         responses: {
           '201': {
@@ -88,39 +88,40 @@ const openApiSpec = {
                   properties: {
                     id: {
                       type: 'string',
-                      description: 'User ID'
+                      description: 'User ID',
                     },
                     email: {
                       type: 'string',
-                      description: 'User email'
+                      description: 'User email',
                     },
                     name: {
                       type: 'string',
-                      description: 'User name'
-                    }
-                  }
-                }
-              }
-            }
+                      description: 'User name',
+                    },
+                  },
+                },
+              },
+            },
           },
           '400': {
-            description: 'Invalid request data'
+            description: 'Invalid request data',
           },
           '409': {
-            description: 'User already exists'
-          }
-        }
-      }
+            description: 'User already exists',
+          },
+        },
+      },
     },
     '/v1/reports/market-forces': {
       post: {
         tags: ['Reports'],
         summary: 'Generate Market Forces report',
-        description: 'Trigger generation of a Market Forces Analysis report for a company',
+        description:
+          'Trigger generation of a Market Forces Analysis report for a company',
         security: [
           {
-            bearerAuth: []
-          }
+            bearerAuth: [],
+          },
         ],
         requestBody: {
           required: true,
@@ -132,24 +133,24 @@ const openApiSpec = {
                 properties: {
                   companyId: {
                     type: 'string',
-                    description: 'Target company ID'
+                    description: 'Target company ID',
                   },
                   reportType: {
                     type: 'string',
                     enum: ['preview', 'full'],
                     default: 'preview',
-                    description: 'Type of report to generate'
+                    description: 'Type of report to generate',
                   },
                   urgency: {
                     type: 'string',
                     enum: ['normal', 'high'],
                     default: 'normal',
-                    description: 'Processing priority'
-                  }
-                }
-              }
-            }
-          }
+                    description: 'Processing priority',
+                  },
+                },
+              },
+            },
+          },
         },
         responses: {
           '202': {
@@ -161,40 +162,41 @@ const openApiSpec = {
                   properties: {
                     trackingId: {
                       type: 'string',
-                      description: 'Report tracking ID'
+                      description: 'Report tracking ID',
                     },
                     status: {
                       type: 'string',
-                      description: 'Processing status'
+                      description: 'Processing status',
                     },
                     estimatedCompletion: {
                       type: 'string',
                       format: 'date-time',
-                      description: 'Estimated completion time'
-                    }
-                  }
-                }
-              }
-            }
+                      description: 'Estimated completion time',
+                    },
+                  },
+                },
+              },
+            },
           },
           '401': {
-            description: 'Unauthorized'
+            description: 'Unauthorized',
           },
           '403': {
-            description: 'Forbidden - insufficient permissions'
-          }
-        }
-      }
+            description: 'Forbidden - insufficient permissions',
+          },
+        },
+      },
     },
     '/v1/ai/collect-sentiment': {
       post: {
         tags: ['AI'],
         summary: 'Collect market sentiment',
-        description: 'Trigger sentiment collection from multiple sources for specified companies',
+        description:
+          'Trigger sentiment collection from multiple sources for specified companies',
         security: [
           {
-            bearerAuth: []
-          }
+            bearerAuth: [],
+          },
         ],
         requestBody: {
           required: true,
@@ -207,28 +209,28 @@ const openApiSpec = {
                   companyIds: {
                     type: 'array',
                     items: {
-                      type: 'string'
+                      type: 'string',
                     },
-                    description: 'List of company IDs to analyze'
+                    description: 'List of company IDs to analyze',
                   },
                   urgency: {
                     type: 'string',
                     enum: ['normal', 'high'],
                     default: 'normal',
-                    description: 'Processing priority'
+                    description: 'Processing priority',
                   },
                   sources: {
                     type: 'array',
                     items: {
                       type: 'string',
-                      enum: ['reddit', 'twitter', 'g2', 'hackernews']
+                      enum: ['reddit', 'twitter', 'g2', 'hackernews'],
                     },
-                    description: 'Specific sources to collect from'
-                  }
-                }
-              }
-            }
-          }
+                    description: 'Specific sources to collect from',
+                  },
+                },
+              },
+            },
+          },
         },
         responses: {
           '202': {
@@ -240,22 +242,22 @@ const openApiSpec = {
                   properties: {
                     jobId: {
                       type: 'string',
-                      description: 'Collection job ID'
+                      description: 'Collection job ID',
                     },
                     status: {
                       type: 'string',
-                      description: 'Job status'
-                    }
-                  }
-                }
-              }
-            }
+                      description: 'Job status',
+                    },
+                  },
+                },
+              },
+            },
           },
           '401': {
-            description: 'Unauthorized'
-          }
-        }
-      }
+            description: 'Unauthorized',
+          },
+        },
+      },
     },
     '/v1/marketing/apollo/sync': {
       post: {
@@ -264,8 +266,8 @@ const openApiSpec = {
         description: 'Trigger synchronization with Apollo.io CRM',
         security: [
           {
-            bearerAuth: []
-          }
+            bearerAuth: [],
+          },
         ],
         requestBody: {
           required: true,
@@ -277,20 +279,25 @@ const openApiSpec = {
                   fullSync: {
                     type: 'boolean',
                     default: false,
-                    description: 'Perform full sync instead of incremental'
+                    description: 'Perform full sync instead of incremental',
                   },
                   syncTypes: {
                     type: 'array',
                     items: {
                       type: 'string',
-                      enum: ['contacts', 'companies', 'sequences', 'smartlists']
+                      enum: [
+                        'contacts',
+                        'companies',
+                        'sequences',
+                        'smartlists',
+                      ],
                     },
-                    description: 'Specific data types to sync'
-                  }
-                }
-              }
-            }
-          }
+                    description: 'Specific data types to sync',
+                  },
+                },
+              },
+            },
+          },
         },
         responses: {
           '202': {
@@ -302,26 +309,26 @@ const openApiSpec = {
                   properties: {
                     syncId: {
                       type: 'string',
-                      description: 'Sync operation ID'
+                      description: 'Sync operation ID',
                     },
                     status: {
                       type: 'string',
-                      description: 'Sync status'
-                    }
-                  }
-                }
-              }
-            }
+                      description: 'Sync status',
+                    },
+                  },
+                },
+              },
+            },
           },
           '401': {
-            description: 'Unauthorized'
+            description: 'Unauthorized',
           },
           '403': {
-            description: 'Admin access required'
-          }
-        }
-      }
-    }
+            description: 'Admin access required',
+          },
+        },
+      },
+    },
   },
   components: {
     securitySchemes: {
@@ -329,8 +336,8 @@ const openApiSpec = {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'JWT',
-        description: 'JWT authentication token'
-      }
+        description: 'JWT authentication token',
+      },
     },
     schemas: {
       Error: {
@@ -338,82 +345,82 @@ const openApiSpec = {
         properties: {
           error: {
             type: 'string',
-            description: 'Error message'
+            description: 'Error message',
           },
           code: {
             type: 'string',
-            description: 'Error code'
-          }
-        }
+            description: 'Error code',
+          },
+        },
       },
       Company: {
         type: 'object',
         properties: {
           id: {
             type: 'string',
-            description: 'Company ID'
+            description: 'Company ID',
           },
           name: {
             type: 'string',
-            description: 'Company name'
+            description: 'Company name',
           },
           domain: {
             type: 'string',
-            description: 'Company domain'
+            description: 'Company domain',
           },
           employeeCount: {
             type: 'integer',
-            description: 'Number of employees'
+            description: 'Number of employees',
           },
           revenue: {
             type: 'number',
-            description: 'Annual revenue'
+            description: 'Annual revenue',
           },
           industry: {
             type: 'string',
-            description: 'Industry sector'
-          }
-        }
+            description: 'Industry sector',
+          },
+        },
       },
       Report: {
         type: 'object',
         properties: {
           id: {
             type: 'string',
-            description: 'Report ID'
+            description: 'Report ID',
           },
           companyId: {
             type: 'string',
-            description: 'Target company ID'
+            description: 'Target company ID',
           },
           type: {
             type: 'string',
             enum: ['preview', 'full'],
-            description: 'Report type'
+            description: 'Report type',
           },
           status: {
             type: 'string',
             enum: ['pending', 'processing', 'completed', 'failed'],
-            description: 'Report status'
+            description: 'Report status',
           },
           createdAt: {
             type: 'string',
             format: 'date-time',
-            description: 'Creation timestamp'
+            description: 'Creation timestamp',
           },
           completedAt: {
             type: 'string',
             format: 'date-time',
-            description: 'Completion timestamp'
+            description: 'Completion timestamp',
           },
           downloadUrl: {
             type: 'string',
-            description: 'PDF download URL'
-          }
-        }
-      }
-    }
-  }
+            description: 'PDF download URL',
+          },
+        },
+      },
+    },
+  },
 };
 
 export async function GET() {

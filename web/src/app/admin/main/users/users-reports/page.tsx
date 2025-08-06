@@ -1,13 +1,13 @@
 'use client';
-import Statistics from 'components/admin/main/users/users-reports/Statistics';
+import Statistics from 'components/dashboard/main/users/users-reports/Statistics';
 // Assets
 import Usa from '/public/img/users/usa.png';
 import FakeLineGraph from '/public/img/users/FakeLineGraph.png';
 import { MdPerson, MdThumbUp } from 'react-icons/md';
-import Conversion from 'components/admin/main/users/users-reports/Conversion';
-import UserActivity from 'components/admin/main/users/users-reports/UserActivity';
+import Conversion from 'components/dashboard/main/users/users-reports/Conversion';
+import UserActivity from 'components/dashboard/main/users/users-reports/UserActivity';
 import tableDataUserReports from 'variables/users/users-reports/tableDataUserReports';
-import UserReportsTable from 'components/admin/main/users/users-reports/UserReportsTable';
+import UserReportsTable from 'components/dashboard/main/users/users-reports/UserReportsTable';
 import Image from 'next/image';
 
 const UserReport = () => {

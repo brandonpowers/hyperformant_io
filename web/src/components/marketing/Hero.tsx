@@ -1,7 +1,7 @@
-"use client"
-import { RiPlayCircleFill } from "@remixicon/react"
-import Link from "next/link"
-import { Button } from "../ui/Button"
+'use client';
+import { RiPlayCircleFill } from '@remixicon/react';
+import Link from 'next/link';
+import { Button } from '../ui/Button';
 
 export default function Hero() {
   return (
@@ -12,23 +12,24 @@ export default function Hero() {
       <h1
         id="hero-title"
         className="inline-block animate-slide-up-fade bg-gradient-to-br from-gray-900 to-gray-800 bg-clip-text p-2 text-4xl font-bold tracking-tighter text-transparent sm:text-6xl md:text-7xl dark:from-gray-50 dark:to-gray-300"
-        style={{ animationDuration: "700ms" }}
+        style={{ animationDuration: '700ms' }}
       >
         AI-Powered Market <br /> Intelligence Platform
       </h1>
       <p
         className="mt-6 max-w-lg animate-slide-up-fade text-lg text-gray-700 dark:text-gray-400"
-        style={{ animationDuration: "900ms" }}
+        style={{ animationDuration: '900ms' }}
       >
-        Transform your business with Market Forces Analysis. Discover competitor vulnerabilities, 
-        predict market disruptions, and accelerate revenue growth with AI-driven insights.
+        Transform your business with Market Forces Analysis. Discover competitor
+        vulnerabilities, predict market disruptions, and accelerate revenue
+        growth with AI-driven insights.
       </p>
       <div
         className="mt-8 flex w-full animate-slide-up-fade flex-col justify-center gap-3 px-3 sm:flex-row"
-        style={{ animationDuration: "1100ms" }}
+        style={{ animationDuration: '1100ms' }}
       >
         <Button className="h-10 font-semibold" asChild href="/auth/sign-up">
-          Start Free Trial
+          Start Free
         </Button>
         <Button
           asChild
@@ -46,11 +47,11 @@ export default function Hero() {
           </Link>
         </Button>
       </div>
-      
+
       {/* Hero Image */}
       <div
         className="relative mx-auto ml-3 mt-20 h-fit w-[40rem] max-w-6xl animate-slide-up-fade sm:ml-auto sm:w-full sm:px-2"
-        style={{ animationDuration: "1400ms" }}
+        style={{ animationDuration: '1400ms' }}
       >
         <div className="flow-root">
           <div className="rounded-2xl bg-slate-50/40 p-2 ring-1 ring-inset ring-slate-200/50 dark:bg-gray-900/70 dark:ring-white/10">
@@ -73,28 +74,52 @@ export default function Hero() {
           aria-hidden="true"
         />
       </div>
-      
+
       {/* Trust indicators */}
       <div className="mt-12 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-600 dark:text-gray-500">
         <div className="flex items-center gap-2">
-          <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <svg
+            className="h-5 w-5 text-green-500"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
           <span>24-hour report delivery</span>
         </div>
         <div className="flex items-center gap-2">
-          <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <svg
+            className="h-5 w-5 text-green-500"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
           <span>No credit card required</span>
         </div>
         <div className="flex items-center gap-2">
-          <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+          <svg
+            className="h-5 w-5 text-green-500"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+              clipRule="evenodd"
+            />
           </svg>
           <span>Cancel anytime</span>
         </div>
       </div>
     </section>
-  )
+  );
 }

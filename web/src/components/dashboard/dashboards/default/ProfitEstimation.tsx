@@ -1,10 +1,10 @@
-import Card from "components/ui/card";
-import CircularProgress from "components/ui/charts/CircularProgress";
-import "react-circular-progressbar/dist/styles.css";
-import React from "react";
+import Card from 'components/ui/card';
+import CircularProgress from 'components/ui/charts/CircularProgress';
+import 'react-circular-progressbar/dist/styles.css';
+import React from 'react';
 function ProfitEstimation() {
   return (
-    <Card extra={"p-5 lg:h-full"}>
+    <Card extra={'p-5 lg:h-full'}>
       <div className="mb-auto flex flex-col px-2 text-center">
         <p className="text-lg font-bold text-navy-700 dark:text-white">
           Profit Estimation

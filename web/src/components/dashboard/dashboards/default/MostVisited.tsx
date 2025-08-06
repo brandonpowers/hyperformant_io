@@ -1,6 +1,6 @@
-import React from "react";
-import Card from "components/ui/card";
-import { MdOutlineCalendarToday } from "react-icons/md";
+import React from 'react';
+import Card from 'components/ui/card';
+import { MdOutlineCalendarToday } from 'react-icons/md';
 
 import {
   createColumnHelper,
@@ -9,7 +9,7 @@ import {
   getSortedRowModel,
   SortingState,
   useReactTable,
-} from "@tanstack/react-table";
+} from '@tanstack/react-table';
 
 type RowObj = {
   pageName: string;
@@ -24,10 +24,10 @@ const columnHelper = createColumnHelper<RowObj>();
 export default function ComplexTable(props: { tableData: any }) {
   const { tableData } = props;
   const [sorting, setSorting] = React.useState<SortingState>([]);
-  let defaultData = tableData;
+  const defaultData = tableData;
   const columns = [
-    columnHelper.accessor("pageName", {
-      id: "pageName",
+    columnHelper.accessor('pageName', {
+      id: 'pageName',
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white">
           PAGE NAME
@@ -39,8 +39,8 @@ export default function ComplexTable(props: { tableData: any }) {
         </p>
       ),
     }),
-    columnHelper.accessor("visitors", {
-      id: "visitors",
+    columnHelper.accessor('visitors', {
+      id: 'visitors',
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white">
           VISITORS
@@ -52,8 +52,8 @@ export default function ComplexTable(props: { tableData: any }) {
         </p>
       ),
     }),
-    columnHelper.accessor("unique", {
-      id: "unique",
+    columnHelper.accessor('unique', {
+      id: 'unique',
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white">
           UNIQUE VISITORS
@@ -65,8 +65,8 @@ export default function ComplexTable(props: { tableData: any }) {
         </p>
       ),
     }),
-    columnHelper.accessor("clients", {
-      id: "clients",
+    columnHelper.accessor('clients', {
+      id: 'clients',
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white">
           CLIENTS
@@ -78,8 +78,8 @@ export default function ComplexTable(props: { tableData: any }) {
         </p>
       ),
     }),
-    columnHelper.accessor("bounceRate", {
-      id: "bounceRate",
+    columnHelper.accessor('bounceRate', {
+      id: 'bounceRate',
       header: () => (
         <p className="text-sm font-bold text-gray-600 dark:text-white">
           BOUNCE RATE
@@ -88,9 +88,9 @@ export default function ComplexTable(props: { tableData: any }) {
       cell: (info) => (
         <div
           className={`text-sm font-bold ${
-            info.getValue()[0] === "-"
-              ? "font-medium text-red-500"
-              : "font-medium text-green-500"
+            info.getValue()[0] === '-'
+              ? 'font-medium text-red-500'
+              : 'font-medium text-green-500'
           }`}
         >
           {info.getValue()}
@@ -111,7 +111,7 @@ export default function ComplexTable(props: { tableData: any }) {
     debugTable: true,
   });
   return (
-    <Card extra={"h-full w-full pt-3 pb-10 px-8"}>
+    <Card extra={'h-full w-full pt-3 pb-10 px-8'}>
       <div className="flex items-center justify-between">
         <p className="text-lg font-bold text-navy-700 dark:text-white">
           Most Visited Pages
@@ -138,11 +138,11 @@ export default function ComplexTable(props: { tableData: any }) {
                       <div className="items-center justify-between text-xs text-gray-200">
                         {flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                         {{
-                          asc: "",
-                          desc: "",
+                          asc: '',
+                          desc: '',
                         }[header.column.getIsSorted() as string] ?? null}
                       </div>
                     </th>
@@ -166,7 +166,7 @@ export default function ComplexTable(props: { tableData: any }) {
                         >
                           {flexRender(
                             cell.column.columnDef.cell,
-                            cell.getContext()
+                            cell.getContext(),
                           )}
                         </td>
                       );

@@ -8,24 +8,24 @@ export async function GET() {
     documentation: {
       redoc: '/api/docs',
       swagger: '/api/swagger',
-      openapi: '/api/openapi.json'
+      openapi: '/api/openapi.json',
     },
     endpoints: {
       authentication: {
         register: '/api/auth/register',
-        login: 'Via NextAuth.js providers'
+        login: 'Via NextAuth.js providers',
       },
       reports: {
-        marketForces: '/api/v1/reports/market-forces'
+        marketForces: '/api/v1/reports/market-forces',
       },
       ai: {
-        collectSentiment: '/api/v1/ai/collect-sentiment'
+        collectSentiment: '/api/v1/ai/collect-sentiment',
       },
       marketing: {
-        apolloSync: '/api/v1/marketing/apollo/sync'
-      }
+        apolloSync: '/api/v1/marketing/apollo/sync',
+      },
     },
     status: 'operational',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   });
 }

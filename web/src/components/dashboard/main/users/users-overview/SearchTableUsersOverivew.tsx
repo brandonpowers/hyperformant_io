@@ -33,10 +33,10 @@ function CheckTable(props: { tableData: any }) {
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     [],
   );
-  let defaultData = tableData;
+  const defaultData = tableData;
   const [globalFilter, setGlobalFilter] = React.useState('');
   const createPages = (count: number) => {
-    let arrPageCount = [];
+    const arrPageCount = [];
 
     for (let i = 1; i <= count; i++) {
       arrPageCount.push(i);

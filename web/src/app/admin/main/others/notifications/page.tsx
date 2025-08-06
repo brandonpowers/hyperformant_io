@@ -2,8 +2,8 @@
 import Card from 'components/ui/card';
 import { AiFillExclamationCircle } from 'react-icons/ai';
 import { BsFillCheckCircleFill } from 'react-icons/bs';
-import SolidSubtleAlert from 'components/admin/main/others/notifications/SolidSubtleAlert';
-import SolidSubtleMultiAlert from 'components/admin/main/others/notifications/SolidSubtleMultiAlert';
+import SolidSubtleAlert from 'components/dashboard/main/others/notifications/SolidSubtleAlert';
+import SolidSubtleMultiAlert from 'components/dashboard/main/others/notifications/SolidSubtleMultiAlert';
 const Notification = () => {
   return (
     <div className="mt-3 grid h-full w-full grid-cols-1 gap-5 rounded-[20px] lg:grid-cols-2">

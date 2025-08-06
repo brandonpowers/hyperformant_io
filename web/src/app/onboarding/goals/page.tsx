@@ -1,9 +1,15 @@
 'use client';
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import Card from 'components/ui/card';
 import Checkbox from 'components/ui/checkbox';
-import { IoRocketOutline, IoTrendingUpOutline, IoAnalyticsOutline, IoPeopleOutline, IoGlobeOutline, IoBulbOutline } from 'react-icons/io5';
+import {
+  IoRocketOutline,
+  IoTrendingUpOutline,
+  IoAnalyticsOutline,
+  IoPeopleOutline,
+  IoGlobeOutline,
+  IoBulbOutline,
+} from 'react-icons/io5';
 
 interface Goal {
   id: string;
@@ -60,7 +66,7 @@ export default function GoalsPage() {
     setSelectedGoals((prev) =>
       prev.includes(goalId)
         ? prev.filter((id) => id !== goalId)
-        : [...prev, goalId]
+        : [...prev, goalId],
     );
   };
 

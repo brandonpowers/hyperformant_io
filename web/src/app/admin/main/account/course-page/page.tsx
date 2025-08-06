@@ -1,7 +1,7 @@
 'use client';
 import Card from 'components/ui/card';
-import Completed from 'components/admin/main/account/course-page/Completion';
-import CourseInfo from 'components/admin/main/account/course-page/CourseInfo';
+import Completed from 'components/dashboard/main/account/course-page/Completion';
+import CourseInfo from 'components/dashboard/main/account/course-page/CourseInfo';
 
 function CoursePage() {
   return (

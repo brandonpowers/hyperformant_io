@@ -1,5 +1,5 @@
-import React from "react";
-import { AiOutlineClose } from "react-icons/ai";
+import React from 'react';
+import { AiOutlineClose } from 'react-icons/ai';
 
 function SolidSubtleMultiAlert(props: {
   icon: JSX.Element;
@@ -34,8 +34,8 @@ function SolidSubtleMultiAlert(props: {
           <h5
             className={`pb-[3px] font-bold dark:text-navy-900 ${
               solid
-                ? "text-white dark:!text-navy-900"
-                : "text-navy-700 dark:!text-white"
+                ? 'text-white dark:!text-navy-900'
+                : 'text-navy-700 dark:!text-white'
             } `}
           >
             {title}
@@ -43,8 +43,8 @@ function SolidSubtleMultiAlert(props: {
           <p
             className={`font-base pr-[5px] ${
               solid
-                ? "text-white dark:!text-navy-900"
-                : "text-navy-700 dark:!text-white"
+                ? 'text-white dark:!text-navy-900'
+                : 'text-navy-700 dark:!text-white'
             } `}
           >
             {description}

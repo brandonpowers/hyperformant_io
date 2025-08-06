@@ -1,13 +1,13 @@
 'use client';
-import AddDevice from 'components/admin/dashboards/smart-home/AddDevice';
-import Consumption from 'components/admin/dashboards/smart-home/Consumption';
-import General from 'components/admin/dashboards/smart-home/General';
-import Home from 'components/admin/dashboards/smart-home/Home';
-import Light from 'components/admin/dashboards/smart-home/Light';
-import MapCard from 'components/admin/dashboards/smart-home/MapCard';
-import Plan from 'components/admin/dashboards/smart-home/Plan';
-import Temperature from 'components/admin/dashboards/smart-home/Temperature';
-import Weather from 'components/admin/dashboards/smart-home/Weather';
+import AddDevice from 'components/dashboard/dashboards/smart-home/AddDevice';
+import Consumption from 'components/dashboard/dashboards/smart-home/Consumption';
+import General from 'components/dashboard/dashboards/smart-home/General';
+import Home from 'components/dashboard/dashboards/smart-home/Home';
+import Light from 'components/dashboard/dashboards/smart-home/Light';
+import MapCard from 'components/dashboard/dashboards/smart-home/MapCard';
+import Plan from 'components/dashboard/dashboards/smart-home/Plan';
+import Temperature from 'components/dashboard/dashboards/smart-home/Temperature';
+import Weather from 'components/dashboard/dashboards/smart-home/Weather';
 
 const SmartHome = () => {
   return (

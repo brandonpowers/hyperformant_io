@@ -1,7 +1,7 @@
 'use client';
-import EagleView from 'components/admin/dashboards/car-interface/EagleView';
-import MapCard from 'components/admin/dashboards/car-interface/MapCard';
-import Phone from 'components/admin/dashboards/car-interface/Phone';
+import EagleView from 'components/dashboard/dashboards/car-interface/EagleView';
+import MapCard from 'components/dashboard/dashboards/car-interface/MapCard';
+import Phone from 'components/dashboard/dashboards/car-interface/Phone';
 
 const CarInterface = () => {
   return (

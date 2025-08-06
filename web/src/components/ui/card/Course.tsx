@@ -1,4 +1,4 @@
-import { MdOutlineTimer } from "react-icons/md";
+import { MdOutlineTimer } from 'react-icons/md';
 
 const Course = (props: {
   bgBox: string;
@@ -34,8 +34,8 @@ const Course = (props: {
             <div className="flex w-max justify-end gap-1 font-medium">
               <p className="mt-2 w-max text-gray-600"> {day} •</p>
               <p className="mt-2 w-max text-base text-navy-700 dark:text-white">
-                {" "}
-                {date}{" "}
+                {' '}
+                {date}{' '}
               </p>
             </div>
           </div>
@@ -51,8 +51,8 @@ const Course = (props: {
             <div
               className={`flex h-7 w-max items-center justify-center rounded-lg px-2 text-xs font-bold uppercase tracking-wide ${
                 topics[2]
-                  ? "bg-lightPrimary text-brand-500 dark:bg-white/5 dark:text-white"
-                  : "!hidden"
+                  ? 'bg-lightPrimary text-brand-500 dark:bg-white/5 dark:text-white'
+                  : '!hidden'
               } `}
             >
               {topics[2]}

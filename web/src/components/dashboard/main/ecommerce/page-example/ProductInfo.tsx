@@ -1,5 +1,5 @@
-import { MdStar, MdStarHalf } from "react-icons/md";
-import Accordian from "./Accordian";
+import { MdStar, MdStarHalf } from 'react-icons/md';
+import Accordian from './Accordian';
 
 const ProductInfo = () => {
   return (

@@ -1,7 +1,7 @@
 'use client';
 import EventCalendar from 'components/ui/calendar/EventCalendar';
-import Event from 'components/admin/main/applications/calendar/Events';
-import TimeLine from 'components/admin/main/applications/calendar/Timeline';
+import Event from 'components/dashboard/main/applications/calendar/Events';
+import TimeLine from 'components/dashboard/main/applications/calendar/Timeline';
 import { calendarData } from 'variables/calendar';
 const Calendar = () => {
   return (

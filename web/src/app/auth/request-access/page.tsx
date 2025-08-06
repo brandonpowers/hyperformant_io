@@ -25,7 +25,7 @@ function RequestAccess() {
       setCompany({
         id: companyId,
         name: companyName,
-        domain: companyDomain
+        domain: companyDomain,
       });
     }
   }, [companyId, companyName, companyDomain]);
@@ -56,7 +56,9 @@ function RequestAccess() {
 
       setSuccess(true);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send access request');
+      setError(
+        err instanceof Error ? err.message : 'Failed to send access request',
+      );
     } finally {
       setIsLoading(false);
     }
@@ -83,8 +85,9 @@ function RequestAccess() {
                 Request Sent!
               </h3>
               <p className="mb-6 text-base text-gray-600 dark:text-gray-400">
-                Your access request has been sent to the administrators of {company?.name}.
-                You'll receive an email notification once your request is reviewed.
+                Your access request has been sent to the administrators of{' '}
+                {company?.name}. You'll receive an email notification once your
+                request is reviewed.
               </p>
               <button
                 onClick={() => router.push('/auth/sign-in')}
@@ -112,7 +115,7 @@ function RequestAccess() {
                 Request Access
               </h3>
               <p className="text-center text-base text-gray-600 dark:text-gray-400">
-                {company?.name || 'Company'} already exists in our system. 
+                {company?.name || 'Company'} already exists in our system.
                 Request access from the company administrators.
               </p>
             </div>
@@ -122,21 +125,28 @@ function RequestAccess() {
                 {error}
               </div>
             )}
-            
+
             <div className="mb-6">
               <label className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
                 Company
               </label>
               <div className="rounded-lg bg-gray-50 p-4 dark:bg-gray-800">
-                <p className="font-semibold text-gray-900 dark:text-white">{company?.name}</p>
+                <p className="font-semibold text-gray-900 dark:text-white">
+                  {company?.name}
+                </p>
                 {company?.domain && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400">{company.domain}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {company.domain}
+                  </p>
                 )}
               </div>
             </div>
 
             <div className="mb-6">
-              <label htmlFor="message" className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label
+                htmlFor="message"
+                className="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+              >
                 Message (optional)
               </label>
               <textarea
@@ -148,15 +158,15 @@ function RequestAccess() {
                 className="w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm outline-none focus:border-brand-500 dark:border-gray-600 dark:bg-gray-800 dark:text-white"
               />
             </div>
-            
-            <button 
+
+            <button
               type="submit"
               disabled={isLoading}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
             >
               {isLoading ? 'Sending Request...' : 'Request Access'}
             </button>
-            
+
             <div className="mt-6 text-center">
               <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
                 Changed your mind?

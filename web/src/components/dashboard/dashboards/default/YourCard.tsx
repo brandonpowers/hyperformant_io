@@ -1,8 +1,8 @@
-import Card from "components/ui/card";
-import MasterCard from "components/ui/card/Mastercard";
-import Transaction from "components/ui/dataDisplay/Transaction";
-import React from "react";
-import { AiOutlinePlus } from "react-icons/ai";
+import Card from 'components/ui/card';
+import MasterCard from 'components/ui/card/Mastercard';
+import Transaction from 'components/ui/dataDisplay/Transaction';
+import React from 'react';
+import { AiOutlinePlus } from 'react-icons/ai';
 //assets
 import {
   MdOutlineShoppingBasket,
@@ -14,12 +14,12 @@ import {
   MdAdd,
   MdAttachMoney,
   MdMoreHoriz,
-} from "react-icons/md";
-import { RiNetflixFill } from "react-icons/ri";
+} from 'react-icons/md';
+import { RiNetflixFill } from 'react-icons/ri';
 
 function YourCard() {
   return (
-    <Card extra={"w-full h-fit 3xl:h-full px-3 pt-3 2xl:pb-5"}>
+    <Card extra={'w-full h-fit 3xl:h-full px-3 pt-3 2xl:pb-5'}>
       {/* Header */}
       <div className="flex items-center justify-between px-3 pt-3">
         <h4 className="text-lg font-bold text-navy-700 dark:text-white">

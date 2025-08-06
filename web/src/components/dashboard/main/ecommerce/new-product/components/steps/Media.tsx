@@ -1,6 +1,6 @@
 // Assets
 import { MdOutlineCloudUpload } from 'react-icons/md';
-import DropZonefile from 'components/admin/main/ecommerce/settings-product/DropZonefile';
+import DropZonefile from 'components/dashboard/main/ecommerce/settings-product/DropZonefile';
 
 const Media = () => {
   return (

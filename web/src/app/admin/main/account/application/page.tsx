@@ -1,9 +1,9 @@
 'use client';
-import MiniStatistics from 'components/admin/main/account/application/MiniStatistics';
+import MiniStatistics from 'components/dashboard/main/account/application/MiniStatistics';
 import FakeBarChart from '/public/img/account/FakeBarChart.png';
 
 import { MdOutlineBarChart, MdPerson, MdFileCopy } from 'react-icons/md';
-import ManagementTable from 'components/admin/main/account/application/ManagementTable';
+import ManagementTable from 'components/dashboard/main/account/application/ManagementTable';
 import tableDataManagement from 'variables/account/application/tableDataManagement';
 import Image from 'next/image';
 

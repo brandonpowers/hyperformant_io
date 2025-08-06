@@ -1,9 +1,9 @@
-import React from "react"
+import React from 'react';
 
-interface BadgeProps extends React.ComponentPropsWithoutRef<"span"> {}
+interface BadgeProps extends React.ComponentPropsWithoutRef<'span'> {}
 
 const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
-  ({ children, className, ...props }: BadgeProps, forwardedRef) => {
+  ({ children, className: _className, ...props }: BadgeProps, forwardedRef) => {
     return (
       <span
         ref={forwardedRef}
@@ -14,10 +14,10 @@ const Badge = React.forwardRef<HTMLSpanElement, BadgeProps>(
           {children}
         </span>
       </span>
-    )
+    );
   },
-)
+);
 
-Badge.displayName = "Badge"
+Badge.displayName = 'Badge';
 
-export { Badge, type BadgeProps }
+export { Badge, type BadgeProps };

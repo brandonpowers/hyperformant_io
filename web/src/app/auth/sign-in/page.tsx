@@ -4,7 +4,6 @@ import InputField from 'components/ui/fields/InputField';
 import Centered from 'components/auth/variants/CenteredAuthLayout';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
-import Checkbox from 'components/ui/checkbox';
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -14,7 +13,7 @@ function SignInDefault() {
   const searchParams = useSearchParams();
   const [formData, setFormData] = useState({
     email: '',
-    password: ''
+    password: '',
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,14 +22,15 @@ function SignInDefault() {
   // Check for success message from registration
   const message = searchParams?.get('message');
 
-  const handleInputChange = (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: e.target.value
-    }));
-    // Clear error when user starts typing
-    if (error) setError('');
-  };
+  const handleInputChange =
+    (field: string) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        [field]: e.target.value,
+      }));
+      // Clear error when user starts typing
+      if (error) setError('');
+    };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,7 +46,10 @@ function SignInDefault() {
 
       if (result?.error) {
         // Check if this is a verification error
-        if (result.error.includes('verify') || result.error === 'CredentialsSignin') {
+        if (
+          result.error.includes('verify') ||
+          result.error === 'CredentialsSignin'
+        ) {
           // Try to determine if it's a verification issue by checking the specific error
           // For now, we'll create a separate API call to check verification status
           try {
@@ -55,22 +58,24 @@ function SignInDefault() {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ email: formData.email }),
             });
-            
+
             const checkData = await checkResponse.json();
-            
+
             if (checkData.needsVerification) {
               // Store password temporarily for auto-login after verification
               sessionStorage.setItem('temp_password', formData.password);
-              
+
               // Redirect to verification page with email pre-filled
-              router.push(`/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent('Please verify your email address. We\'ve sent you a new verification code.')}`);
+              router.push(
+                `/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent("Please verify your email address. We've sent you a new verification code.")}`,
+              );
               return;
             }
           } catch (checkError) {
             console.error('Failed to check verification status:', checkError);
           }
         }
-        
+
         setError('Invalid email or password');
       } else {
         // Successful sign in - redirect to dashboard
@@ -120,7 +125,7 @@ function SignInDefault() {
               </div>
             )}
             <div className="mt-9">
-              <button 
+              <button
                 type="button"
                 onClick={handleGoogleSignIn}
                 disabled={isLoading}
@@ -133,7 +138,7 @@ function SignInDefault() {
                   Sign In with Google
                 </p>
               </button>
-              <button 
+              <button
                 type="button"
                 onClick={handleMicrosoftSignIn}
                 disabled={isLoading}
@@ -181,7 +186,10 @@ function SignInDefault() {
                   onChange={(e) => setRememberMe(e.target.checked)}
                   className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
                 />
-                <label htmlFor="rememberMe" className="ml-2 text-sm font-medium text-navy-700 dark:text-white">
+                <label
+                  htmlFor="rememberMe"
+                  className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
+                >
                   Keep me logged In
                 </label>
               </div>
@@ -192,7 +200,7 @@ function SignInDefault() {
                 Forgot password?
               </a>
             </div>
-            <button 
+            <button
               type="submit"
               disabled={isLoading}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"

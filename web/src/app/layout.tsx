@@ -1,14 +1,14 @@
 import React, { ReactNode } from 'react';
 import SessionProvider from 'components/providers/SessionProvider';
 import TRPCProvider from 'components/providers/TRPCProvider';
-import { ThemeProvider } from "next-themes";
-import { Inter } from "next/font/google";
-import "../styles/globals.css";
+import { ThemeProvider } from 'next-themes';
+import { Inter } from 'next/font/google';
+import '../styles/globals.css';
 
 const inter = Inter({
-  subsets: ["latin"],
-  display: "swap",
-  variable: "--font-inter",
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-inter',
 });
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -25,9 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           disableTransitionOnChange
         >
           <TRPCProvider>
-            <SessionProvider>
-              {children}
-            </SessionProvider>
+            <SessionProvider>{children}</SessionProvider>
           </TRPCProvider>
         </ThemeProvider>
       </body>

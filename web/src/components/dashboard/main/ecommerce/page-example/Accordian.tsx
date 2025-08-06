@@ -1,6 +1,6 @@
-import React from "react";
-import { MdKeyboardArrowDown } from "react-icons/md";
-import { MdKeyboardArrowUp } from "react-icons/md";
+import React from 'react';
+import { MdKeyboardArrowDown } from 'react-icons/md';
+import { MdKeyboardArrowUp } from 'react-icons/md';
 
 import {
   Accordion,
@@ -8,10 +8,10 @@ import {
   AccordionItemHeading,
   AccordionItemButton,
   AccordionItemPanel,
-} from "react-accessible-accordion";
+} from 'react-accessible-accordion';
 
-import "react-accessible-accordion/dist/fancy-example.css";
-import { useState } from "react";
+import 'react-accessible-accordion/dist/fancy-example.css';
+import { useState } from 'react';
 
 function Accordian() {
   const [open, setOpen] = useState(false);
@@ -59,7 +59,7 @@ function Accordian() {
           >
             <AccordionItemButton className="flex justify-between border-b border-gray-200 py-[17px] dark:!border-white/10">
               <p className="font-bold text-navy-700 dark:text-white">
-                Characteristics{" "}
+                Characteristics{' '}
               </p>
               {open ? (
                 <MdKeyboardArrowDown className="text-lg text-gray-600" />

@@ -1,12 +1,12 @@
 'use client';
 import tableDataDevelopment from 'variables/applications/data-tables/tableDataDevelopment';
 import tableDataCheck from 'variables/applications/data-tables/tableDataCheck';
-import CheckTable from 'components/admin/main/applications/data-tables/CheckTable';
+import CheckTable from 'components/dashboard/main/applications/data-tables/CheckTable';
 import tableDataColumns from 'variables/applications/data-tables/tableDataColumns';
 import tableDataComplex from 'variables/applications/data-tables/tableDataComplex';
-import DevelopmentTable from 'components/admin/main/applications/data-tables/DevelopmentTable';
-import ColumnsTable from 'components/admin/main/applications/data-tables/ColumnsTable';
-import ComplexTable from 'components/admin/main/applications/data-tables/ComplexTable';
+import DevelopmentTable from 'components/dashboard/main/applications/data-tables/DevelopmentTable';
+import ColumnsTable from 'components/dashboard/main/applications/data-tables/ColumnsTable';
+import ComplexTable from 'components/dashboard/main/applications/data-tables/ComplexTable';
 
 const Tables = () => {
   return (

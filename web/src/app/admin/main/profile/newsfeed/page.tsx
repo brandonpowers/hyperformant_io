@@ -1,8 +1,8 @@
 'use client';
-import Filter from 'components/admin/main/profile/newsfeed/Filter';
-import Post from 'components/admin/main/profile/newsfeed/Post';
-import Stories from 'components/admin/main/profile/newsfeed/Stories';
-import Trending from 'components/admin/main/profile/newsfeed/Trending';
+import Filter from 'components/dashboard/main/profile/newsfeed/Filter';
+import Post from 'components/dashboard/main/profile/newsfeed/Post';
+import Stories from 'components/dashboard/main/profile/newsfeed/Stories';
+import Trending from 'components/dashboard/main/profile/newsfeed/Trending';
 
 const NewsFeed = () => {
   return (

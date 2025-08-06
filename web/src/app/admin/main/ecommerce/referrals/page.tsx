@@ -1,6 +1,6 @@
 'use client';
-import Earn from 'components/admin/main/ecommerce/referrals/Earn';
-import Invite from 'components/admin/main/ecommerce/referrals/Invite';
+import Earn from 'components/dashboard/main/ecommerce/referrals/Earn';
+import Invite from 'components/dashboard/main/ecommerce/referrals/Invite';
 // Assets
 import {
   MdAttachMoney,
@@ -12,7 +12,7 @@ import {
 import tableDataReferrals from 'variables/ecommerce/referrals/tableDataReferrals';
 
 import MiniStatistics from 'components/ui/card/MiniStatistics';
-import ReferralsTable from 'components/admin/main/ecommerce/referrals/ReferralsTable';
+import ReferralsTable from 'components/dashboard/main/ecommerce/referrals/ReferralsTable';
 const Referrals = () => {
   return (
     <div className="mt-3 grid h-full w-full grid-cols-12 gap-5 rounded-[20px]">

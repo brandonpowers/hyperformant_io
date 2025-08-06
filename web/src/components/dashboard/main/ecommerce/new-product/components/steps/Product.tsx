@@ -1,5 +1,5 @@
-import InputField from "components/ui/fields/InputField";
-import TextField from "components/ui/fields/TextField";
+import InputField from 'components/ui/fields/InputField';
+import TextField from 'components/ui/fields/TextField';
 
 const Product = () => {
   return (

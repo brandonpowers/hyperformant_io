@@ -22,7 +22,7 @@ const Stepper = (props: {
       highlighted?: boolean;
       selected?: boolean;
       completed?: boolean;
-    }[]
+    }[],
   ) => {
     const newSteps = [...steps];
     let count = 0;
@@ -70,8 +70,8 @@ const Stepper = (props: {
           completed: false,
           highlighted: index === 0 ? true : false,
           selected: index === 0 ? true : false,
-        }
-      )
+        },
+      ),
     );
 
     const current = updateStep(currentStep - 1, stepsState);

@@ -63,7 +63,7 @@ function loadEnvironment() {
 function openBrowser(url: string): boolean {
   const platform = os.platform();
   let command: string;
-  
+
   switch (platform) {
     case 'darwin': // macOS
       command = 'open';
@@ -75,7 +75,7 @@ function openBrowser(url: string): boolean {
       command = 'xdg-open';
       break;
   }
-  
+
   try {
     execSync(`${command} "${url}"`, { stdio: 'ignore' });
     return true;
@@ -88,41 +88,55 @@ function openBrowser(url: string): boolean {
 // Check for required tools
 function checkRequirements() {
   const requirements = [
-    { cmd: 'docker', name: 'Docker', url: 'https://docs.docker.com/get-docker/' },
-    { cmd: 'docker-compose', name: 'Docker Compose', url: 'https://docs.docker.com/compose/install/' },
+    {
+      cmd: 'docker',
+      name: 'Docker',
+      url: 'https://docs.docker.com/get-docker/',
+    },
+    {
+      cmd: 'docker-compose',
+      name: 'Docker Compose',
+      url: 'https://docs.docker.com/compose/install/',
+    },
     { cmd: 'node', name: 'Node.js', url: 'https://nodejs.org/' },
-    { cmd: 'npm', name: 'npm', url: 'https://nodejs.org/' }
+    { cmd: 'npm', name: 'npm', url: 'https://nodejs.org/' },
   ];
 
   let allGood = true;
-  
+
   console.log(`${c.bright}Checking requirements...${c.reset}\n`);
-  
+
   requirements.forEach(req => {
     try {
       execSync(`which ${req.cmd}`, { stdio: 'ignore' });
       console.log(`  ✅ ${req.name}`);
     } catch {
-      console.log(`  ❌ ${req.name} - ${c.dim}Install from: ${req.url}${c.reset}`);
+      console.log(
+        `  ❌ ${req.name} - ${c.dim}Install from: ${req.url}${c.reset}`
+      );
       allGood = false;
     }
   });
-  
+
   // Check and install xdg-utils for browser support on Linux
   if (os.platform() === 'linux') {
     try {
       execSync('which xdg-open', { stdio: 'ignore' });
       console.log(`  ✅ Browser support (xdg-utils)`);
     } catch {
-      console.log(`  ${c.yellow}⚠️ Browser auto-launch may not work - install xdg-utils manually${c.reset}`);
+      console.log(
+        `  ${c.yellow}⚠️ Browser auto-launch may not work - install xdg-utils manually${c.reset}`
+      );
     }
   }
-  
+
   if (!allGood) {
-    console.log(`\n${c.red}Please install missing requirements before continuing.${c.reset}\n`);
+    console.log(
+      `\n${c.red}Please install missing requirements before continuing.${c.reset}\n`
+    );
     process.exit(1);
   }
-  
+
   console.log(`\n${c.green}All requirements satisfied!${c.reset}\n`);
 }
 
@@ -210,12 +224,13 @@ async function validateConfigs() {
     process.exit(1);
   }
 
-  const workflowFiles = fs.readdirSync(workflowsDir)
+  const workflowFiles = fs
+    .readdirSync(workflowsDir)
     .filter(f => f.endsWith('.json'))
     .map(f => path.join(workflowsDir, f));
 
   let errors = 0;
-  // Validate workflow configurations  
+  // Validate workflow configurations
   for (const file of workflowFiles) {
     try {
       const data = loadJson(file);
@@ -247,14 +262,12 @@ async function importWorkflows(env: string) {
   const deployScript = path.join(__dirname, '..', 'n8n', 'deploy.js');
   if (!fs.existsSync(deployScript)) {
     console.error('❌ N8N deployment script not found:', deployScript);
-    console.error(
-      'Please ensure n8n/deploy.js exists and is executable.'
-    );
+    console.error('Please ensure n8n/deploy.js exists and is executable.');
     process.exit(1);
   }
 
   // Use the proven shell script that GitHub Actions uses
-  const { spawn } = require('child_process');
+  const { spawn } = await import('child_process');
 
   return new Promise<void>((resolve, reject) => {
     const child = spawn('node', [deployScript], {
@@ -312,29 +325,32 @@ async function deploy(env: string) {
 // Setup command
 async function runSetup() {
   console.log(`${c.bright}${c.yellow}Running initial setup...${c.reset}\n`);
-  
+
   // Check for Next.js .env.local
   const envPath = path.join(process.cwd(), 'web', '.env.local');
   const envExamplePath = path.join(process.cwd(), 'web', '.env.example');
-  
+
   if (!fs.existsSync(envPath) && fs.existsSync(envExamplePath)) {
     console.log(`📝 Creating Next.js .env.local file...`);
     fs.copyFileSync(envExamplePath, envPath);
   } else if (fs.existsSync(envPath)) {
     console.log(`✅ Next.js .env.local already exists`);
   }
-  
+
   // Start Docker services
   console.log(`\n🐳 Starting Docker services...`);
   execSync('docker-compose up -d', { stdio: 'inherit' });
-  
+
   // Wait for PostgreSQL
   console.log(`\n⏳ Waiting for PostgreSQL to be ready...`);
   let pgReady = false;
   let attempts = 0;
   while (!pgReady && attempts < 30) {
     try {
-      execSync('docker-compose exec -T postgres pg_isready -U postgres -d hyperformant', { stdio: 'ignore' });
+      execSync(
+        'docker-compose exec -T postgres pg_isready -U postgres -d hyperformant',
+        { stdio: 'ignore' }
+      );
       pgReady = true;
     } catch {
       process.stdout.write('.');
@@ -342,26 +358,31 @@ async function runSetup() {
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
-  
+
   if (!pgReady) {
-    console.log(`\n${c.red}PostgreSQL failed to start. Check Docker logs.${c.reset}`);
+    console.log(
+      `\n${c.red}PostgreSQL failed to start. Check Docker logs.${c.reset}`
+    );
     process.exit(1);
   }
-  
+
   console.log(`\n✅ PostgreSQL is ready!`);
-  
+
   // Run Prisma database migrations
   console.log(`\n🔄 Setting up Next.js database...`);
-  execSync('cd web && npx prisma migrate dev --name initial_consolidated_schema', { stdio: 'inherit' });
+  execSync(
+    'cd web && npx prisma migrate dev --name initial_consolidated_schema',
+    { stdio: 'inherit' }
+  );
   execSync('cd web && npx prisma db seed', { stdio: 'inherit' });
-  
+
   // Build and validate
   console.log(`\n🔨 Building application...`);
   execSync('cd web && npm run build', { stdio: 'inherit' });
-  
+
   console.log(`\n✅ Validating configurations...`);
   execSync('npm run validate', { stdio: 'inherit' });
-  
+
   console.log(`\n${c.bright}${c.green}✨ Setup complete!${c.reset}\n`);
 }
 
@@ -378,7 +399,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
 `);
 
   console.log(`${c.dim}Starting development environment...${c.reset}\n`);
-  
+
   // Load environment variables from .env.local
   console.log(`${c.dim}📄 Loading environment variables...${c.reset}`);
   const envVars = loadEnvironment();
@@ -388,7 +409,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     console.log(`${c.red}❌ DATABASE_URL not found in .env.local${c.reset}`);
     process.exit(1);
   }
-  
+
   // Check if Docker services are running
   try {
     execSync('docker-compose ps | grep -q "Up"', { stdio: 'ignore' });
@@ -396,17 +417,20 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
   } catch {
     console.log(`${c.yellow}🐳 Starting Docker services...${c.reset}`);
     execSync('docker-compose up -d', { stdio: 'inherit' });
-    
+
     // Wait for PostgreSQL to be ready
     console.log(`${c.dim}⏳ Waiting for PostgreSQL...${c.reset}`);
     let pgReady = false;
     let attempts = 0;
     while (!pgReady && attempts < 30) {
       try {
-        execSync('docker-compose exec -T postgres pg_isready -U postgres -d hyperformant', { 
-          stdio: 'ignore',
-          cwd: process.cwd()
-        });
+        execSync(
+          'docker-compose exec -T postgres pg_isready -U postgres -d hyperformant',
+          {
+            stdio: 'ignore',
+            cwd: process.cwd(),
+          }
+        );
         pgReady = true;
       } catch {
         process.stdout.write('.');
@@ -414,46 +438,50 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
     }
-    
+
     if (!pgReady) {
-      console.log(`\n${c.red}❌ PostgreSQL failed to start. Check Docker logs.${c.reset}`);
+      console.log(
+        `\n${c.red}❌ PostgreSQL failed to start. Check Docker logs.${c.reset}`
+      );
       process.exit(1);
     }
     console.log(`\n${c.green}✅ PostgreSQL is ready!${c.reset}`);
   }
-  
+
   // Check if database needs migration
   const webDir = path.join(process.cwd(), 'web');
-  const prismaEnv = { 
-    ...process.env, 
+  const prismaEnv = {
+    ...process.env,
     NODE_ENV: 'development',
-    DATABASE_URL: process.env.DATABASE_URL
+    DATABASE_URL: process.env.DATABASE_URL,
   };
-  
+
   try {
     console.log(`${c.dim}🔍 Checking database schema...${c.reset}`);
-    execSync('npx prisma migrate status', { 
+    execSync('npx prisma migrate status', {
       stdio: 'ignore',
       cwd: webDir,
-      env: prismaEnv
+      env: prismaEnv,
     });
     console.log(`${c.green}✅ Database schema is up to date${c.reset}`);
   } catch {
     console.log(`${c.yellow}🔄 Running database migrations...${c.reset}`);
     try {
-      execSync('npx prisma migrate dev --name auto_migration', { 
+      execSync('npx prisma migrate dev --name auto_migration', {
         stdio: 'inherit',
         cwd: webDir,
-        env: prismaEnv
+        env: prismaEnv,
       });
       console.log(`${c.green}✅ Database migrations completed${c.reset}`);
-      
+
       // Run seed if needed
-      console.log(`${c.yellow}🌱 Seeding database with initial data...${c.reset}`);
-      execSync('npx prisma db seed', { 
+      console.log(
+        `${c.yellow}🌱 Seeding database with initial data...${c.reset}`
+      );
+      execSync('npx prisma db seed', {
         stdio: 'inherit',
         cwd: webDir,
-        env: prismaEnv
+        env: prismaEnv,
       });
       console.log(`${c.green}✅ Database seeding completed${c.reset}`);
     } catch (error) {
@@ -462,29 +490,31 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
       process.exit(1);
     }
   }
-  
+
   // Light cache clearing for optimal performance
   try {
     execSync('rm -rf web/.next', { stdio: 'ignore' });
-  } catch {}
+  } catch {
+    // Ignore errors if .next directory doesn't exist
+  }
 
   // Start Next.js development server
   console.log(`${c.yellow}Starting Next.js development server...${c.reset}\n`);
-  
+
   nextjsDevProcess = spawn('npm', ['run', 'dev:web'], {
     stdio: 'inherit',
     shell: true,
-    detached: true
+    detached: true,
   });
 
   // Start Prisma Studio
   console.log(`${c.yellow}Starting Prisma Studio...${c.reset}\n`);
-  
+
   prismaStudioProcess = spawn('npm', ['run', 'db:studio'], {
     cwd: path.join(process.cwd(), 'web'),
     stdio: ['ignore', 'ignore', 'inherit'],
     shell: true,
-    detached: true
+    detached: true,
   });
 
   // Show service URLs after a delay
@@ -519,18 +549,20 @@ ${c.bright}${c.white} Quick Commands:${c.reset}
 
 ${c.dim}Press Ctrl+C to stop all services${c.reset}
 `);
-    
+
     // Auto-launch browser tabs after Next.js is fully ready
     setTimeout(() => {
       console.log(`${c.bright}${c.cyan}🌐 Opening Next.js app...${c.reset}`);
       openBrowser(services.nextjs);
-      console.log(`${c.bright}${c.green}✨ App should now be open!${c.reset}\n`);
+      console.log(
+        `${c.bright}${c.green}✨ App should now be open!${c.reset}\n`
+      );
     }, 8000);
   }, 5000);
 
   // Handle process exit
   if (nextjsDevProcess) {
-    nextjsDevProcess.on('exit', (code) => {
+    nextjsDevProcess.on('exit', code => {
       process.exit(code || 0);
     });
   }
@@ -539,35 +571,37 @@ ${c.dim}Press Ctrl+C to stop all services${c.reset}
 // Handle graceful shutdown
 process.on('SIGINT', async () => {
   console.log(`\n\n${c.yellow}Shutting down services...${c.reset}`);
-  
+
   // Stop Next.js dev process first
   if (nextjsDevProcess && !nextjsDevProcess.killed) {
     console.log(`${c.dim}Stopping Next.js development server...${c.reset}`);
-    
+
     try {
       // Kill the process group to ensure all child processes stop
       if (nextjsDevProcess.pid) {
         process.kill(-nextjsDevProcess.pid, 'SIGTERM');
       }
-      
+
       // Wait for graceful shutdown
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         const timeout = setTimeout(() => {
           // Force kill if not stopped gracefully
           try {
             if (nextjsDevProcess?.pid) {
               process.kill(-nextjsDevProcess.pid, 'SIGKILL');
             }
-          } catch {}
+          } catch {
+            // Process might have already exited
+          }
           resolve();
         }, 5000);
-        
-        nextjsDevProcess!.on('exit', () => {
+
+        nextjsDevProcess?.on('exit', () => {
           clearTimeout(timeout);
           resolve();
         });
       });
-      
+
       console.log(`${c.green}✅ Next.js server stopped${c.reset}`);
     } catch (error) {
       console.log(`${c.dim}Next.js process already stopped${c.reset}`);
@@ -577,33 +611,35 @@ process.on('SIGINT', async () => {
   // Stop Prisma Studio
   if (prismaStudioProcess && !prismaStudioProcess.killed) {
     console.log(`${c.dim}Stopping Prisma Studio...${c.reset}`);
-    
+
     try {
       if (prismaStudioProcess.pid) {
         process.kill(-prismaStudioProcess.pid, 'SIGTERM');
       }
-      await new Promise<void>((resolve) => {
+      await new Promise<void>(resolve => {
         const timeout = setTimeout(() => {
           try {
             if (prismaStudioProcess?.pid) {
               process.kill(-prismaStudioProcess.pid, 'SIGKILL');
             }
-          } catch {}
+          } catch {
+            // Process might have already exited
+          }
           resolve();
         }, 3000);
-        
-        prismaStudioProcess!.on('exit', () => {
+
+        prismaStudioProcess?.on('exit', () => {
           clearTimeout(timeout);
           resolve();
         });
       });
-      
+
       console.log(`${c.green}✅ Prisma Studio stopped${c.reset}`);
     } catch (error) {
       console.log(`${c.dim}Prisma Studio process already stopped${c.reset}`);
     }
   }
-  
+
   // Stop Docker services
   try {
     console.log(`${c.dim}Stopping Docker containers...${c.reset}`);
@@ -612,7 +648,7 @@ process.on('SIGINT', async () => {
   } catch (error) {
     console.log(`${c.red}Error stopping Docker services${c.reset}`);
   }
-  
+
   console.log(`${c.green}✅ All services stopped${c.reset}\n`);
   process.exit(0);
 });
@@ -665,7 +701,9 @@ yargs(hideBin(process.argv))
     async () => {
       checkRequirements();
       await runSetup();
-      console.log(`\n${c.bright}Run ${c.green}hyperformant dev${c.reset} ${c.bright}to start the development server${c.reset}\n`);
+      console.log(
+        `\n${c.bright}Run ${c.green}hyperformant dev${c.reset} ${c.bright}to start the development server${c.reset}\n`
+      );
     }
   )
   .command(

@@ -1,8 +1,8 @@
 'use client';
-import Banner from 'components/admin/main/profile/settings/Profile';
-import Information from 'components/admin/main/profile/settings/Info';
-import Password from 'components/admin/main/profile/settings/Password';
-import Social from 'components/admin/main/profile/settings/Socials';
+import Banner from 'components/dashboard/main/profile/settings/Profile';
+import Information from 'components/dashboard/main/profile/settings/Info';
+import Password from 'components/dashboard/main/profile/settings/Password';
+import Social from 'components/dashboard/main/profile/settings/Socials';
 
 const ProfileSetting = () => {
   return (

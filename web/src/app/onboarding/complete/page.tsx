@@ -1,7 +1,12 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { IoCheckmarkCircle, IoRocket, IoDocumentText, IoAnalytics } from 'react-icons/io5';
+import {
+  IoCheckmarkCircle,
+  IoRocket,
+  IoDocumentText,
+  IoAnalytics,
+} from 'react-icons/io5';
 import Link from 'next/link';
 
 interface Feature {
@@ -67,7 +72,8 @@ export default function CompletePage() {
         You're all set!
       </h1>
       <p className="mb-8 text-lg text-gray-600 dark:text-gray-400">
-        Your account is ready. Redirecting to dashboard in {countdown} seconds...
+        Your account is ready. Redirecting to dashboard in {countdown}{' '}
+        seconds...
       </p>
 
       <div className="mb-8 space-y-4">

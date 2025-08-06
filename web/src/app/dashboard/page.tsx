@@ -1,12 +1,12 @@
 'use client';
-import Balance from 'components/admin/dashboards/default/Balance';
-import DailyTraffic from 'components/admin/dashboards/default/DailyTraffic';
-import MostVisited from 'components/admin/dashboards/default/MostVisitedTable';
-import OverallRevenue from 'components/admin/dashboards/default/OverallRevenue';
-import ProfitEstimation from 'components/admin/dashboards/default/ProfitEstimation';
-import ProjectStatus from 'components/admin/dashboards/default/ProjectStatus';
-import YourCard from 'components/admin/dashboards/default/YourCard';
-import YourTransfers from 'components/admin/dashboards/default/YourTransfers';
+import Balance from 'components/dashboard/dashboards/default/Balance';
+import DailyTraffic from 'components/dashboard/dashboards/default/DailyTraffic';
+import MostVisited from 'components/dashboard/dashboards/default/MostVisitedTable';
+import OverallRevenue from 'components/dashboard/dashboards/default/OverallRevenue';
+import ProfitEstimation from 'components/dashboard/dashboards/default/ProfitEstimation';
+import ProjectStatus from 'components/dashboard/dashboards/default/ProjectStatus';
+import YourCard from 'components/dashboard/dashboards/default/YourCard';
+import YourTransfers from 'components/dashboard/dashboards/default/YourTransfers';
 
 import tableDataMostVisited from 'variables/dashboards/default/tableDataMostVisited';
 

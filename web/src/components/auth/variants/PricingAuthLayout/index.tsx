@@ -1,5 +1,5 @@
 'use client';
-import NavbarAuth from 'components/navbar/NavbarAuth';
+import NavbarAuth from 'components/ui/navbar/NavbarAuth';
 import React, { useState } from 'react';
 import zoho from '/public/svg/zoho-logo.svg';
 import deloite from '/public/svg/deloitte-logo.svg';
@@ -7,7 +7,7 @@ import georgia from '/public/svg/georgia-logo.svg';
 import google from '/public/svg/google-logo.svg';
 import microsoft from '/public/svg/microsoft-logo.svg';
 import msn from '/public/svg/msn-logo.svg';
-import Footer from 'components/footer/Footer';
+import Footer from 'components/ui/footer/Footer';
 import Card from 'components/ui/card';
 import Image from 'next/image';
 
@@ -69,7 +69,7 @@ function Pricing() {
             Hit the ground running.
           </p>
           <button className="linear mt-[32px] w-full rounded-xl bg-brand-50 py-2 font-dm text-base font-medium text-brand-500 transition duration-200 hover:opacity-90 active:opacity-80 dark:bg-navy-700 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/10">
-            Start Free trial
+            Start Free
           </button>
           {/* amount */}
           <div className="mt-8 w-full">
@@ -181,7 +181,7 @@ function Pricing() {
             Hit the ground running.
           </p>
           <button className="linear mt-[32px] w-full rounded-xl bg-brand-50 py-2 font-dm text-base font-medium text-brand-500 transition duration-200 hover:opacity-90 active:opacity-80 dark:bg-navy-700 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/10">
-            Start Free trial
+            Start Free
           </button>
           {/* amount */}
           <div className="mt-[35px] w-full">
