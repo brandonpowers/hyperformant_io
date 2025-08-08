@@ -31,7 +31,7 @@ const Banner = () => {
             Account type
           </h6>
           <select
-            className="mt-2 px-2 text-sm font-bold text-navy-700 dark:!bg-navy-dark dark:text-white"
+            className="mt-2 px-2 text-sm font-bold text-navy-700 dark:!bg-card-dark dark:text-white"
             name=""
             id=""
           >

@@ -13,7 +13,7 @@ const MiniCalendar = (props: { width?: string }) => {
       <div
         className={`flex ${
           width ? `w-[${width}]` : 'w-full md:w-[320px]'
-        } h-full max-w-full flex-col rounded-[20px] bg-white px-3 py-4 dark:border dark:!border-white/10 dark:!bg-navy-dark`}
+        } h-full max-w-full flex-col rounded-[20px] px-3 py-4 dark:border dark:!border-white/10 bg-card-light dark:!bg-card-dark`}
       >
         <Calendar
           onChange={onChange}

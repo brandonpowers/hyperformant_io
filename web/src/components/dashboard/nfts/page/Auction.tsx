@@ -64,7 +64,7 @@ const Auction = (props: {
 
       {/* curret bide */}
       <div className="flex h-full w-full flex-col xl:px-3">
-        <div className="mt-14 flex h-[450px] w-full flex-col items-center rounded-[20px] border border-gray-200 pt-10 shadow-xl shadow-gray-100 dark:!border-none dark:bg-navy-dark dark:shadow-none md:h-[515px]">
+        <div className="mt-14 flex h-[450px] w-full flex-col items-center rounded-[20px] border border-gray-200 pt-10 shadow-xl shadow-gray-100 dark:!border-none dark:bg-card-dark dark:shadow-none md:h-[515px]">
           <h4 className="mt-4 text-[22px] font-medium text-navy-700 dark:text-white">
             Current Bid
           </h4>

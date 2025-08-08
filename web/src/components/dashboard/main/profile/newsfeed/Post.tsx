@@ -170,10 +170,10 @@ const Post = () => {
                 alt=""
               />
             </div>
-            <div className="flex h-[50px] w-full items-center rounded-full bg-lightPrimary pr-3 dark:border dark:!border-white/10 dark:!bg-navy-dark">
+            <div className="flex h-[50px] w-full items-center rounded-full bg-lightPrimary pr-3 dark:border dark:!border-white/10 dark:!bg-card-dark">
               <input
                 placeholder="Write your comment...."
-                className="h-full w-full rounded-full bg-lightPrimary px-4 text-sm text-navy-700 outline-none dark:!bg-navy-dark dark:text-white"
+                className="h-full w-full rounded-full bg-lightPrimary px-4 text-sm text-navy-700 outline-none dark:!bg-card-dark dark:text-white"
                 type="text"
               />
               <div className="flex items-center gap-4">

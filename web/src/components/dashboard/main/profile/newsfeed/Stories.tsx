@@ -17,7 +17,7 @@ import Image from 'next/image';
 
 const Stories = () => {
   return (
-    <div className="rounded-[20px] bg-white bg-clip-border shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none lg:justify-between">
+    <div className="rounded-[20px] bg-clip-border shadow-3xl shadow-shadow-500 bg-card-light dark:!bg-card-dark dark:shadow-none lg:justify-between">
       <Scrollbars
         autoHide
         style={{ width: '100', height: 128, borderRadius: 30 }}

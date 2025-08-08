@@ -13,7 +13,7 @@ const Buttons = () => {
         <button className="linear rounded-xl bg-gray-100 px-5 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-gray-200 active:bg-gray-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Secondary
         </button>
-        <button className="linear rounded-xl bg-navy-700 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-navy-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
+        <button className="linear rounded-xl bg-navy-700 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-card-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Dark
         </button>
         <button className="linear rounded-xl bg-blue-500 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-blue-600 active:bg-blue-700 dark:bg-blue-400 dark:text-white dark:hover:bg-blue-300 dark:active:bg-blue-200">
@@ -44,7 +44,7 @@ const Buttons = () => {
         <button className="linear rounded-full bg-gray-100 px-5 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-gray-200 active:bg-gray-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Secondary
         </button>
-        <button className="linear rounded-full bg-navy-700 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-navy-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
+        <button className="linear rounded-full bg-navy-700 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-card-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Dark
         </button>
         <button className="linear rounded-full bg-blue-500 px-5 py-3 text-base font-medium text-white transition duration-200 hover:bg-blue-600 active:bg-blue-700 dark:bg-blue-400 dark:text-white dark:hover:bg-blue-300 dark:active:bg-blue-200">
@@ -75,7 +75,7 @@ const Buttons = () => {
         <button className="linear rounded-xl border border-gray-200 px-5 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-gray-200/10 active:bg-gray-300/10 dark:border-white/20 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:active:bg-white/20">
           Secondary
         </button>
-        <button className="linear rounded-xl border border-navy-700 px-5 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-navy-dark/5 active:bg-navy-900/5 dark:border-white/20 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:active:bg-white/20">
+        <button className="linear rounded-xl border border-navy-700 px-5 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-card-dark/5 active:bg-navy-900/5 dark:border-white/20 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 dark:active:bg-white/20">
           Dark
         </button>
         <button className="linear rounded-xl border border-blue-500 px-5 py-3 text-base font-medium text-blue-500 transition duration-200 hover:bg-blue-600/5 active:bg-blue-700/5 dark:border-blue-400 dark:bg-blue-400/10 dark:text-white dark:hover:bg-blue-300/10 dark:active:bg-blue-200/10">
@@ -279,7 +279,7 @@ const Buttons = () => {
         <button className="linear flex flex-row items-center rounded-xl bg-gray-100 px-4 py-3 text-base font-medium text-navy-700 transition duration-200 hover:bg-gray-200 active:bg-gray-300 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Secondary <MdChevronRight className="text-lg" />
         </button>
-        <button className="linear flex flex-row items-center rounded-xl bg-navy-700 px-4 py-3 text-base font-medium text-white transition duration-200 hover:bg-navy-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
+        <button className="linear flex flex-row items-center rounded-xl bg-navy-700 px-4 py-3 text-base font-medium text-white transition duration-200 hover:bg-card-dark active:bg-navy-900 dark:bg-white/10 dark:text-white dark:hover:bg-white/20 dark:active:bg-white/30">
           Dark <MdChevronRight className="text-lg" />
         </button>
         <button className="linear flex flex-row items-center rounded-xl bg-blue-500 px-4 py-3 text-base font-medium text-white transition duration-200 hover:bg-blue-600 active:bg-blue-700 dark:bg-blue-400 dark:text-white dark:hover:bg-blue-300 dark:active:bg-blue-200">

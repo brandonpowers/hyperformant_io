@@ -15,7 +15,7 @@ const Calendar = () => {
         </div>
       </div>
       {/* Calendar */}
-      <div className="z-0 col-span-11 h-full w-full rounded-[20px] bg-white bg-clip-border px-[24px] py-[20px] shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:text-white dark:shadow-none lg:col-span-7">
+      <div className="z-0 col-span-11 h-full w-full rounded-[20px] bg-white bg-clip-border px-[24px] py-[20px] shadow-3xl shadow-shadow-500 dark:!bg-card-dark dark:text-white dark:shadow-none lg:col-span-7">
         {/* Calendar Header */}
         <div>
           <h5 className="text-xl font-bold text-navy-700 dark:text-white">

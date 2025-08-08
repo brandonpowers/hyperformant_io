@@ -62,7 +62,7 @@ export default function DashboardLayout({
       }}
     >
       <CompanyProvider>
-        <div className="flex flex-col min-h-screen w-full bg-background-100 dark:bg-background-900">
+        <div className="flex flex-col min-h-screen w-full bg-gradient-main">
           {/* Site Header - spans full width above everything */}
           <SiteHeader />
 

@@ -5,7 +5,7 @@
 Hyperformant implements a **dual PDF generation approach** based on use case and trigger source:
 
 1. **Market Forces Reports** (N8N) - Automated, CRM-triggered reports sent to prospects
-2. **Dashboard Exports** (Wasp) - User-initiated exports of dashboard and analytics data
+2. **Dashboard Exports** (Next.js) - User-initiated exports of dashboard and analytics data
 
 Both approaches use React-PDF as the core technology but serve different business purposes and user flows.
 
@@ -15,7 +15,7 @@ Both approaches use React-PDF as the core technology but serve different busines
 
 **Different Use Cases Require Different Architectures:**
 
-| Aspect         | Market Forces (N8N)                   | Dashboard Exports (Wasp)               |
+| Aspect         | Market Forces (N8N)                   | Dashboard Exports (Next.js)            |
 | -------------- | ------------------------------------- | -------------------------------------- |
 | **Trigger**    | Automated (Apollo.io sequences)       | User action (button click)             |
 | **Recipient**  | External prospects                    | Logged-in users                        |
@@ -166,7 +166,7 @@ return {
 };
 ```
 
-## Dashboard PDF Exports (Wasp)
+## Dashboard PDF Exports (Next.js)
 
 ### Purpose
 
@@ -176,7 +176,7 @@ Allow logged-in users to export their dashboard data and analytics as PDF report
 
 ```mermaid
 graph LR
-    A[User Button Click] --> B[Wasp Action]
+    A[User Button Click] --> B[Next.js API Route]
     B --> C[Fetch User Data]
     C --> D[Generate PDF]
     D --> E[Save to Storage]
@@ -185,7 +185,7 @@ graph LR
 
 ### Implementation Strategy
 
-**Wasp Action Implementation:**
+**Next.js API Route Implementation:**
 
 ```typescript
 export const generateDashboardExport: GenerateDashboardExport = async (
@@ -348,9 +348,9 @@ const ChartImage = ({ chartData, type }) => {
 3. **Integrate with N8N workflows** (update existing Market Forces generator)
 4. **Test end-to-end generation and delivery**
 
-### Phase 2: Wasp Dashboard Exports (Week 2)
+### Phase 2: Next.js Dashboard Exports (Week 2)
 
-1. **Implement Wasp PDF generation action**
+1. **Implement Next.js PDF generation API route**
 2. **Create dashboard templates** (Market Forces and Analytics)
 3. **Add frontend export buttons** and download handling
 4. **Test user experience and file management**
@@ -374,12 +374,12 @@ const ChartImage = ({ chartData, type }) => {
 ### Error Handling
 
 - **N8N**: Retry logic with fallback notifications
-- **Wasp**: User-friendly error messages with retry options
+- **Next.js**: User-friendly error messages with retry options
 - **Monitoring**: Track generation success rates and failure reasons
 
 ### Security
 
-- **Access Control**: User-specific data access in Wasp exports
+- **Access Control**: User-specific data access in Next.js exports
 - **Content Validation**: Sanitize data before PDF generation
 - **File Storage**: Secure storage with expiration policies
 - **Audit Logging**: Track PDF generation and access

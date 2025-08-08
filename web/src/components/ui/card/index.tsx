@@ -8,11 +8,11 @@ function Card(props: {
   // variant is intentionally unused but kept for future API compatibility
   return (
     <div
-      className={`!z-5 relative flex flex-col rounded-[20px] bg-white bg-clip-border shadow-3xl ${
+      className={`!z-5 relative flex flex-col rounded-[20px] bg-clip-border shadow-3xl ${
         props.default
           ? 'shadow-shadow-500 dark:shadow-none'
           : 'shadow-shadow-100 dark:shadow-none'
-      }  dark:!bg-navy-dark dark:text-white  ${extra}`}
+      } bg-card-light dark:!bg-card-dark dark:text-white  ${extra}`}
       {...rest}
     >
       {children}

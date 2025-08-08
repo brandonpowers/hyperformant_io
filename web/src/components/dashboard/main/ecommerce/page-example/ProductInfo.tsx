@@ -3,7 +3,7 @@ import Accordian from './Accordian';
 
 const ProductInfo = () => {
   return (
-    <div className="h-full w-full rounded-xl bg-white px-2 py-3 dark:!bg-navy-dark xl:!pl-10 xl:!pr-4">
+    <div className="h-full w-full rounded-xl px-2 py-3 bg-card-light dark:!bg-card-dark xl:!pl-10 xl:!pr-4">
       <h1 className="pt-[10px] text-[28px] font-semibold text-navy-700 dark:text-white md:text-[30px]">
         ZOE™️ Elegant Chair
       </h1>
@@ -57,9 +57,9 @@ const ProductInfo = () => {
             >
               Color
             </label>
-            <div className="w-full rounded-xl border border-gray-200 py-3 pr-3 pl-2.5 text-sm font-normal text-gray-600 outline-none dark:!border-white/10 dark:!bg-navy-dark dark:text-white sm:w-full md:w-full">
+            <div className="w-full rounded-xl border border-gray-200 py-3 pr-3 pl-2.5 text-sm font-normal text-gray-600 outline-none dark:!border-white/10 dark:!bg-card-dark dark:text-white sm:w-full md:w-full">
               <select
-                className="text-lightFourth w-full rounded-xl pr-4 text-sm outline-none dark:!bg-navy-dark dark:text-white"
+                className="text-lightFourth w-full rounded-xl pr-4 text-sm outline-none dark:!bg-card-dark dark:text-white"
                 name=""
                 id="color"
               >
@@ -80,7 +80,7 @@ const ProductInfo = () => {
             </label>
             <div className="w-full rounded-xl border border-gray-200 py-3 pr-3 pl-2.5 text-sm font-normal text-gray-600 outline-none dark:!border-white/10 sm:w-full md:w-full">
               <select
-                className="text-lightFourth w-full rounded-xl pr-4 text-sm outline-none dark:!bg-navy-dark dark:text-white"
+                className="text-lightFourth w-full rounded-xl pr-4 text-sm outline-none dark:!bg-card-dark dark:text-white"
                 name=""
                 id="quantity"
               >

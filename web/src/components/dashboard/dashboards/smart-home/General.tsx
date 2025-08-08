@@ -23,7 +23,7 @@ const General = () => {
           <MdOutlineLocationOn />
         </p>
         <select
-          className="bg-none text-sm font-bold text-gray-600 dark:bg-navy-dark"
+          className="bg-none text-sm font-bold text-gray-600 dark:bg-card-dark"
           name=""
           id=""
         >

@@ -69,8 +69,8 @@ function ForgotPassword() {
             <InputField
               variant="auth"
               extra="mb-6"
-              label="Email*"
-              placeholder="mail@example.com"
+              label=""
+              placeholder="Email"
               id="email"
               type="email"
               value={email}

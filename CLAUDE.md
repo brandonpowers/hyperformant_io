@@ -342,19 +342,19 @@ The main CLI (`src/cli.ts`) handles:
 
 ## Core Services & Infrastructure
 
-### Wasp Backend Services
+### Next.js Backend Services
 
-**PDF Dashboard Exports** (Wasp actions):
+**PDF Dashboard Exports** (Next.js API routes):
 
 - React-PDF generation for user dashboard exports
 - Analytics reports and data visualizations
 - User-initiated downloads and email delivery
 - Authentication and user-specific data handling
 
-**User Management & Data Operations** (Wasp actions/queries):
+**User Management & Data Operations** (Next.js API routes + Hono):
 
-- Authentication and subscription management
-- Company and report CRUD operations
+- Authentication and subscription management via NextAuth.js
+- Company and report CRUD operations via Hono API routes
 - Dashboard data aggregation and analytics
 - File upload/download and storage management
 
@@ -382,9 +382,9 @@ The main CLI (`src/cli.ts`) handles:
 
 ### Shared Infrastructure
 
-**Database** (PostgreSQL via Wasp/Prisma):
+**Database** (PostgreSQL via Next.js + Prisma):
 
-- Consolidated schema accessible by both Wasp and N8N
+- Consolidated schema accessible by both Next.js and N8N
 - Real-time data sync between frontend and automation workflows
 - Comprehensive audit logging and data integrity
 
@@ -582,3 +582,191 @@ Most components use Horizon UI's styling system:
 - **Colors**: `brand-500`, `navy-700`, `lightPrimary`
 - **Classes**: `linear` for buttons, rounded corners with `rounded-xl`
 - **Dark mode**: All components support dark mode variants
+
+## 🚀 **Modern API Architecture 2025: Protocol-Agnostic System**
+
+### **Core Philosophy: Build APIs That Scale Across All Protocols**
+
+Hyperformant uses the most advanced 2025 API architecture built on **Hono + Zod OpenAPI** - a protocol-agnostic system that supports REST, GraphQL, gRPC, WebSockets, and more from a single codebase. This ensures maximum flexibility, performance, and maintainability.
+
+### **The Hono Advantage: Universal Protocol Support**
+
+**Built on Hono Framework:**
+- **Edge-first**: Runs on Cloudflare Workers, Vercel Edge, Node.js, Bun, Deno
+- **Protocol-agnostic**: Single codebase serves REST, GraphQL, gRPC, WebSockets
+- **TypeScript-native**: Superior type inference and safety
+- **3x Performance**: Faster than Express/Fastify
+- **Auto-generated docs**: OpenAPI 3.1, GraphQL schemas, Proto files
+
+**Development Approach:**
+1. **Zod Schema First**: Define types once, use everywhere
+2. **Hono Router**: Handle all protocols from single definition
+3. **Auto-Generation**: Docs, types, and clients generated automatically
+4. **Protocol Flexibility**: Add REST, GraphQL, gRPC, WebSockets as needed
+
+### **Modern Architecture Stack (2025)**
+
+#### **Hono-Powered Universal API**
+```
+/app/api/[[...route]]/route.ts    # Single route handler for ALL endpoints
+                                  # Supports REST, GraphQL, WebSockets, gRPC
+
+/src/schemas/                     # Zod schemas (single source of truth)
+├── company.schema.ts
+├── report.schema.ts
+├── common.schema.ts
+└── index.ts
+
+/src/routers/                     # Hono routers with OpenAPI
+├── companies.router.ts
+├── reports.router.ts
+├── ai.router.ts
+├── marketing.router.ts
+├── realtime.router.ts           # WebSocket endpoints
+└── index.ts
+
+/generated/                       # Auto-generated from schemas
+├── openapi.json                 # OpenAPI 3.1 spec
+├── schema.graphql               # GraphQL schema
+└── api.proto                    # gRPC proto files
+```
+
+#### **Core API Utilities** (`/src/lib/api/`)
+```typescript
+├── validation.ts      # Zod schemas & request validation
+├── auth.ts           # Authentication middleware
+├── errors.ts         # Unified error handling  
+├── responses.ts      # Standard response formatting
+├── rate-limit.ts     # Rate limiting middleware
+└── openapi.ts        # OpenAPI documentation helpers
+```
+
+#### **API Conventions**
+
+**Request/Response Patterns:**
+```typescript
+// Standard Success Response
+{
+  "data": { /* resource data */ },
+  "meta": { "timestamp": "2024-01-01T00:00:00Z" }
+}
+
+// Standard Error Response  
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid company ID format",
+    "details": { /* validation errors */ }
+  }
+}
+
+// Async Operation Response (202 Accepted)
+{
+  "data": {
+    "id": "task-123",
+    "status": "processing", 
+    "estimatedCompletion": "2024-01-01T00:15:00Z"
+  }
+}
+```
+
+**Authentication:**
+- All `/api/v1/*` endpoints require authentication via NextAuth.js session
+- External API access via JWT tokens with proper scoping
+- Admin endpoints require `isAdmin: true` in session
+
+**Validation:**
+- All request bodies validated with Zod schemas
+- Type-safe request/response interfaces generated from schemas
+- Runtime validation with detailed error messages
+
+**Error Handling:**
+- Consistent error response format across all endpoints
+- Proper HTTP status codes (400, 401, 403, 404, 422, 500)
+- Detailed error messages for development, sanitized for production
+
+#### **OpenAPI Documentation**
+
+**Auto-Generated from JSDoc:**
+```typescript
+/**
+ * @openapi
+ * /api/v1/companies:
+ *   post:
+ *     summary: Create a new company
+ *     tags: [Companies]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [name]
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 description: Company name
+ */
+export async function POST(request: NextRequest) {
+  // Implementation...
+}
+```
+
+**Documentation Endpoints:**
+- `GET /api/openapi.json` - Machine-readable OpenAPI specification
+- Public developer portal with interactive docs
+- Automated code sample generation
+- Postman/Insomnia collection export
+
+#### **Internal vs External API Separation**
+
+**Public APIs** (`/api/v1/`):
+- ✅ Well-documented with OpenAPI specs
+- ✅ Versioned and backward-compatible
+- ✅ Rate-limited and secured
+- ✅ Suitable for partner integrations
+- ✅ Comprehensive input validation
+- ✅ Standardized error handling
+
+**Internal APIs** (`/api/internal/` - only if absolutely necessary):
+- For dashboard-specific operations that don't fit public API patterns
+- Should be minimized - prefer public APIs when possible
+- Not documented in public OpenAPI spec
+
+#### **Migration Strategy**
+
+**Phase 1: Foundation** (Current Priority)
+1. Create API utilities and middleware
+2. Establish versioned API structure (`/api/v1/`)  
+3. Migrate companies endpoint with proper validation
+4. Set up OpenAPI auto-generation
+
+**Phase 2: Core Domains** (Progressive)
+- Reports API (`/api/v1/reports/`)
+- AI Intelligence API (`/api/v1/ai/`)
+- Marketing API (`/api/v1/marketing/`)
+- Analytics API (`/api/v1/analytics/`)
+
+**Phase 3: Advanced Features** (As-Needed)
+- Webhooks system
+- Advanced permissions & scoping
+- Rate limiting tiers
+- API analytics & monitoring
+
+### **Benefits of API-First Approach**
+
+✅ **Consistency**: Same APIs power dashboard and external integrations  
+✅ **Developer Experience**: Clean, discoverable APIs with great documentation  
+✅ **Partner Enablement**: Easy for partners to integrate with Hyperformant  
+✅ **Future-Proof**: Versioned APIs allow safe evolution  
+✅ **Quality**: Well-defined APIs are easier to test and maintain  
+✅ **Monitoring**: Clear API boundaries enable better observability
+
+### **Development Rules**
+
+1. **Always start with API design** for new features
+2. **Use our own APIs** in dashboard React components  
+3. **Document as you build** using JSDoc → OpenAPI pattern
+4. **Validate everything** with Zod schemas for type safety
+5. **Version carefully** - maintain backward compatibility in `/api/v1/`
+6. **Test thoroughly** - APIs are the contract with our users

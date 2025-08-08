@@ -33,7 +33,10 @@ const Dropdown = (props: {
 
   return (
     <div ref={wrapperRef} className="relative flex w-full">
-      <div className="flex w-full" onMouseDown={() => setOpenWrapper(!openWrapper)}>
+      <div
+        className="flex w-full"
+        onMouseDown={() => setOpenWrapper(!openWrapper)}
+      >
         {button}
       </div>
       <div

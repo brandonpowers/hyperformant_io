@@ -112,8 +112,8 @@ function ResetPassword() {
             <InputField
               variant="auth"
               extra="mb-3"
-              label="New Password*"
-              placeholder="Min 8 characters"
+              label=""
+              placeholder="New Password"
               id="password"
               type="password"
               value={password}
@@ -123,8 +123,8 @@ function ResetPassword() {
             <InputField
               variant="auth"
               extra="mb-6"
-              label="Confirm Password*"
-              placeholder="Min 8 characters"
+              label=""
+              placeholder="Confirm Password"
               id="confirmPassword"
               type="password"
               value={confirmPassword}

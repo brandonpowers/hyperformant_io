@@ -9,11 +9,11 @@ interface LegalLayoutProps {
   lastUpdated: string;
 }
 
-export default function LegalLayout({ 
-  children, 
-  title, 
-  subtitle, 
-  lastUpdated 
+export default function LegalLayout({
+  children,
+  title,
+  subtitle,
+  lastUpdated,
 }: LegalLayoutProps) {
   return (
     <>
@@ -36,7 +36,7 @@ export default function LegalLayout({
             </div>
           </div>
         </div>
-        
+
         <div className="bg-white dark:bg-gray-800">
           <div className="mx-auto max-w-4xl px-6 py-16 lg:px-8">
             <div className="prose prose-lg prose-gray max-w-none dark:prose-invert">

@@ -40,7 +40,7 @@ const Details = () => {
               </label>
               <div className="w-full rounded-xl border border-gray-200 p-3 text-sm font-normal text-gray-600 outline-none dark:!border-white/10 sm:w-full md:w-full">
                 <select
-                  className="text-lightFourth w-full rounded-xl bg-white pr-4 text-sm outline-none dark:bg-navy-dark dark:text-white"
+                  className="text-lightFourth w-full rounded-xl pr-4 text-sm outline-none bg-card-light dark:bg-card-dark dark:text-white"
                   name=""
                   id="currency"
                 >

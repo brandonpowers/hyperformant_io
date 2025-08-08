@@ -25,7 +25,7 @@ export default function Admin({ children }: { children: React.ReactNode }) {
   const context = useContext(ConfiguratorContext);
   const { mini, theme, setTheme, setMini } = context;
   return (
-    <div className="flex h-full w-full bg-background-100 dark:bg-background-900">
+    <div className="flex h-full w-full bg-gradient-main">
       <Sidebar
         routes={routes}
         open={open}
@@ -36,10 +36,10 @@ export default function Admin({ children }: { children: React.ReactNode }) {
         variant="admin"
       />
       {/* Navbar & Main Content */}
-      <div className="h-full w-full font-dm dark:bg-navy-900">
+      <div className="h-full w-full font-dm">
         {/* Main Content */}
         <main
-          className={`mx-2.5 flex-none transition-all dark:bg-navy-900 md:pr-2 ${
+          className={`mx-2.5 flex-none transition-all md:pr-2 ${
             mini === false
               ? 'xl:ml-[313px]'
               : mini === true && hovered === true

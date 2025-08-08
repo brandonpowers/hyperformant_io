@@ -159,7 +159,25 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session?.user && token) {
-        session.user.id = token.id as string;
+        const userId = (token.sub || token.id) as string;
+
+        // Validate that the user exists in the database
+        const userExists = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true },
+        });
+
+        // If user doesn't exist in database, invalidate the session
+        if (!userExists) {
+          console.log(
+            'User from session not found in database, invalidating session:',
+            userId,
+          );
+          // Returning null clears the session and NextAuth will redirect to sign-in
+          return null as any;
+        }
+
+        session.user.id = userId;
         // Add any additional user properties from token
         session.user.isAdmin = (token.isAdmin as boolean) || false;
         session.user.subscriptionStatus = token.subscriptionStatus as string;

@@ -3,7 +3,7 @@ import Card from 'components/ui/card';
 
 const Upload = () => {
   return (
-    <Card className="grid h-full w-full grid-cols-1 gap-3 rounded-[20px] bg-white bg-clip-border p-3 font-dm shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none 2xl:grid-cols-11">
+    <Card className="grid h-full w-full grid-cols-1 gap-3 rounded-[20px] bg-clip-border p-3 font-dm shadow-3xl shadow-shadow-500 bg-card-light dark:!bg-card-dark dark:shadow-none 2xl:grid-cols-11">
       <div className="col-span-5 h-full w-full rounded-xl bg-lightPrimary dark:!bg-navy-700 2xl:col-span-6">
         <button className="flex h-full w-full flex-col items-center justify-center rounded-xl border-[2px] border-dashed border-gray-200 py-3 dark:!border-navy-700 lg:pb-0">
           <MdFileUpload className="text-[80px] text-brand-500 dark:text-white" />
@@ -16,7 +16,7 @@ const Upload = () => {
         </button>
       </div>
 
-      <div className="col-span-5 flex h-full w-full flex-col justify-center overflow-hidden rounded-xl bg-white pl-3 pb-4 dark:!bg-navy-dark">
+      <div className="col-span-5 flex h-full w-full flex-col justify-center overflow-hidden rounded-xl pl-3 pb-4 bg-card-light dark:!bg-card-dark">
         <h4 className="text-left text-xl font-bold leading-9 text-navy-700 dark:text-white">
           Complete Your Profile
         </h4>

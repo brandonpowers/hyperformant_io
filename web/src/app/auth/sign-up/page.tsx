@@ -151,8 +151,8 @@ function SignUpDefault() {
                 <InputField
                   variant="auth"
                   extra="mb-3"
-                  label="First Name*"
-                  placeholder="John"
+                  label=""
+                  placeholder="First name"
                   id="firstname"
                   type="text"
                   value={formData.firstName}
@@ -164,8 +164,8 @@ function SignUpDefault() {
                 <InputField
                   variant="auth"
                   extra="mb-3"
-                  label="Last Name*"
-                  placeholder="Doe"
+                  label=""
+                  placeholder="Last name"
                   id="lastname"
                   type="text"
                   value={formData.lastName}
@@ -177,8 +177,8 @@ function SignUpDefault() {
             <InputField
               variant="auth"
               extra="mb-3"
-              label="Email*"
-              placeholder="mail@simmmple.com"
+              label=""
+              placeholder="Email"
               id="email"
               type="email"
               value={formData.email}
@@ -188,8 +188,8 @@ function SignUpDefault() {
             <InputField
               variant="auth"
               extra="mb-3"
-              label="Password*"
-              placeholder="Min 8 characters"
+              label=""
+              placeholder="Password"
               id="password"
               type="password"
               value={formData.password}

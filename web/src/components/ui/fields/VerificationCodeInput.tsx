@@ -95,7 +95,7 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
     e.preventDefault();
     const pastedData = e.clipboardData
       .getData('text/plain')
-      .replace(/\\D/g, '')
+      .replace(/\D/g, '')
       .slice(0, length);
 
     if (pastedData.length === length) {
@@ -145,7 +145,7 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
             }
             ${
               disabled
-                ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-navy-dark'
+                ? 'bg-gray-100 cursor-not-allowed opacity-50 dark:bg-card-dark'
                 : 'bg-white dark:bg-navy-700'
             }
             text-navy-700 dark:text-white

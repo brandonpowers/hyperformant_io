@@ -29,7 +29,7 @@ const MiniStatistics = (props: {
   } = props;
   return (
     <div
-      className={`flex ${cardBg} justify-between rounded-[20px] bg-clip-border p-6 font-dm shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none`}
+      className={`flex ${cardBg} justify-between rounded-[20px] bg-clip-border p-6 font-dm shadow-3xl shadow-shadow-500 dark:!bg-card-dark dark:shadow-none`}
     >
       <div>
         <h5 className={`font-dm text-sm font-medium ${titleColor} `}>

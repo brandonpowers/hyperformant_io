@@ -105,7 +105,7 @@ const Courses = () => {
       <div className="h-0 w-0 bg-gray-300 dark:!bg-navy-700 lg:h-[1050px] lg:w-px" />
 
       {/* right section */}
-      <div className="mt-1 flex h-full w-full flex-col items-center rounded-[20px] bg-white px-4 py-4 shadow-2xl shadow-gray-100 dark:!bg-navy-dark dark:shadow-none lg:w-[275px] 3xl:w-[470px]">
+      <div className="mt-1 flex h-full w-full flex-col items-center rounded-[20px] bg-white px-4 py-4 shadow-2xl shadow-gray-100 dark:!bg-card-dark dark:shadow-none lg:w-[275px] 3xl:w-[470px]">
         {/* Calendar */}
         <Card extra={`max-w-full`}>
           <MiniCalendar />

@@ -39,9 +39,9 @@
 ### Prerequisites
 
 - Node.js 18+ and npm 9+
-- [Wasp CLI](https://wasp-lang.dev/docs/quick-start)
-- Docker and Docker Compose
+- Docker and Docker Compose (for N8N workflows)
 - Apollo.io account with API access
+- PostgreSQL database
 
 ### Installation
 
@@ -171,7 +171,7 @@ npm run build:app        # Build Next.js application for production
 npm run deploy           # Deploy application stack to Fly.io
 ```
 
-### Database Operations (via Wasp)
+### Database Operations (via Prisma)
 
 ```bash
 npm run db:migrate       # Run Prisma migrations
@@ -262,7 +262,7 @@ N8N_API_KEY=your-n8n-api-key
 
 ### Service URLs (Development)
 
-- **Wasp App**: http://localhost:3000
+- **Next.js App**: http://localhost:3000
 - **N8N Workflows**: http://localhost:5678 (admin/admin)
 - **Email Testing**: http://localhost:9000
 - **PostgreSQL**: localhost:5432
@@ -313,13 +313,13 @@ Pushing to `main` branch triggers automatic deployment to Fly.io:
 
 ```bash
 git push origin main
-# GitHub Actions deploys Wasp app automatically
+# GitHub Actions deploys Next.js app automatically
 ```
 
 ### Manual Deployment
 
 ```bash
-# Deploy Wasp application
+# Deploy Next.js application
 npm run deploy
 
 # Deploy CLI tools (if needed)
@@ -361,11 +361,11 @@ npm run validate        # Validate JSON configs
 
 ### Common Issues
 
-**Wasp Build Errors**:
+**Next.js Build Errors**:
 
 ```bash
-cd app && wasp clean
-cd app && wasp start
+npm run build     # Check for build errors
+npm run dev       # Restart development server
 ```
 
 **Database Connection Issues**:
@@ -393,7 +393,8 @@ NODE_ENV=development npm run dev:cli health
 
 ### Documentation
 
-- [Wasp Documentation](https://wasp-lang.dev/docs)
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Hono Documentation](https://hono.dev/docs/)
 - [Apollo.io API Docs](https://apolloio.github.io/apollo-api-docs/)
 - [N8N Documentation](https://docs.n8n.io/)
 
@@ -409,4 +410,4 @@ This project is proprietary software. All rights reserved.
 
 ---
 
-**Hyperformant leverages modern full-stack frameworks (Wasp, Prisma, Postgres) and proven platforms (Apollo.io, N8N) to deliver automated market intelligence at scale.** 🚀
+**Hyperformant leverages modern full-stack frameworks (Next.js, Hono, Prisma, PostgreSQL) and proven platforms (Apollo.io, N8N) to deliver automated market intelligence at scale.** 🚀

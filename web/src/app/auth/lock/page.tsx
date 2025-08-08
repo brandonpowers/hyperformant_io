@@ -101,8 +101,8 @@ function Lock() {
             <InputField
               variant="auth"
               extra="mb-6"
-              label="Password*"
-              placeholder="Enter your password"
+              label=""
+              placeholder="Password"
               id="password"
               type="password"
               value={password}

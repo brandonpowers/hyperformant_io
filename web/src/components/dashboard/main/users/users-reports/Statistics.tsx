@@ -6,7 +6,7 @@ const Statistics = (props: {
 }) => {
   const { icon, title, value, endContent } = props;
   return (
-    <div className="flex h-[88px] w-full justify-between rounded-[20px] bg-white bg-clip-border px-4 py-3 shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none">
+    <div className="flex h-[88px] w-full justify-between rounded-[20px] bg-clip-border px-4 py-3 shadow-3xl shadow-shadow-500 bg-card-light dark:!bg-card-dark dark:shadow-none">
       <div className="flex items-center gap-3">
         {icon}
         <div>

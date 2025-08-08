@@ -64,7 +64,7 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
           </div>
           {/* Free Horizon Card - responsive to viewport height */}
           {showCard && (
-            <div className="mb-[44px] mt-[28px] flex-shrink-0">
+            <div className="mb-[28px] mt-[28px] flex-shrink-0">
               <div className="flex justify-center">
                 <SidebarCard mini={mini} hovered={hovered} />
               </div>

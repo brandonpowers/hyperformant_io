@@ -37,7 +37,7 @@ const UserReport = () => {
               <div className="relative flex h-14 w-14 items-center justify-center rounded-full">
                 <Image fill style={{ objectFit: 'contain' }} src={Usa} alt="" />
               </div>
-              <select className="text-xs text-gray-600 dark:bg-navy-dark" />
+              <select className="text-xs text-gray-600 dark:bg-card-dark" />
             </div>
           }
           title="Location"

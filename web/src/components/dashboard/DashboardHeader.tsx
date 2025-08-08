@@ -14,7 +14,7 @@ const SiteHeader = () => {
   );
 
   return (
-    <header className="w-full bg-white dark:bg-navy-dark shadow-sm border-b border-gray-200 dark:border-navy-700 z-50">
+    <header className="w-full bg-card-light dark:bg-card-dark shadow-sm border-b border-gray-200 dark:border-navy-700 z-50">
       <div className="flex items-center justify-between px-6 py-6">
         {/* Logo and Brand */}
         <div className="flex items-center space-x-4">
@@ -48,7 +48,7 @@ const SiteHeader = () => {
 
           {/* Theme Toggle */}
           <button
-            className="flex cursor-pointer items-center justify-center rounded-lg bg-gray-100 p-2 text-gray-700 transition duration-200 hover:bg-gray-200 dark:bg-navy-700 dark:text-yellow-500 dark:hover:bg-navy-600"
+            className="flex cursor-pointer items-center justify-center rounded-lg bg-gray-100 p-2 text-gray-500 transition duration-200 hover:bg-navy-900 dark:bg-navy-900 dark:text-yellow-500 dark:hover:bg-gray-100"
             onClick={() => {
               if (darkmode) {
                 document.body.classList.remove('dark');

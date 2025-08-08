@@ -12,7 +12,7 @@ const SettingsProduct = () => {
       {/* left side */}
       <div className="col-span-2  flex h-full w-full flex-col gap-5 xl:col-span-1">
         {/* Chair */}
-        <div className="relative flex w-full items-center justify-center rounded-[20px] bg-white bg-cover bg-clip-border shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none xl:h-[400px] 2xl:h-[420px] 3xl:h-[460px]">
+        <div className="relative flex w-full items-center justify-center rounded-[20px] bg-white bg-cover bg-clip-border shadow-3xl shadow-shadow-500 dark:!bg-card-dark dark:shadow-none xl:h-[400px] 2xl:h-[420px] 3xl:h-[460px]">
           <Image fill src={ChairDef} className="rounded-2xl" alt="" />
         </div>
         <div>

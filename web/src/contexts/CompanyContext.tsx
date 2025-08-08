@@ -40,26 +40,35 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/companies');
+      const response = await fetch('/api/v1/companies');
+
       if (response.ok) {
         const data = await response.json();
-        setCompanies(data);
+        // Extract companies from Hono API response format
+        // API returns: { data: [...companies...], meta: {...} }
+        const companies = data.data || [];
+        setCompanies(companies);
 
         // Set selected company from localStorage or use first company
         const savedCompanyId = localStorage.getItem('selectedCompanyId');
+
         if (savedCompanyId) {
-          const savedCompany = data.find(
+          const savedCompany = companies.find(
             (c: Company) => c.id === savedCompanyId,
           );
           if (savedCompany) {
             setSelectedCompanyState(savedCompany);
-          } else if (data.length > 0) {
-            setSelectedCompanyState(data[0]);
-            localStorage.setItem('selectedCompanyId', data[0].id);
+          } else if (companies.length > 0) {
+            setSelectedCompanyState(companies[0]);
+            localStorage.setItem('selectedCompanyId', companies[0].id);
+          } else {
+            localStorage.removeItem('selectedCompanyId');
           }
-        } else if (data.length > 0) {
-          setSelectedCompanyState(data[0]);
-          localStorage.setItem('selectedCompanyId', data[0].id);
+        } else if (companies.length > 0) {
+          setSelectedCompanyState(companies[0]);
+          localStorage.setItem('selectedCompanyId', companies[0].id);
+        } else {
+          localStorage.removeItem('selectedCompanyId');
         }
       }
     } catch (error) {

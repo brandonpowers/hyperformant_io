@@ -1,11 +1,14 @@
 # OAuth Setup Guide for Hyperformant
 
+This guide covers setting up OAuth authentication using NextAuth.js in our Next.js application.
+
 ## Google OAuth Configuration
 
 ### Prerequisites
 
 - A Google Cloud Platform account
 - A project in Google Cloud Console
+- Next.js application running with NextAuth.js
 
 ### Setup Steps
 
@@ -32,86 +35,80 @@
      - Development: `http://localhost:3000`
      - Production: `https://your-domain.com`
    - Authorized redirect URIs:
-     - Development: `http://localhost:3001/auth/google/callback`
-     - Production: `https://your-domain.com/auth/google/callback`
+     - Development: `http://localhost:3000/api/auth/callback/google`
+     - Production: `https://your-domain.com/api/auth/callback/google`
    - Click "Create"
 
 4. **Save Credentials**
    - Copy the Client ID and Client Secret
-   - Add them to your `.env.server` file:
+   - Add them to your `.env.local` file:
      ```env
      GOOGLE_CLIENT_ID="your-client-id-here"
      GOOGLE_CLIENT_SECRET="your-client-secret-here"
      ```
 
+### NextAuth.js Configuration
+
+The OAuth providers are already configured in `/src/app/api/auth/[...nextauth]/route.ts`. Google OAuth will work automatically once you've set the environment variables.
+
 ### Testing Google OAuth
 
-1. Start the Wasp development server:
-
+1. Start the Next.js development server:
    ```bash
-   wasp start
+   npm run dev
    ```
 
 2. Navigate to the login page
 3. Click "Continue with Google"
 4. Complete the Google authentication flow
 
-## Microsoft OAuth via Azure AD (Alternative Options)
+## Microsoft OAuth via Azure AD
 
-Since Wasp doesn't directly support Microsoft OAuth, here are alternative approaches:
+NextAuth.js supports Microsoft/Azure AD out of the box.
 
-### Option 1: Use Keycloak (Recommended)
+### Setup Steps
 
-Keycloak can act as an identity broker for Microsoft accounts:
+1. **Register Application in Azure AD**
+   - Go to [Azure Portal](https://portal.azure.com/)
+   - Navigate to "Azure Active Directory" > "App registrations"
+   - Click "New registration"
+   - Name: "Hyperformant"
+   - Account types: Choose appropriate option
+   - Redirect URI: `http://localhost:3000/api/auth/callback/azure-ad` (dev)
 
-1. **Set up Keycloak**
-   - Deploy Keycloak (Docker, cloud, or on-premise)
-   - Create a realm for your application
+2. **Configure Application**
+   - Note the Application (client) ID
+   - Go to "Certificates & secrets"
+   - Create a new client secret
+   - Note the secret value
 
-2. **Configure Microsoft as Identity Provider in Keycloak**
-   - In Keycloak admin, go to Identity Providers
-   - Add Microsoft as a provider
-   - Configure with your Azure AD credentials
-
-3. **Configure Wasp to use Keycloak**
-   ```wasp
-   auth: {
-     methods: {
-       keycloak: {
-         configFn: import { getKeycloakAuthConfig } from "@src/auth/keycloak",
-         userSignupFields: import { getKeycloakUserFields } from "@src/auth/keycloak",
-       }
-     }
-   }
+3. **Add Environment Variables**
+   ```env
+   AZURE_AD_CLIENT_ID="your-application-id"
+   AZURE_AD_CLIENT_SECRET="your-client-secret"
+   AZURE_AD_TENANT_ID="your-tenant-id"
    ```
 
-### Option 2: Custom Implementation
-
-Implement a custom OAuth flow:
-
-1. Create API endpoints for Microsoft OAuth
-2. Use Microsoft's OAuth libraries
-3. Handle the authentication flow manually
-4. Create sessions compatible with Wasp's auth system
-
-### Option 3: Use Auth0 or Similar
-
-Consider using a third-party authentication service that supports multiple providers and can be integrated with Wasp.
+4. **Update NextAuth Configuration**
+   Add the Azure AD provider to your NextAuth configuration if not already present.
 
 ## Environment Variables Reference
 
-Add these to your `.env.server` file:
+Add these to your `.env.local` file:
 
 ```env
-# Google OAuth (required if using Google auth)
+# NextAuth.js Configuration
+NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_SECRET="your-random-secret-key"
+
+# Google OAuth
 GOOGLE_CLIENT_ID="your-google-client-id"
 GOOGLE_CLIENT_SECRET="your-google-client-secret"
 
-# Optional: Keycloak (if using for Microsoft auth)
-KEYCLOAK_URL="https://your-keycloak-instance.com"
-KEYCLOAK_REALM="your-realm"
-KEYCLOAK_CLIENT_ID="your-client-id"
-KEYCLOAK_CLIENT_SECRET="your-client-secret"
+# Microsoft/Azure AD (optional)
+AZURE_AD_CLIENT_ID="your-azure-client-id"
+AZURE_AD_CLIENT_SECRET="your-azure-client-secret"
+AZURE_AD_TENANT_ID="your-tenant-id"
 ```
 
 ## Troubleshooting
@@ -119,23 +116,28 @@ KEYCLOAK_CLIENT_SECRET="your-client-secret"
 ### Common Issues
 
 1. **"Error: GOOGLE_CLIENT_ID is required"**
-   - Ensure both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env.server`
-   - Restart the Wasp server after adding environment variables
+   - Ensure both `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET` are set in `.env.local`
+   - Restart the development server after adding environment variables
 
 2. **"Redirect URI mismatch"**
    - Verify the redirect URI in Google Console matches exactly
+   - For NextAuth.js, use: `/api/auth/callback/google`
    - Include the port number for localhost
-   - Check for trailing slashes
 
 3. **"Access blocked: This app's request is invalid"**
    - Ensure OAuth consent screen is configured
    - Add test users if app is in development mode
    - Verify all required scopes are added
 
+4. **NextAuth.js Session Issues**
+   - Ensure `NEXTAUTH_SECRET` is set
+   - Check that `NEXTAUTH_URL` matches your application URL
+   - Verify database connection for session storage
+
 ## Security Best Practices
 
 1. **Never commit credentials**
-   - Keep `.env.server` in `.gitignore`
+   - Keep `.env.local` in `.gitignore`
    - Use environment variables in production
 
 2. **Use HTTPS in production**
@@ -150,10 +152,27 @@ KEYCLOAK_CLIENT_SECRET="your-client-secret"
    - Rotate client secrets periodically
    - Monitor for suspicious activity
 
+## Production Deployment
+
+When deploying to production:
+
+1. **Update Environment Variables**
+   - Set production URLs in OAuth console
+   - Update `NEXTAUTH_URL` to production domain
+   - Generate strong `NEXTAUTH_SECRET`
+
+2. **Update Redirect URIs**
+   - Add production callback URLs to OAuth providers
+   - Remove development URLs from production apps
+
+3. **Database Configuration**
+   - Ensure database is accessible for session storage
+   - Configure connection pooling appropriately
+
 ## Next Steps
 
 1. Test authentication flow thoroughly
-2. Implement proper error handling
-3. Add user profile management
-4. Consider implementing refresh tokens
-5. Set up monitoring for failed auth attempts
+2. Implement proper error handling in UI
+3. Add user profile management features
+4. Set up monitoring for failed auth attempts
+5. Consider implementing role-based access control

@@ -8,7 +8,7 @@ function MiniStatistics(props: {
 }) {
   const { name, value, icon, iconBg } = props;
   return (
-    <div className="flex w-full items-center gap-3 rounded-[20px] bg-white bg-clip-border px-[18px] py-4 shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none">
+    <div className="flex w-full items-center gap-3 rounded-[20px] bg-clip-border px-[18px] py-4 shadow-3xl shadow-shadow-500 bg-card-light dark:!bg-card-dark dark:shadow-none">
       <div
         className={`flex h-[56px] w-14 items-center justify-center rounded-full text-[33px] text-brand-500 dark:!bg-navy-700 dark:text-white ${iconBg} `}
       >

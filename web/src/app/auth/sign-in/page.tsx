@@ -160,8 +160,8 @@ function SignInDefault() {
             <InputField
               variant="auth"
               extra="mb-3"
-              label="Email*"
-              placeholder="mail@simmmple.com"
+              label=""
+              placeholder="Email"
               id="email"
               type="email"
               value={formData.email}
@@ -170,8 +170,8 @@ function SignInDefault() {
             <InputField
               variant="auth"
               extra="mb-3"
-              label="Password*"
-              placeholder="Min. 8 characters"
+              label=""
+              placeholder="Password"
               id="password"
               type="password"
               value={formData.password}
@@ -193,12 +193,6 @@ function SignInDefault() {
                   Keep me logged In
                 </label>
               </div>
-              <a
-                className="text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-                href="/auth/forgot-password"
-              >
-                Forgot password?
-              </a>
             </div>
             <button
               type="submit"
@@ -208,12 +202,20 @@ function SignInDefault() {
               {isLoading ? 'Signing in...' : 'Sign In'}
             </button>
             <div className="mt-3">
-              <a
-                href="/auth/sign-up"
-                className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-              >
-                Create an Account
-              </a>
+              <div className="flex items-center justify-between">
+                <a
+                  href="/auth/sign-up"
+                  className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+                >
+                  Create an Account
+                </a>
+                <a
+                  className="text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+                  href="/auth/forgot-password"
+                >
+                  Forgot password?
+                </a>
+              </div>
             </div>
           </form>
         </Card>

@@ -3,7 +3,7 @@ import ReceiptTable from './ReceiptTable';
 
 const Content = () => {
   return (
-    <div className="w-full bg-white pb-[57px] dark:!bg-navy-dark">
+    <div className="w-full pb-[57px] bg-card-light dark:!bg-card-dark">
       <div>
         <ReceiptTable tableData={tableDataReceipt} />
       </div>

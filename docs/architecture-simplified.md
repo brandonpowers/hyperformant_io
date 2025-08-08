@@ -1,190 +1,120 @@
-# Simplified Hyperformant Architecture
+# Hyperformant Architecture (Current)
 
 ## 🎯 **Architecture Overview**
 
-Hyperformant now uses a **simplified, Wasp-first architecture** with native PostgreSQL and Fly.io deployment.
+Hyperformant uses a **Next.js-first architecture** with PostgreSQL database and N8N orchestration for automation workflows.
 
-### **Local Development:**
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Wasp App      │    │   PostgreSQL    │    │      n8n        │
-│ (Frontend+API)  │◄──►│   (Database)    │◄──►│  (Workflows)    │
-│ localhost:3000  │    │ localhost:5432  │    │ localhost:5678  │
-└─────────────────┘    └─────────────────┘    └─────────────────┘
-         │                       │                       │
-         └───────────────────────┼───────────────────────┘
-                                 │
-                    ┌─────────────────┐
-                    │   Inbucket      │
-                    │ (Email Testing) │
-                    │ localhost:9000  │
-                    └─────────────────┘
-```
-
-### **Production (Fly.io):**
+## High-Level Architecture
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│  Wasp App       │    │ Fly PostgreSQL  │    │   Fly n8n       │
-│ hyperformant     │◄──►│ hyperformant-db  │◄──►│ hyperformant-n8n │
-│ .fly.dev        │    │ .fly.dev        │    │ .fly.dev        │
+│   Next.js App   │    │   PostgreSQL    │    │      N8N        │
+│                 │    │                 │    │                 │
+│ • Frontend UI   │◄──►│ • User Data     │◄──►│ • Workflows     │
+│ • API Routes    │    │ • Companies     │    │ • AI Agents     │
+│ • Authentication│    │ • Reports       │    │ • Integrations  │
+│ • Hono API      │    │ • Sessions      │    │ • Email/PDF     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🏗️ **Component Responsibilities**
+## Production Architecture
 
-### **1. Wasp Application** (`app/`)
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  Next.js App    │    │ Fly PostgreSQL  │    │   N8N Cloud     │
+│                 │    │                 │    │                 │
+│ • Vercel Deploy │◄──►│ • Managed DB    │◄──►│ • Cloud Hosted  │
+│ • Auto-scaling  │    │ • Backups       │    │ • Workflows     │
+│ • Edge Network  │    │ • Monitoring    │    │ • Integrations  │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
 
-- **Frontend**: React-based user interface
-- **Backend**: Node.js API with Prisma ORM
-- **Authentication**: Built-in email/password + social auth
-- **Database**: Prisma migrations and queries
-- **User Management**: Complete user lifecycle
+## Component Details
+
+### **1. Next.js Application** (`web/`)
+
+**Frontend Responsibilities:**
+- React dashboard and user interface
+- NextAuth.js authentication system
+- Company and report management UI
+- Real-time data visualization
+
+**Backend Responsibilities:**
+- Hono-powered API routes at `/api/v1/*`
+- Database operations via Prisma ORM
+- User session management
+- File upload/download handling
 
 ### **2. PostgreSQL Database**
 
-- **Single Source of Truth**: All data in one database
-- **Wasp-Managed**: Prisma migrations and schema
-- **Shared Access**: Both Wasp and n8n connect to same DB
-- **Local**: Docker container for development
-- **Production**: Fly.io managed PostgreSQL
+**Database Schema:**
+- User accounts and authentication
+- Company and report data
+- Audit logs and analytics
+- Session storage for NextAuth.js
 
-### **3. n8n Workflow Engine**
+**Management:**
+- Prisma ORM for type-safe database operations
+- Database migrations via Prisma
+- Shared access between Next.js and N8N
 
-- **Automation**: Market intelligence workflows
-- **Apollo Integration**: API calls and data processing
-- **AI Orchestration**: Coordinates multiple AI services
-- **Database Integration**: Writes results to shared PostgreSQL
-- **Local**: Docker container
-- **Production**: Fly.io app instance
+### **3. N8N Orchestration**
 
-## 📊 **Database Schema**
+**Automation Workflows:**
+- Apollo.io CRM integration and data sync
+- AI agent coordination for market intelligence
+- Email delivery with PDF report generation
+- Social media sentiment analysis
+- Scheduled data collection and processing
 
-### **Single Prisma Schema** (`app/app/schema.prisma`)
-
-All tables consolidated into one schema:
-
-#### **User Management**
-
-- `User` - Authentication and profiles
-- `Task`, `File`, `GptResponse` - User data
-- `ContactFormMessage` - Support
-
-#### **Market Intelligence**
-
-- `Company` - Company profiles with Apollo data
-- `MarketReport` - Generated market analysis reports
-- `MarketData` - Flexible market research data
-- `CompetitorAnalysis` - Competitive positioning
-- `MarketIntelligence` - Sentiment analysis results
-
-#### **Apollo.io Integration**
-
-- `ApolloSmartList` - Smart list tracking
-- `ApolloSequence` - Email sequence management
-
-#### **Analytics & Metrics**
-
-- `DailyStats` - User and revenue metrics
-- `DailyBusinessMetrics` - Business KPIs
-- `PageViewSource` - Traffic analytics
-- `Log` - System logging
-
-#### **n8n Integration**
-
-- `WorkflowExecution` - Workflow run tracking
-- `SystemConfig` - Configuration management
-
-## 🚀 **Deployment Strategy**
-
-### **Development Workflow**
+## Development Workflow
 
 ```bash
-# 1. Start infrastructure
-docker-compose up -d
+# 1. Start Next.js application
+npm run dev
 
-# 2. Start Wasp application
-cd hyperformant-app
-wasp start
+# 2. Run database migrations
+npm run db:migrate
 
-# 3. n8n is available at localhost:5678
+# 3. Open database studio (optional)
+npm run db:studio
 ```
 
-### **Production Deployment**
+## Deployment
 
+**Next.js App:**
 ```bash
-# Automated via GitHub Actions on push to main
-git push origin main
+# Deploy to Vercel (recommended)
+vercel deploy
 
-# Manual deployment
-cd hyperformant-app
-wasp deploy fly
+# Or build for self-hosting
+npm run build
+npm start
 ```
 
-### **Fly.io Apps**
+**Services:**
+1. **hyperformant** - Next.js application on Vercel
+2. **database** - PostgreSQL on Fly.io or managed provider
+3. **n8n** - N8N Cloud for workflow orchestration
 
-1. **hyperformant** - Main Wasp application
-2. **hyperformant-n8n** - n8n workflow engine
-3. **hyperformant-db** - PostgreSQL database
+## Environment Configuration
 
-## 🔧 **Configuration Management**
+**Required Environment Variables:**
+- `DATABASE_URL` - PostgreSQL connection string
+- `NEXTAUTH_SECRET` - NextAuth.js session secret
+- `NEXTAUTH_URL` - Application URL for OAuth callbacks
+- `N8N_WEBHOOK_URL` - N8N webhook endpoint for integrations
 
-### **Environment Files**
+**Database Connection:**
+- Same `DATABASE_URL` used by both Next.js and N8N
+- Prisma handles connection pooling and migrations
+- N8N connects directly for workflow operations
 
-- `.env.development` - Local development settings
-- `.env.production` - Production configuration template
-- `app/.env` - Wasp-specific environment
+## Technology Stack
 
-### **Shared Configuration**
-
-- **DATABASE_URL**: Same for Wasp and n8n
-- **API Keys**: Shared across all services
-- **Feature Flags**: Consistent environment settings
-
-## ✅ **Benefits of Simplified Architecture**
-
-### **Reduced Complexity**
-
-- ❌ **Removed**: Supabase Auth, Kong Gateway, Multiple JWT systems
-- ✅ **Simplified**: Single database, single auth system, single deployment
-
-### **Better Developer Experience**
-
-- **One Command Setup**: `./scripts/setup-dev.sh`
-- **Single Migration System**: Prisma handles everything
-- **Unified Environment**: Shared configuration across services
-
-### **Production Ready**
-
-- **Fly.io Native**: Optimized for Fly.io's platform
-- **Auto-scaling**: Built-in horizontal scaling
-- **Monitoring**: Integrated logging and metrics
-
-### **Cost Effective**
-
-- **Fewer Services**: Reduced hosting costs
-- **Shared Database**: No redundant data storage
-- **Efficient Scaling**: Pay only for what you use
-
-## 📈 **Scaling Considerations**
-
-### **Database Scaling**
-
-- **Vertical**: Increase Fly.io PostgreSQL instance size
-- **Read Replicas**: Add read-only replicas for analytics
-- **Connection Pooling**: Built into Fly.io PostgreSQL
-
-### **Application Scaling**
-
-- **Wasp App**: Auto-scaling via Fly.io machines
-- **n8n**: Scale based on workflow volume
-- **Background Jobs**: Queue-based processing for heavy tasks
-
-### **Monitoring**
-
-- **Fly.io Metrics**: Built-in monitoring and alerting
-- **Application Logs**: Centralized logging
-- **Database Performance**: Query optimization with Prisma
-
-This simplified architecture provides all the functionality of the previous complex setup while being significantly easier to develop, deploy, and maintain.
+- **Frontend & Backend**: Next.js full-stack framework
+- **API Routing**: Hono framework with TypeScript
+- **Authentication**: NextAuth.js with database sessions
+- **Database**: PostgreSQL with Prisma ORM
+- **Orchestration**: N8N Cloud workflows
+- **Deployment**: Vercel (frontend), N8N Cloud (workflows)

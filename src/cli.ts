@@ -29,13 +29,10 @@ const c = {
 // Service URLs
 const services = {
   nextjs: 'http://localhost:3000',
-  nextjsApi: 'http://localhost:3000/api',
+  nextjsApi: 'http://localhost:3000/api/v1',
   n8n: 'http://localhost:5678',
   email: 'http://localhost:9000',
   prismaStudio: 'http://localhost:5555',
-  openapi: 'http://localhost:3000/api/openapi.json',
-  redocs: 'http://localhost:3000/api/docs',
-  swagger: 'http://localhost:3000/api/swagger',
 };
 
 // Global process references for cleanup
@@ -85,6 +82,63 @@ function openBrowser(url: string): boolean {
   }
 }
 
+// Check if Docker daemon is running
+function isDockerRunning(): boolean {
+  try {
+    execSync('docker version --format "{{.Server.Version}}"', { 
+      stdio: 'ignore',
+      timeout: 2000 // 2 second timeout to avoid hanging
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// Get platform-specific Docker start instructions
+function getDockerStartInstructions(): string {
+  const platform = os.platform();
+  
+  const instructions = `
+${c.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+${c.bright}${c.red}❌ Docker daemon is not running${c.reset}
+
+Please start Docker using one of the following methods:
+
+${c.bright}${c.cyan}Windows (Docker Desktop):${c.reset}
+  1. Open Docker Desktop from the Start Menu or System Tray
+  2. Wait for Docker to fully start (icon turns from orange to white/green)
+  3. Run this command again
+
+${c.bright}${c.cyan}Linux:${c.reset}
+  ${c.dim}# Start Docker service${c.reset}
+  ${c.green}sudo systemctl start docker${c.reset}
+  
+  ${c.dim}# Enable Docker to start on boot (optional)${c.reset}
+  ${c.green}sudo systemctl enable docker${c.reset}
+  
+  ${c.dim}# Add your user to docker group to avoid sudo (optional)${c.reset}
+  ${c.green}sudo usermod -aG docker $USER${c.reset}
+  ${c.dim}# Then log out and back in for changes to take effect${c.reset}
+
+${c.bright}${c.cyan}macOS (Docker Desktop):${c.reset}
+  1. Open Docker Desktop from Applications or Spotlight
+  2. Wait for Docker to fully start (icon in menu bar shows "Docker Desktop is running")
+  3. Run this command again
+
+${c.bright}${c.cyan}WSL2 (Windows Subsystem for Linux):${c.reset}
+  !!! Install docker within your Linux shell in WSL2 !!!
+  !!! Docker for Windows + WSL2 performs poorly      !!!
+
+  ${c.dim}# Start Docker service${c.reset}
+  ${c.green}sudo service docker start${c.reset}
+
+${c.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+`;
+  
+  return instructions;
+}
+
 // Check for required tools
 function checkRequirements() {
   const requirements = [
@@ -94,7 +148,7 @@ function checkRequirements() {
       url: 'https://docs.docker.com/get-docker/',
     },
     {
-      cmd: 'docker-compose',
+      cmd: 'docker compose',
       name: 'Docker Compose',
       url: 'https://docs.docker.com/compose/install/',
     },
@@ -108,7 +162,12 @@ function checkRequirements() {
 
   requirements.forEach(req => {
     try {
-      execSync(`which ${req.cmd}`, { stdio: 'ignore' });
+      // Special handling for docker compose (subcommand)
+      if (req.cmd === 'docker compose') {
+        execSync('docker compose version', { stdio: 'ignore' });
+      } else {
+        execSync(`which ${req.cmd}`, { stdio: 'ignore' });
+      }
       console.log(`  ✅ ${req.name}`);
     } catch {
       console.log(
@@ -339,7 +398,7 @@ async function runSetup() {
 
   // Start Docker services
   console.log(`\n🐳 Starting Docker services...`);
-  execSync('docker-compose up -d', { stdio: 'inherit' });
+  execSync('docker compose up -d', { stdio: 'inherit' });
 
   // Wait for PostgreSQL
   console.log(`\n⏳ Waiting for PostgreSQL to be ready...`);
@@ -348,7 +407,7 @@ async function runSetup() {
   while (!pgReady && attempts < 30) {
     try {
       execSync(
-        'docker-compose exec -T postgres pg_isready -U postgres -d hyperformant',
+        'docker compose exec -T postgres pg_isready -U postgres -d hyperformant',
         { stdio: 'ignore' }
       );
       pgReady = true;
@@ -410,13 +469,27 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     process.exit(1);
   }
 
+  // Check if Docker daemon is running
+  console.log(`${c.dim}🐳 Checking Docker daemon...${c.reset}`);
+  if (!isDockerRunning()) {
+    console.log(getDockerStartInstructions());
+    process.exit(1);
+  }
+  console.log(`${c.green}✅ Docker daemon is running${c.reset}`);
+
   // Check if Docker services are running
   try {
-    execSync('docker-compose ps | grep -q "Up"', { stdio: 'ignore' });
+    execSync('docker compose ps | grep -q "Up"', { stdio: 'ignore' });
     console.log(`${c.green}✅ Docker services already running${c.reset}`);
   } catch {
     console.log(`${c.yellow}🐳 Starting Docker services...${c.reset}`);
-    execSync('docker-compose up -d', { stdio: 'inherit' });
+    try {
+      execSync('docker compose up -d', { stdio: 'inherit' });
+    } catch (error) {
+      console.log(`\n${c.red}❌ Failed to start Docker services${c.reset}`);
+      console.log(`${c.dim}Please check your docker-compose.yml configuration${c.reset}`);
+      process.exit(1);
+    }
 
     // Wait for PostgreSQL to be ready
     console.log(`${c.dim}⏳ Waiting for PostgreSQL...${c.reset}`);
@@ -425,7 +498,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     while (!pgReady && attempts < 30) {
       try {
         execSync(
-          'docker-compose exec -T postgres pg_isready -U postgres -d hyperformant',
+          'docker compose exec -T postgres pg_isready -U postgres -d hyperformant',
           {
             stdio: 'ignore',
             cwd: process.cwd(),
@@ -501,10 +574,11 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
   // Start Next.js development server
   console.log(`${c.yellow}Starting Next.js development server...${c.reset}\n`);
 
-  nextjsDevProcess = spawn('npm', ['run', 'dev:web'], {
+  nextjsDevProcess = spawn('npm', ['run', 'dev'], {
     stdio: 'inherit',
     shell: true,
     detached: true,
+    cwd: path.join(process.cwd(), 'web'),
   });
 
   // Start Prisma Studio
@@ -525,20 +599,21 @@ ${c.bright}${c.white} SERVICES RUNNING ${c.reset}
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 
  ${c.yellow}▶ Next.js App${c.reset}        ${c.cyan}http://localhost:3000${c.reset}
- ${c.blue}▶ Next.js API${c.reset}        ${c.cyan}http://localhost:3000/api${c.reset}
+ ${c.blue}▶ Next.js API${c.reset}        ${c.cyan}http://localhost:3000/api/v1${c.reset}
  ${c.magenta}▶ n8n Workflows${c.reset}      ${c.cyan}http://localhost:5678${c.reset} ${c.dim}(admin/admin)${c.reset}
  ${c.cyan}▶ Email Testing${c.reset}      ${c.cyan}http://localhost:9000${c.reset}
  ${c.green}▶ Prisma Studio${c.reset}      ${c.cyan}http://localhost:5555${c.reset} ${c.dim}(database admin)${c.reset}
  ${c.blue}▶ PostgreSQL${c.reset}         ${c.dim}postgresql://localhost:5432${c.reset}
 
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-${c.bright}${c.white} API DOCUMENTATION ${c.reset}
+${c.bright}${c.white} API ENDPOINTS ${c.reset}
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 
- ${c.green}▶ Redoc Docs${c.reset}         ${c.cyan}http://localhost:3000/api/docs${c.reset}
- ${c.green}▶ Swagger UI${c.reset}         ${c.cyan}http://localhost:3000/api/swagger${c.reset}
- ${c.green}▶ OpenAPI Spec${c.reset}       ${c.cyan}http://localhost:3000/api/openapi.json${c.reset}
-
+ ${c.green}▶ Docs${c.reset}               ${c.cyan}http://localhost:3000/api/v1/docs${c.reset}
+ ${c.green}▶ OpenAPI${c.reset}           ${c.cyan}http://localhost:3000/api/v1/openapi.json${c.reset}
+ ${c.green}▶ Health Check${c.reset}       ${c.cyan}http://localhost:3000/api/v1/health${c.reset}
+ ${c.green}▶ API Info${c.reset}           ${c.cyan}http://localhost:3000/api/v1/info${c.reset}
+ 
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 
 ${c.bright}${c.white} Quick Commands:${c.reset}
@@ -643,7 +718,7 @@ process.on('SIGINT', async () => {
   // Stop Docker services
   try {
     console.log(`${c.dim}Stopping Docker containers...${c.reset}`);
-    execSync('docker-compose down', { stdio: 'ignore' });
+    execSync('docker compose down', { stdio: 'ignore' });
     console.log(`${c.green}✅ Docker containers stopped${c.reset}`);
   } catch (error) {
     console.log(`${c.red}Error stopping Docker services${c.reset}`);

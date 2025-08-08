@@ -14,7 +14,7 @@ const Course = (props: {
   const { bgBox, icon, title, desc, day, date, topics, time, extra } = props;
   return (
     <div
-      className={`flex h-fit w-full flex-col rounded-[20px] bg-white bg-clip-border p-4 !pb-10 shadow-3xl shadow-shadow-500 dark:!bg-navy-dark dark:shadow-none 2xl:flex-row 3xl:h-[310px] ${extra}`}
+      className={`flex h-fit w-full flex-col rounded-[20px] bg-clip-border p-4 !pb-10 shadow-3xl shadow-shadow-500 bg-card-light dark:!bg-card-dark dark:shadow-none 2xl:flex-row 3xl:h-[310px] ${extra}`}
     >
       <div
         className={`${bgBox} mr-8 flex min-h-[200px] min-w-full items-center justify-center rounded-xl text-[100px] text-white 2xl:h-[270px] 2xl:min-w-[270px]`}

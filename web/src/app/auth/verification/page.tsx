@@ -24,7 +24,6 @@ function Verification() {
   const urlCode = searchParams?.get('code');
 
   const handleCodeComplete = async (verificationCode: string) => {
-    setCode(verificationCode);
     setIsLoading(true);
     setMessage('');
     setHasError(false);

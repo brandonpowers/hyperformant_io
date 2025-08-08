@@ -4,7 +4,7 @@ import { BsArrowRight } from 'react-icons/bs';
 
 const Schedule = () => {
   return (
-    <div className="w-full rounded-[20px] bg-white px-[20px] py-8 font-dm shadow-xl shadow-gray-100 dark:border dark:!border-white/10 dark:!bg-navy-dark dark:shadow-none 3xl:px-[30px]">
+    <div className="w-full rounded-[20px] px-[20px] py-8 font-dm shadow-xl shadow-gray-100 dark:border dark:!border-white/10 bg-card-light dark:!bg-card-dark dark:shadow-none 3xl:px-[30px]">
       {/* Header */}
       <div className="flex w-full items-center justify-between">
         <h4 className="leading-1 text-lg font-bold text-navy-700 dark:text-white">
