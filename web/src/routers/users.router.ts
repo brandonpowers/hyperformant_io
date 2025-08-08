@@ -1,7 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { PrismaClient } from '@prisma/client';
-import { getServerSession } from 'next-auth/next';
-import { authOptions } from '../app/api/auth/[...nextauth]/route';
 import {
   UserSchema,
   UserProfileSchema,
@@ -14,6 +12,7 @@ import {
 } from '../schemas';
 import { ApiError } from '../lib/api/errors';
 import { ApiResponse } from '../lib/api/responses';
+import { createAuthMiddleware, createAdminMiddleware } from '../lib/api/auth-middleware';
 import bcryptjs from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -21,46 +20,9 @@ const prisma = new PrismaClient();
 // Create Hono app with OpenAPI
 export const usersApp = new OpenAPIHono();
 
-/**
- * Authentication middleware
- */
-const authMiddleware = async (c: any, next: any) => {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user?.id) {
-    throw ApiError.unauthorized();
-  }
-
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: {
-      id: true,
-      name: true,
-      email: true,
-      isAdmin: true,
-      emailVerified: true,
-      isActive: true,
-    },
-  });
-
-  if (!user || !user.isActive) {
-    throw ApiError.unauthorized('User not found or inactive');
-  }
-
-  c.set('user', user);
-  await next();
-};
-
-/**
- * Admin middleware
- */
-const adminMiddleware = async (c: any, next: any) => {
-  const user = c.get('user');
-  if (!user?.isAdmin) {
-    throw ApiError.forbidden('Admin access required');
-  }
-  await next();
-};
+// Use the shared authentication middleware
+const authMiddleware = createAuthMiddleware();
+const adminMiddleware = createAdminMiddleware();
 
 /**
  * USER ROUTES

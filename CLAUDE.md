@@ -268,6 +268,50 @@ The main CLI (`src/cli.ts`) handles:
 
 ## Important Development Notes
 
+### 🛡️ API Middleware Architecture (CRITICAL: Always Follow)
+
+**REQUIRED: Use shared middleware for all new API endpoints**
+
+**Standard Router Setup:**
+```typescript
+import { createAuthMiddleware } from '../lib/api/auth-middleware';
+import { validateBody } from '../lib/api/validation-middleware';
+import { db } from '../lib/api/database';
+
+const authMiddleware = createAuthMiddleware();
+
+// Every protected route follows this pattern:
+app.post('/endpoint', authMiddleware, validateBody(Schema), async (c) => {
+  const user = c.get('user');        // Always available & typed
+  const body = getValidatedBody(c);  // Always validated & typed
+  // Focus on business logic only
+});
+```
+
+**Available Shared Middleware:**
+- `createAuthMiddleware()` - NextAuth JWT validation with user context
+- `createAdminMiddleware()` - Admin-only access (use after auth)
+- `validateBody/Query/Params()` - Automatic Zod validation with types
+- `db` - Shared Prisma client with error handling
+- `createLoggingMiddleware()` - Request/response logging
+- `ApiError.*` - Consistent error responses
+- `ApiResponse.*` - Standardized response format
+
+**Development Process:**
+1. Copy `/src/lib/api/router-template.ts` for new routers
+2. Define Zod schemas in `/src/schemas/`
+3. Use shared middleware (never create inline middleware)
+4. Mount router in `/src/routers/index.ts`
+
+**NEVER:**
+- Create duplicate authentication middleware
+- Skip validation on user inputs
+- Use direct database connections (use shared `db`)
+- Create custom error handling (use `ApiError`)
+- Skip request logging for new endpoints
+
+**Reference:** See `/src/lib/api/README.md` for complete documentation and examples.
+
 ### Apollo.io Integration First
 
 - **Never duplicate Apollo.io functionality** - use their APIs and native features

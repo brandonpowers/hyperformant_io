@@ -49,27 +49,28 @@
 git clone <repository>
 cd hyperformant
 
-cd web
-> init
+# Install dependencies for both CLI and web
+npm run install:all
 
-npm install
-npm run dev
+# Set up environment (follow prompts)
+npm run setup
+
+# Start development
+cd web && npm run dev
 ```
 
 ### Start Development Environment
 
 ```bash
-# Start everything
+# Start Next.js application (most common)
+cd web && npm run dev
+
+# Or from root directory
 npm run dev
 
-# Start infrastructure services (PostgreSQL, n8n, email)
-npm run dev:infra
-
-# Start Next.js application
-npm run dev:web
-
-# Run CLI tools
-npm run dev:cli <command>
+# Database operations
+npm run db:migrate       # Run database migrations
+npm run db:seed          # Seed database with initial data
 ```
 
 ### **Service URLs (Development)**
@@ -166,9 +167,14 @@ All tables consolidated in single Prisma schema:
 ### Application Development
 
 ```bash
-npm run dev:web          # Start Next.js app (frontend + backend)
-npm run build:app        # Build Next.js application for production
-npm run deploy           # Deploy application stack to Fly.io
+# From web directory
+cd web && npm run dev    # Start Next.js app (frontend + backend)
+cd web && npm run build  # Build Next.js application for production
+cd web && npm start      # Start production build
+
+# From root directory
+npm run build           # Build Next.js application
+npm run dev             # Run CLI development tools
 ```
 
 ### Database Operations (via Prisma)
@@ -177,6 +183,8 @@ npm run deploy           # Deploy application stack to Fly.io
 npm run db:migrate       # Run Prisma migrations
 npm run db:seed          # Seed database with initial data
 npm run db:reset         # Reset database (dev only)
+npm run db:studio        # Open Prisma Studio
+npm run db:generate      # Generate Prisma client
 ```
 
 ### Code Quality
@@ -185,16 +193,15 @@ npm run db:reset         # Reset database (dev only)
 npm run test             # Run Jest tests
 npm run lint             # ESLint checking
 npm run format           # Prettier formatting
-npm run type-check       # TypeScript validation
-npm run validate         # Full validation suite
+npm run validate         # Validate JSON configurations
 ```
 
-### Infrastructure
+### Setup & Maintenance
 
 ```bash
-npm run dev:infra        # Start Docker services (PostgreSQL, n8n, email)
-npm run health           # Health check all services
-npm run clean            # Clean build artifacts
+npm run install:all      # Install all dependencies (root + web)
+npm run setup            # Initial project setup
+npm run clean:all        # Clean all build artifacts and node_modules
 ```
 
 ---
@@ -319,11 +326,8 @@ git push origin main
 ### Manual Deployment
 
 ```bash
-# Deploy Next.js application
+# Validate and deploy (includes migrations and n8n import)
 npm run deploy
-
-# Deploy CLI tools (if needed)
-npm run deploy:cli
 ```
 
 ### Production URLs
@@ -335,12 +339,11 @@ npm run deploy:cli
 
 ## 🔍 Monitoring & Health Checks
 
-### CLI Health Commands
+### Health & Validation Commands
 
 ```bash
-npm run health           # Check all services
-npm run env             # Validate environment config
-npm run validate        # Validate JSON configs
+npm run validate        # Validate JSON configurations
+npm run setup           # Validate and set up environment
 ```
 
 ### Local Development
@@ -364,27 +367,23 @@ npm run validate        # Validate JSON configs
 **Next.js Build Errors**:
 
 ```bash
-npm run build     # Check for build errors
-npm run dev       # Restart development server
+cd web && npm run build  # Check for build errors
+cd web && npm run dev    # Restart development server
 ```
 
 **Database Connection Issues**:
 
 ```bash
-npm run dev:infra     # Ensure PostgreSQL is running
-npm run db:migrate      # Apply latest migrations
+npm run db:migrate       # Apply latest migrations
+npm run db:reset         # Reset database (development only)
+npm run db:studio        # Open Prisma Studio to inspect data
 ```
 
 **Environment Validation**:
 
 ```bash
-npm run env            # Check for missing environment variables
-```
-
-### Debug Mode
-
-```bash
-NODE_ENV=development npm run dev:cli health
+npm run setup            # Check and configure environment
+npm run validate         # Validate all JSON configurations
 ```
 
 ---

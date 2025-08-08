@@ -3,6 +3,8 @@ import { companiesApp } from './companies.router';
 import { authApp } from './auth.router';
 import { usersApp } from './users.router';
 import { errorHandler } from '../lib/api/errors';
+import { createLoggingMiddleware } from '../lib/api/logging-middleware';
+import { dbHealthCheck } from '../lib/api/database';
 
 /**
  * Main API router that combines all domain routers
@@ -25,6 +27,13 @@ export const apiApp = new OpenAPIHono({
   ],
 });
 
+// Global middleware
+const loggingMiddleware = createLoggingMiddleware({
+  excludePaths: ['/health', '/info', '/docs'],
+});
+
+apiApp.use('*', loggingMiddleware);
+
 // Global error handler
 apiApp.onError(errorHandler);
 
@@ -34,9 +43,12 @@ apiApp.route('/', authApp);
 apiApp.route('/', usersApp);
 
 // System endpoints
-apiApp.get('/health', (c) => {
+apiApp.get('/health', async (c) => {
+  const dbHealthy = await dbHealthCheck();
+  
   return c.json({
-    status: 'healthy',
+    status: dbHealthy ? 'healthy' : 'unhealthy',
+    database: dbHealthy,
     timestamp: new Date().toISOString(),
     version: '1.0.0',
     environment: process.env.NODE_ENV || 'development',
