@@ -28,7 +28,7 @@ export default function Hero() {
         className="mt-8 flex w-full animate-slide-up-fade flex-col justify-center gap-3 px-3 sm:flex-row"
         style={{ animationDuration: '1100ms' }}
       >
-        <Button className="h-10 font-semibold" asChild href="/auth/sign-up">
+        <Button className="h-10 font-semibold" asChild href="/sign-up">
           Start Free
         </Button>
         <Button

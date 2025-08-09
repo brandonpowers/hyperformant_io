@@ -1,7 +1,6 @@
 'use client';
 import Card from 'components/ui/card';
 import InputField from 'components/ui/fields/InputField';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
@@ -21,7 +20,7 @@ function ResetPassword() {
   useEffect(() => {
     // Redirect if no token or email
     if (!token || !email) {
-      router.push('/auth/forgot-password');
+      router.push('/forgot-password');
     }
   }, [token, email, router]);
 
@@ -66,7 +65,7 @@ function ResetPassword() {
         // Redirect to sign-in after 2 seconds
         setTimeout(() => {
           router.push(
-            '/auth/sign-in?message=Password reset successfully! You can now sign in.',
+            '/sign-in?message=Password reset successfully! You can now sign in.',
           );
         }, 2000);
       } else {
@@ -86,10 +85,8 @@ function ResetPassword() {
   }
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <form onSubmit={handleSubmit}>
+    <Card extra="w-[480px] mx-auto p-8">
+      <form onSubmit={handleSubmit}>
             <h3 className="mb-[10px] text-4xl font-bold text-gray-900 dark:text-white">
               Reset Password
             </h3>
@@ -148,16 +145,14 @@ function ResetPassword() {
                 Remember your password?
               </span>
               <Link
-                href="/auth/sign-in"
+                href="/sign-in"
                 className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
               >
                 Sign In
               </Link>
             </div>
-          </form>
-        </Card>
-      }
-    />
+      </form>
+    </Card>
   );
 }
 

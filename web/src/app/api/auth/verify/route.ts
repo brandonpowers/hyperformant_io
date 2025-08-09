@@ -37,6 +37,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Check if email is already verified to prevent duplicate processing
+    if (user.emailVerified) {
+      return NextResponse.json(
+        {
+          message: 'Email already verified!',
+          verified: true,
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+          },
+        },
+        { status: 200 },
+      );
+    }
+
     // Mark email as verified and clear verification fields
     await prisma.user.update({
       where: { id: user.id },
@@ -49,9 +65,8 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(
       {
-        message: 'Email verified successfully! Signing you in...',
+        message: 'Email verified successfully!',
         verified: true,
-        autoLogin: true,
         user: {
           id: user.id,
           email: user.email,

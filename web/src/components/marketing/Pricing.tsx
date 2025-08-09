@@ -63,7 +63,7 @@ const Pricing = () => {
             </div>
 
             <Link
-              href="/auth/sign-up"
+              href="/sign-up"
               className="linear mb-6 block w-full rounded-xl bg-lightPrimary py-3 text-center font-medium text-brand-500 transition duration-200 hover:bg-gray-100 dark:bg-navy-700 dark:text-white dark:hover:bg-white/20"
             >
               Start Free
@@ -162,7 +162,7 @@ const Pricing = () => {
             </div>
 
             <Link
-              href="/auth/sign-up"
+              href="/sign-up"
               className="linear mb-6 block w-full rounded-xl bg-brand-500 py-3 text-center font-medium text-white transition duration-200 hover:bg-brand-600"
             >
               Start Free
@@ -268,7 +268,7 @@ const Pricing = () => {
             </div>
 
             <Link
-              href="/auth/sign-up"
+              href="/sign-up"
               className="linear mb-6 block w-full rounded-xl bg-lightPrimary py-3 text-center font-medium text-brand-500 transition duration-200 hover:bg-gray-100 dark:bg-navy-700 dark:text-white dark:hover:bg-white/20"
             >
               Contact Sales

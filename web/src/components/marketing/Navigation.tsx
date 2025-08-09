@@ -51,7 +51,7 @@ export function Navigation() {
           ) : (
             <div className="hidden items-center gap-4 md:flex">
               <Link
-                href="/auth/sign-in"
+                href="/sign-in"
                 className="px-2 py-1 font-medium text-gray-900 hover:text-gray-700 dark:text-gray-50 dark:hover:text-gray-200"
               >
                 Sign In
@@ -59,16 +59,16 @@ export function Navigation() {
               <Button
                 className="h-10 font-semibold"
                 asChild
-                href="/auth/sign-up"
+                href="/sign-up"
               >
-                Start Free
+                Sign Up
               </Button>
             </div>
           )}
           {!session && (
             <div className="flex gap-x-2 md:hidden">
-              <Button asChild href="/auth/sign-up">
-                Start Free
+              <Button asChild href="/sign-up">
+                Sign Up
               </Button>
             </div>
           )}

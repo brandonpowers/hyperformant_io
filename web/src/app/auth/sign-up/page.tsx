@@ -1,7 +1,6 @@
 'use client';
 import Card from 'components/ui/card';
 import InputField from 'components/ui/fields/InputField';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
 import { useState } from 'react';
@@ -66,13 +65,28 @@ function SignUpDefault() {
         });
         router.push(`/auth/request-access?${params.toString()}`);
       } else if (data.requiresVerification) {
+        // Store password for auto-login after verification
+        sessionStorage.setItem('temp_password', formData.password);
+        
+        // Create session immediately (user exists but not verified)
+        try {
+          await signIn('credentials', {
+            email: formData.email,
+            password: formData.password,
+            redirect: false,
+          });
+        } catch (err) {
+          // If sign-in fails, continue to verification anyway
+          console.log('Initial sign-in failed:', err);
+        }
+        
         // Normal verification flow
         router.push(
           `/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(data.message)}`,
         );
       } else {
         router.push(
-          `/auth/sign-in?message=${encodeURIComponent(data.message)}`,
+          `/sign-in?message=${encodeURIComponent(data.message)}`,
         );
       }
     } catch (err) {
@@ -99,13 +113,11 @@ function SignUpDefault() {
   };
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <form onSubmit={handleSubmit}>
-            <h3 className="text-4xl font-bold text-navy-700 dark:text-white">
-              Sign Up
-            </h3>
+    <Card extra="w-[480px] mx-auto p-8">
+      <form onSubmit={handleSubmit}>
+        <h3 className="text-4xl font-bold text-navy-700 dark:text-white">
+          Sign Up
+        </h3>
 
             {error && (
               <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
@@ -228,16 +240,14 @@ function SignUpDefault() {
                 Already a member?
               </span>
               <a
-                href="/auth/sign-in"
+                href="/sign-in"
                 className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
               >
                 Sign In
               </a>
             </div>
-          </form>
-        </Card>
-      }
-    />
+      </form>
+    </Card>
   );
 }
 

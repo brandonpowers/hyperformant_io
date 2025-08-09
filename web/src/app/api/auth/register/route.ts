@@ -3,6 +3,7 @@ import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
 import { sendEmail, emailTemplates } from 'lib/email';
+import { associateUserWithEntity } from '../../../../lib/entity-association';
 
 const prisma = new PrismaClient();
 
@@ -42,22 +43,6 @@ export async function POST(request: NextRequest) {
     ).toString();
     const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
 
-    // Extract domain from email
-    const emailDomain = email.split('@')[1];
-    const companyName = emailDomain.split('.')[0]; // Get the part before .com/.org/etc
-    const formattedCompanyName =
-      companyName.charAt(0).toUpperCase() + companyName.slice(1); // Capitalize first letter
-
-    // Check if company already exists
-    const existingCompany = await prisma.company.findUnique({
-      where: { domain: emailDomain },
-      include: {
-        members: {
-          where: { role: 'ADMIN' },
-        },
-      },
-    });
-
     // Create user with hashed password and verification code
     const user = await prisma.user.create({
       data: {
@@ -71,40 +56,8 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    let needsAccessRequest = false;
-    let company = existingCompany;
-
-    if (!existingCompany) {
-      // Create new company if it doesn't exist
-      company = await prisma.company.create({
-        data: {
-          name: formattedCompanyName,
-          domain: emailDomain,
-          userId: user.id,
-        },
-      });
-
-      // Make the user an admin of the new company
-      await prisma.companyMember.create({
-        data: {
-          companyId: company.id,
-          userId: user.id,
-          role: 'ADMIN',
-        },
-      });
-    } else if (existingCompany.members.length === 0) {
-      // Company exists but has no admin - make this user the admin
-      await prisma.companyMember.create({
-        data: {
-          companyId: existingCompany.id,
-          userId: user.id,
-          role: 'ADMIN',
-        },
-      });
-    } else {
-      // Company exists and has admin(s) - user needs to request access
-      needsAccessRequest = true;
-    }
+    // Associate user with company entity based on email domain
+    const entityAssociation = await associateUserWithEntity(user.id, email);
 
     // Send verification email
     const { subject, html, text } = emailTemplates.verificationCode(
@@ -125,19 +78,19 @@ export async function POST(request: NextRequest) {
         message:
           'Account created successfully! Please check your email for a verification code.',
         requiresVerification: true,
-        needsAccessRequest,
+        needsAccessRequest: entityAssociation.needsAccessRequest,
+        membershipCreated: entityAssociation.membershipCreated,
+        role: entityAssociation.role,
         user: {
           id: user.id,
           name: user.name,
           email: user.email,
         },
-        company: company
-          ? {
-              id: company.id,
-              name: company.name,
-              domain: company.domain,
-            }
-          : null,
+        company: {
+          id: entityAssociation.entity.id,
+          name: entityAssociation.entity.name,
+          domain: entityAssociation.entity.domain,
+        },
       },
       { status: 201 },
     );

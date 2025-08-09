@@ -1,7 +1,6 @@
 'use client';
 import Card from 'components/ui/card';
 import InputField from 'components/ui/fields/InputField';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
 import { useState } from 'react';
@@ -17,6 +16,7 @@ function SignInDefault() {
   });
   const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
   const [error, setError] = useState('');
 
   // Check for success message from registration
@@ -66,6 +66,7 @@ function SignInDefault() {
               sessionStorage.setItem('temp_password', formData.password);
 
               // Redirect to verification page with email pre-filled
+              setIsRedirecting(true);
               router.push(
                 `/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent("Please verify your email address. We've sent you a new verification code.")}`,
               );
@@ -77,13 +78,15 @@ function SignInDefault() {
         }
 
         setError('Invalid email or password');
+        setIsLoading(false);
       } else {
-        // Successful sign in - redirect to dashboard
+        // Successful sign in - keep loading state and redirect to dashboard
+        setIsRedirecting(true);
         router.push('/dashboard');
+        // Don't set isLoading to false - keep button disabled until page changes
       }
     } catch (err) {
       setError('Sign in failed. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -105,10 +108,8 @@ function SignInDefault() {
   };
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <form onSubmit={handleSubmit}>
+    <Card extra="w-[480px] mx-auto p-8">
+      <form onSubmit={handleSubmit}>
             <h3 className="mb-[10px] text-4xl font-bold text-gray-900 dark:text-white">
               Sign In
             </h3>
@@ -128,7 +129,7 @@ function SignInDefault() {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
                 className="mb-3 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="rounded-full text-xl">
@@ -141,7 +142,7 @@ function SignInDefault() {
               <button
                 type="button"
                 onClick={handleMicrosoftSignIn}
-                disabled={isLoading}
+                disabled={isLoading || isRedirecting}
                 className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <div className="rounded-full text-xl text-blue-600">
@@ -196,31 +197,33 @@ function SignInDefault() {
             </div>
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isRedirecting}
               className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isRedirecting 
+                ? 'Redirecting...' 
+                : isLoading 
+                ? 'Signing in...' 
+                : 'Sign In'}
             </button>
             <div className="mt-3">
               <div className="flex items-center justify-between">
                 <a
-                  href="/auth/sign-up"
+                  href="/sign-up"
                   className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
                 >
                   Create an Account
                 </a>
                 <a
                   className="text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-                  href="/auth/forgot-password"
+                  href="/forgot-password"
                 >
                   Forgot password?
                 </a>
               </div>
             </div>
-          </form>
-        </Card>
-      }
-    />
+      </form>
+    </Card>
   );
 }
 

@@ -1,21 +1,22 @@
 'use client';
 import Card from 'components/ui/card';
 import VerificationCodeInput from 'components/ui/fields/VerificationCodeInput';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import Link from 'next/link';
 import { MdCheckCircle } from 'react-icons/md';
 import { useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 
 function Verification() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { update: updateSession } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [hasError, setHasError] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const email = searchParams?.get('email');
   const registrationMessage = searchParams?.get('message');
@@ -24,6 +25,12 @@ function Verification() {
   const urlCode = searchParams?.get('code');
 
   const handleCodeComplete = async (verificationCode: string) => {
+    // Prevent multiple simultaneous submissions
+    if (isSubmitting || isLoading || isSuccess) {
+      return;
+    }
+
+    setIsSubmitting(true);
     setIsLoading(true);
     setMessage('');
     setHasError(false);
@@ -40,56 +47,55 @@ function Verification() {
       const data = await response.json();
 
       if (response.ok) {
-        setMessage(data.message || 'Email verified successfully!');
+        const successMessage = data.message.includes('already verified') 
+          ? 'Email already verified! Redirecting...' 
+          : 'Email verified successfully! Setting up your account...';
+        
+        setMessage(successMessage);
         setIsSuccess(true);
 
-        // Always attempt auto-login after successful verification
-        if (data.autoLogin && email) {
-          try {
-            // Try to sign in using NextAuth
-            // First, get the stored password or try without password (since email is now verified)
-            const storedPassword = sessionStorage.getItem('temp_password');
-
-            if (storedPassword) {
-              // If we have stored password, use it
+        try {
+          // Update the session to reflect the new emailVerified status
+          await updateSession();
+          
+          setMessage('Success! Redirecting to onboarding...');
+          
+          // Clean up stored password
+          sessionStorage.removeItem('temp_password');
+          
+          // Small delay to show success message then redirect
+          setTimeout(() => {
+            router.push('/onboarding/goals');
+          }, 1500);
+          
+        } catch (error) {
+          console.error('Session update failed:', error);
+          
+          // Fallback: try manual sign-in if session update fails
+          const storedPassword = sessionStorage.getItem('temp_password');
+          if (storedPassword && email) {
+            try {
               const signInResult = await signIn('credentials', {
                 email: email,
                 password: storedPassword,
                 redirect: false,
               });
 
-              if (!signInResult?.error) {
+              if (signInResult?.ok && !signInResult?.error) {
                 sessionStorage.removeItem('temp_password');
-                router.push('/dashboard');
+                router.push('/onboarding/goals');
                 return;
               }
+            } catch (signInError) {
+              console.error('Fallback sign-in failed:', signInError);
             }
-
-            // If stored password didn't work or doesn't exist,
-            // create a manual session redirect approach
-            setMessage(
-              'Email verified successfully! Setting up your account...',
-            );
-            setTimeout(() => {
-              router.push('/onboarding/goals');
-            }, 1500);
-          } catch (signInError) {
-            console.error('Auto sign-in failed:', signInError);
-            // Fall back to sign-in page
-            setTimeout(() => {
-              router.push(
-                '/auth/sign-in?message=Email verified! Please sign in.',
-              );
-            }, 2000);
-          } finally {
-            // Always clean up stored password
-            sessionStorage.removeItem('temp_password');
           }
-        } else {
-          // Fallback: redirect to sign-in page
+          
+          // Final fallback: redirect to sign-in
+          sessionStorage.removeItem('temp_password');
           setTimeout(() => {
             router.push(
-              '/auth/sign-in?message=Email verified! You can now sign in.',
+              '/sign-in?message=Email verified! Please sign in to continue.',
             );
           }, 2000);
         }
@@ -104,6 +110,7 @@ function Verification() {
       setHasError(true);
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -133,10 +140,8 @@ function Verification() {
   };
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <div>
+    <Card extra="w-[480px] mx-auto p-8">
+      <div>
             <div className="mb-6 flex flex-col items-center">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
                 <MdCheckCircle className="h-8 w-8 text-green-500" />
@@ -173,7 +178,7 @@ function Verification() {
               <VerificationCodeInput
                 length={6}
                 onComplete={handleCodeComplete}
-                disabled={isLoading || isSuccess}
+                disabled={isLoading || isSuccess || isSubmitting}
                 error={hasError}
                 initialValue={urlCode || ''}
               />
@@ -204,16 +209,14 @@ function Verification() {
 
             <div className="mt-3 text-center">
               <Link
-                href="/auth/sign-in"
+                href="/sign-in"
                 className="text-sm font-medium text-gray-600 hover:text-brand-500 dark:text-gray-400"
               >
                 Back to Sign In
               </Link>
             </div>
-          </div>
-        </Card>
-      }
-    />
+      </div>
+    </Card>
   );
 }
 

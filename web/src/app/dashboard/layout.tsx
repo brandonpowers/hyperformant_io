@@ -23,7 +23,7 @@ export default function DashboardLayout({
   useEffect(() => {
     if (status === 'loading') return; // Still loading
     if (!session) {
-      window.location.href = '/auth/sign-in';
+      window.location.href = '/sign-in';
     }
   }, [session, status]);
 
@@ -67,7 +67,7 @@ export default function DashboardLayout({
           <SiteHeader />
 
           {/* Dashboard Layout - sidebar and content */}
-          <div className="flex flex-1 w-full relative p-6 gap-6 overflow-visible">
+          <div className="flex flex-1 w-full relative p-6 gap-6 overflow-hidden">
             <Sidebar
               routes={routes}
               open={open}

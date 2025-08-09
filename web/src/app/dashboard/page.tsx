@@ -55,13 +55,13 @@ const Dashboard = () => {
   }, []);
 
   return (
-    <div className="flex h-full w-full flex-col gap-6 xl:flex-row">
-      <div className="h-full w-full rounded-[20px]">
+    <div className="flex h-full flex-col gap-6 xl:flex-row">
+      <div className="flex-1 rounded-[20px]">
         {/* left side */}
-        <div className="col-span-9 h-full w-full rounded-t-2xl xl:col-span-6">
+        <div className="col-span-9 h-full rounded-t-2xl xl:col-span-6">
           {/* overall & Balance */}
           <div className="mb-6 grid grid-cols-6 gap-6">
-            <div className="col-span-6 h-full w-full rounded-xl 3xl:col-span-4">
+            <div className="col-span-6 h-full rounded-xl 3xl:col-span-4">
               
               <ThemeScene
                 nodes={nodes}
@@ -81,7 +81,7 @@ const Dashboard = () => {
       <div className="flex w-0 bg-gray-200 dark:bg-navy-700 xl:w-px" />
 
       {/* right section */}
-      <div className="h-full w-full xl:w-[400px] xl:min-w-[300px] 2xl:min-w-[400px]">
+      <div className="h-full xl:w-[400px] xl:min-w-[300px] 2xl:min-w-[400px] flex-shrink-0">
         <YourCard />
       </div>
     </div>

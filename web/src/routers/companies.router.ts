@@ -18,17 +18,18 @@ export const companiesApp = new OpenAPIHono();
 const authMiddleware = createAuthMiddleware();
 
 /**
- * Company access middleware - verifies user can access specific company
+ * Company access middleware - verifies user can access specific entity (company)
  */
 const companyAccessMiddleware = async (c: any, next: any) => {
   const user = c.get('user');
   const companyId = c.req.param('id');
 
-  const hasAccess = await prisma.company.findFirst({
+  const hasAccess = await prisma.entity.findFirst({
     where: {
       id: companyId,
+      type: 'COMPANY', // Only allow access to company entities
       OR: [
-        { userId: user.id },
+        { createdByUserId: user.id },
         {
           members: {
             some: { userId: user.id },
@@ -62,11 +63,13 @@ companiesApp.openapi({
   },
 }, authMiddleware, async (c) => {
   const user = c.get('user');
+  const query = c.req.valid('query') || {};
   
-  // Build where clause for user access
+  // Build where clause for user access to company entities
   const where: any = {
+    type: 'COMPANY', // Only get company entities
     OR: [
-      { userId: user.id },
+      { createdByUserId: user.id },
       {
         members: {
           some: { userId: user.id },
@@ -75,8 +78,25 @@ companiesApp.openapi({
     ],
   };
 
+  // Add search filters
+  if (query.industryId) {
+    where.industryId = query.industryId;
+  }
+  
+  if (query.marketSegmentId) {
+    where.marketSegmentId = query.marketSegmentId;
+  }
+  
+  if (query.search) {
+    where.OR = [
+      ...where.OR,
+      { name: { contains: query.search, mode: 'insensitive' } },
+      { domain: { contains: query.search, mode: 'insensitive' } },
+    ];
+  }
+
   // Execute query
-  const companies = await prisma.company.findMany({
+  const companies = await prisma.entity.findMany({
     where,
     include: {
       members: {
@@ -89,11 +109,13 @@ companiesApp.openapi({
       createdBy: {
         select: { id: true, name: true, email: true },
       },
+      industry: true,
+      marketSegment: true,
       _count: {
         select: { reports: true, members: true },
       },
     },
-    orderBy: { createdAt: 'desc' },
+    orderBy: { [query.sortBy || 'createdAt']: query.sortOrder || 'desc' },
   });
 
   return c.json(ApiResponse.success(companies));
@@ -103,10 +125,11 @@ companiesApp.openapi({
 companiesApp.get('/companies', authMiddleware, async (c) => {
   const user = c.get('user');
   
-  // Build where clause for user access
+  // Build where clause for user access to company entities
   const where: any = {
+    type: 'COMPANY',
     OR: [
-      { userId: user.id },
+      { createdByUserId: user.id },
       {
         members: {
           some: { userId: user.id },
@@ -116,7 +139,7 @@ companiesApp.get('/companies', authMiddleware, async (c) => {
   };
 
   // Execute query
-  const companies = await prisma.company.findMany({
+  const companies = await prisma.entity.findMany({
     where,
     include: {
       members: {
@@ -129,6 +152,8 @@ companiesApp.get('/companies', authMiddleware, async (c) => {
       createdBy: {
         select: { id: true, name: true, email: true },
       },
+      industry: true,
+      marketSegment: true,
       _count: {
         select: { reports: true, members: true },
       },
@@ -167,13 +192,28 @@ companiesApp.openapi({
     throw ApiError.validation('Company name is required');
   }
 
-  // Create company with transaction
+  // Check for duplicate domain if provided
+  if (body.domain) {
+    const existing = await prisma.entity.findFirst({
+      where: { 
+        domain: body.domain,
+        type: 'COMPANY',
+      },
+    });
+    if (existing) {
+      throw ApiError.conflict('Company with this domain already exists');
+    }
+  }
+
+  // Create company entity with transaction
   const company = await prisma.$transaction(async (tx) => {
-    const newCompany = await tx.company.create({
+    const newCompany = await tx.entity.create({
       data: {
         ...body,
-        founded: body.founded ? new Date(body.founded) : null,
-        userId: user.id,
+        type: 'COMPANY',
+        foundedAt: body.foundedAt ? new Date(body.foundedAt) : null,
+        createdByUserId: user.id,
+        isUserCompany: true, // Mark as user company
       },
       include: {
         members: {
@@ -186,6 +226,8 @@ companiesApp.openapi({
         createdBy: {
           select: { id: true, name: true, email: true },
         },
+        industry: true,
+        marketSegment: true,
         _count: {
           select: { reports: true, members: true },
         },
@@ -193,9 +235,9 @@ companiesApp.openapi({
     });
 
     // Create admin membership
-    await tx.companyMember.create({
+    await tx.entityMember.create({
       data: {
-        companyId: newCompany.id,
+        entityId: newCompany.id,
         userId: user.id,
         role: 'ADMIN',
       },
@@ -224,8 +266,11 @@ companiesApp.openapi({
 }, authMiddleware, companyAccessMiddleware, async (c) => {
   const id = c.req.param('id');
   
-  const company = await prisma.company.findUnique({
-    where: { id },
+  const company = await prisma.entity.findUnique({
+    where: { 
+      id,
+      type: 'COMPANY',
+    },
     include: {
       members: {
         include: {
@@ -237,6 +282,8 @@ companiesApp.openapi({
       createdBy: {
         select: { id: true, name: true, email: true },
       },
+      industry: true,
+      marketSegment: true,
       reports: {
         select: {
           id: true,
@@ -249,7 +296,14 @@ companiesApp.openapi({
         take: 10,
       },
       _count: {
-        select: { reports: true, members: true },
+        select: { 
+          reports: true, 
+          members: true,
+          metrics: true,
+          impacts: true,
+          outgoing: true,
+          incoming: true,
+        },
       },
     },
   });

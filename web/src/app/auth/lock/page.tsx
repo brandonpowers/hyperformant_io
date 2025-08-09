@@ -1,7 +1,6 @@
 'use client';
 import Card from 'components/ui/card';
 import InputField from 'components/ui/fields/InputField';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import UserAvatar from 'components/ui/avatar/UserAvatar';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
@@ -24,7 +23,7 @@ function Lock() {
   // Handle redirect after mounting
   useEffect(() => {
     if (mounted && status === 'unauthenticated') {
-      router.push('/auth/sign-in');
+      router.push('/sign-in');
     }
   }, [mounted, status, router]);
 
@@ -60,15 +59,11 @@ function Lock() {
   // Show loading state during authentication check
   if (!mounted || status === 'loading') {
     return (
-      <Centered
-        maincard={
-          <Card extra="w-[480px] mx-auto p-8">
-            <div className="flex justify-center items-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
-            </div>
-          </Card>
-        }
-      />
+      <Card extra="w-[480px] mx-auto p-8">
+        <div className="flex justify-center items-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"></div>
+        </div>
+      </Card>
     );
   }
 
@@ -78,10 +73,8 @@ function Lock() {
   }
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <form onSubmit={handleSubmit}>
+    <Card extra="w-[480px] mx-auto p-8">
+      <form onSubmit={handleSubmit}>
             <div className="mb-6 flex flex-col items-center">
               <UserAvatar size="xl" />
               <h3 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
@@ -122,16 +115,14 @@ function Lock() {
                 Not your account?
               </span>
               <Link
-                href="/auth/sign-in"
+                href="/sign-in"
                 className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
               >
                 Sign in with different account
               </Link>
             </div>
-          </form>
-        </Card>
-      }
-    />
+      </form>
+    </Card>
   );
 }
 

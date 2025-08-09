@@ -25,9 +25,13 @@ const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
     if (initialValue && initialValue.length === length) {
       const newValues = initialValue.split('');
       setValues(newValues);
-      onComplete(initialValue);
+      // Use a small timeout to prevent multiple calls during component mounting
+      const timeoutId = setTimeout(() => {
+        onComplete(initialValue);
+      }, 100);
+      return () => clearTimeout(timeoutId);
     }
-  }, [initialValue, length, onComplete]);
+  }, [initialValue, length]); // Removed onComplete from dependencies to prevent re-runs
 
   // Auto-focus first input on mount (if no initial value)
   useEffect(() => {

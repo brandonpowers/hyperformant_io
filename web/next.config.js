@@ -20,6 +20,27 @@ const nextConfig = {
     // Make ENV
     unoptimized: true,
   },
+  async rewrites() {
+    return [
+      // Public auth routes - clean URLs at root level
+      {
+        source: '/sign-in',
+        destination: '/auth/sign-in',
+      },
+      {
+        source: '/sign-up',
+        destination: '/auth/sign-up',
+      },
+      {
+        source: '/forgot-password',
+        destination: '/auth/forgot-password',
+      },
+      {
+        source: '/reset-password',
+        destination: '/auth/reset-password',
+      },
+    ];
+  },
 };
 
 module.exports = nextConfig;

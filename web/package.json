@@ -7,12 +7,7 @@
     "build": "next build",
     "start": "next start",
     "predeploy": "npm run build",
-    "preinstall": "npx npm-force-resolutions",
-    "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
-    "db:reset": "prisma migrate reset",
-    "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "preinstall": "npx npm-force-resolutions"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.10.0",

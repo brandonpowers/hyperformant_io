@@ -2,6 +2,11 @@ import { OpenAPIHono } from '@hono/zod-openapi';
 import { companiesApp } from './companies.router';
 import { authApp } from './auth.router';
 import { usersApp } from './users.router';
+import { entitiesApp } from './entities.router';
+import { signalsApp } from './signals.router';
+import { connectionsApp } from './connections.router';
+import { metricsApp } from './metrics.router';
+import { intelligenceApp } from './intelligence.router';
 import { errorHandler } from '../lib/api/errors';
 import { createLoggingMiddleware } from '../lib/api/logging-middleware';
 import { dbHealthCheck } from '../lib/api/database';
@@ -42,6 +47,13 @@ apiApp.route('/', companiesApp);
 apiApp.route('/', authApp);
 apiApp.route('/', usersApp);
 
+// Mount competitive intelligence routers
+apiApp.route('/', entitiesApp);
+apiApp.route('/', signalsApp);
+apiApp.route('/', connectionsApp);
+apiApp.route('/', metricsApp);
+apiApp.route('/', intelligenceApp);
+
 // System endpoints
 apiApp.get('/health', async (c) => {
   const dbHealthy = await dbHealthCheck();
@@ -65,11 +77,21 @@ apiApp.get('/info', (c) => {
       companies: '/api/v1/companies',
       auth: '/api/v1/auth',
       users: '/api/v1/users',
+      entities: '/api/v1/entities',
+      signals: '/api/v1/signals',
+      connections: '/api/v1/connections',
+      metrics: '/api/v1/metrics',
+      intelligence: '/api/v1/intelligence',
     },
     features: [
       'REST API',
-      'Authentication with NextAuth.js',
+      'Authentication with NextAuth.js', 
       'Hono framework',
+      'Competitive Intelligence',
+      'Entity Relationship Mapping',
+      'Signal Processing',
+      'Time-series Metrics',
+      'Composite Indices',
     ],
   });
 });

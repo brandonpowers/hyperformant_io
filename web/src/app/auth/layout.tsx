@@ -1,29 +1,19 @@
-'use client';
-import { PropsWithChildren } from 'react';
-
-// Chakra imports
-
-// Layout components
 import React from 'react';
-import { isWindowAvailable } from 'utils/navigation';
-import FixedPlugin from 'components/ui/fixedPlugin/FixedPlugin';
-import '../../styles/dashboard.css';
+import NavbarAuth from 'components/auth/NavbarAuth';
+import Footer from 'components/ui/footer/Footer';
 
-// Custom Chakra theme
-
-interface AuthProps extends PropsWithChildren {}
-
-export default function AuthLayout({ children }: AuthProps) {
-  // states and functions
-  if (isWindowAvailable()) document.documentElement.dir = 'ltr';
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div>
-      <div className="relative float-right h-full min-h-screen w-full dark:!bg-navy-900">
-        <main className={`mx-auto min-h-screen`}>
-          <FixedPlugin />
-          {children}
-        </main>
+    <div className="flex min-h-screen w-full flex-col self-center justify-self-center bg-gradient-main">
+      <NavbarAuth />
+      <div className="flex-1 flex items-center justify-center py-12">
+        {children}
       </div>
+      <Footer />
     </div>
   );
 }

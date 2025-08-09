@@ -585,7 +585,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
   console.log(`${c.yellow}Starting Prisma Studio...${c.reset}\n`);
 
   prismaStudioProcess = spawn('npm', ['run', 'db:studio'], {
-    cwd: path.join(process.cwd(), 'web'),
+    //cwd: path.join(process.cwd(), 'web'),
     stdio: ['ignore', 'ignore', 'inherit'],
     shell: true,
     detached: true,
@@ -610,10 +610,9 @@ ${c.bright}${c.white} API ENDPOINTS ${c.reset}
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 
  ${c.green}▶ Docs${c.reset}               ${c.cyan}http://localhost:3000/api/v1/docs${c.reset}
- ${c.green}▶ OpenAPI${c.reset}           ${c.cyan}http://localhost:3000/api/v1/openapi.json${c.reset}
+ ${c.green}▶ OpenAPI${c.reset}            ${c.cyan}http://localhost:3000/api/v1/openapi.json${c.reset}
  ${c.green}▶ Health Check${c.reset}       ${c.cyan}http://localhost:3000/api/v1/health${c.reset}
- ${c.green}▶ API Info${c.reset}           ${c.cyan}http://localhost:3000/api/v1/info${c.reset}
- 
+  
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 
 ${c.bright}${c.white} Quick Commands:${c.reset}

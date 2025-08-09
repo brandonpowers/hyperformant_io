@@ -8,29 +8,56 @@ import {
 import { UserSchema } from './user.schema';
 
 /**
- * Company-related schemas
- * Maps to Prisma Company model
+ * Company-related schemas (now aliases for Entity schemas)
+ * Maps to consolidated Entity model with type='COMPANY'
  */
 
-// Company role enum
-export const CompanyRoleSchema = z.enum(['ADMIN', 'EDITOR', 'VIEWER']).openapi({
-  description: 'User role within a company',
+// Entity role enum (replaces CompanyRole)
+export const EntityRoleSchema = z.enum(['ADMIN', 'EDITOR', 'VIEWER']).openapi({
+  description: 'User role within an entity/company',
 });
 
-// Base company schema
+// Re-export as CompanyRoleSchema for backward compatibility
+export const CompanyRoleSchema = EntityRoleSchema;
+
+// Base company schema (now based on Entity)
 export const CompanySchema = z
   .object({
     id: IdSchema,
+    type: z.literal('COMPANY').default('COMPANY'),
     name: z
       .string()
       .min(1, 'Company name is required')
-      .max(100, 'Name too long'),
+      .max(200, 'Name too long'),
     domain: z.string().optional(),
-    industry: z.string().optional(),
+    ticker: z.string().optional(),
+    foundedAt: DateTimeSchema.optional(),
+    hqCountry: z.string().optional(),
+    hqRegion: z.string().optional(),
+    
+    // Company-specific fields
     employees: z.number().int().positive().optional(),
     revenue: z.string().optional(),
-    founded: DateTimeSchema.optional(),
     description: z.string().max(1000, 'Description too long').optional(),
+    
+    // Competitive intelligence fields
+    isUserCompany: z.boolean().default(false),
+    externalIds: z.record(z.string(), z.any()).optional(),
+    
+    industryId: IdSchema.optional(),
+    industry: z.object({
+      id: IdSchema,
+      name: z.string(),
+      code: z.string().optional(),
+    }).optional(),
+    
+    marketSegmentId: IdSchema.optional(),
+    marketSegment: z.object({
+      id: IdSchema,
+      name: z.string(),
+      industryId: IdSchema,
+    }).optional(),
+    
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
 
@@ -40,7 +67,7 @@ export const CompanySchema = z
       .array(
         z.object({
           id: IdSchema,
-          role: CompanyRoleSchema,
+          role: EntityRoleSchema,
           joinedAt: DateTimeSchema,
           user: UserSchema,
         }),
@@ -50,6 +77,9 @@ export const CompanySchema = z
       .object({
         reports: z.number().int().min(0),
         members: z.number().int().min(0),
+        metrics: z.number().int().min(0),
+        signals: z.number().int().min(0),
+        connections: z.number().int().min(0),
       })
       .optional(),
   })
@@ -58,16 +88,22 @@ export const CompanySchema = z
 // Create company request
 export const CreateCompanySchema = z
   .object({
+    type: z.literal('COMPANY').default('COMPANY'),
     name: z
       .string()
       .min(1, 'Company name is required')
-      .max(100, 'Name too long'),
+      .max(200, 'Name too long'),
     domain: z.string().optional(),
-    industry: z.string().optional(),
+    ticker: z.string().optional(),
+    foundedAt: DateTimeSchema.optional(),
+    hqCountry: z.string().optional(),
+    hqRegion: z.string().optional(),
     employees: z.number().int().positive().optional(),
     revenue: z.string().optional(),
-    founded: DateTimeSchema.optional(),
     description: z.string().max(1000, 'Description too long').optional(),
+    industryId: IdSchema.optional(),
+    marketSegmentId: IdSchema.optional(),
+    isUserCompany: z.boolean().default(true), // Default true for user-created companies
   })
   .openapi('CreateCompany');
 
@@ -75,14 +111,19 @@ export const CreateCompanySchema = z
 export const UpdateCompanySchema =
   CreateCompanySchema.partial().openapi('UpdateCompany');
 
-// Company query parameters
+// Company query parameters  
 export const CompanyQuerySchema = PaginationQuerySchema.extend({
-  industry: z.string().optional().openapi({
-    description: 'Filter by industry',
-    example: 'Technology',
+  industryId: IdSchema.optional().openapi({
+    description: 'Filter by industry ID',
+  }),
+  marketSegmentId: IdSchema.optional().openapi({
+    description: 'Filter by market segment ID',
+  }),
+  search: z.string().optional().openapi({
+    description: 'Search by name or domain',
   }),
   sortBy: z
-    .enum(['name', 'createdAt', 'updatedAt'])
+    .enum(['name', 'createdAt', 'updatedAt', 'foundedAt'])
     .default('createdAt')
     .openapi({
       description: 'Field to sort by',
@@ -107,13 +148,13 @@ export const CompanyParamsSchema = z
   })
   .openapi('CompanyParams');
 
-// Company member management
+// Company member management (now EntityMember)
 export const CompanyMemberSchema = z
   .object({
     id: IdSchema,
-    companyId: IdSchema,
+    entityId: IdSchema, // Changed from companyId
     userId: IdSchema,
-    role: CompanyRoleSchema,
+    role: EntityRoleSchema,
     joinedAt: DateTimeSchema,
     user: UserSchema,
   })
@@ -122,38 +163,38 @@ export const CompanyMemberSchema = z
 export const InviteMemberSchema = z
   .object({
     email: z.string().email('Valid email required'),
-    role: CompanyRoleSchema.default('VIEWER'),
+    role: EntityRoleSchema.default('VIEWER'),
     message: z.string().max(500).optional(),
   })
   .openapi('InviteMember');
 
 export const UpdateMemberRoleSchema = z
   .object({
-    role: CompanyRoleSchema,
+    role: EntityRoleSchema,
   })
   .openapi('UpdateMemberRole');
 
-// Company access request
+// Company access request (now EntityAccessRequest)
 export const CompanyAccessRequestSchema = z
   .object({
     id: IdSchema,
-    companyId: IdSchema,
+    entityId: IdSchema, // Changed from companyId
     requesterId: IdSchema,
-    requestedRole: CompanyRoleSchema,
+    requestedRole: EntityRoleSchema,
     status: z.enum(['PENDING', 'APPROVED', 'REJECTED']),
     message: z.string().max(500).optional(),
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
 
     // Relations
-    company: CompanySchema.pick({ id: true, name: true }).optional(),
+    entity: CompanySchema.pick({ id: true, name: true }).optional(), // Changed from company
     requester: UserSchema.optional(),
   })
   .openapi('CompanyAccessRequest');
 
 export const CreateAccessRequestSchema = z
   .object({
-    requestedRole: CompanyRoleSchema.default('VIEWER'),
+    requestedRole: EntityRoleSchema.default('VIEWER'),
     message: z.string().max(500).optional(),
   })
   .openapi('CreateAccessRequest');

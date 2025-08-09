@@ -44,45 +44,8 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
 
-          // Check if email is verified
-          if (!user.emailVerified) {
-            // Generate new verification code
-            const verificationCode = Math.floor(
-              100000 + Math.random() * 900000,
-            ).toString();
-            const verificationExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 minutes from now
-
-            // Update user with new verification code
-            await prisma.user.update({
-              where: { id: user.id },
-              data: {
-                verificationCode,
-                verificationExpiry,
-              },
-            });
-
-            // Send verification email
-            try {
-              const { subject, html, text } = emailTemplates.verificationCode(
-                verificationCode,
-                user.email!,
-              );
-              await sendEmail({
-                to: user.email!,
-                subject,
-                html,
-                text,
-              });
-              console.log(`Auto-sent verification email to: ${user.email}`);
-            } catch (emailError) {
-              console.error('Failed to send verification email:', emailError);
-            }
-
-            // Custom error that the frontend can handle to redirect to verification
-            const error = new Error('VERIFICATION_REQUIRED');
-            (error as any).email = user.email;
-            throw error;
-          }
+          // Allow sign-in even if email is not verified
+          // The middleware will handle redirecting unverified users to verification page
 
           // Verify password
           const isPasswordValid = await bcrypt.compare(
@@ -99,6 +62,7 @@ export const authOptions: NextAuthOptions = {
             email: user.email,
             name: user.name,
             image: user.image,
+            emailVerified: user.emailVerified,
           };
         } catch (error) {
           console.error('Authentication error:', error);
@@ -111,14 +75,14 @@ export const authOptions: NextAuthOptions = {
     strategy: 'jwt',
   },
   pages: {
-    signIn: '/auth/sign-in',
-    signUp: '/auth/sign-up',
+    signIn: '/sign-in',
+    signUp: '/sign-up',
     error: '/auth/error',
   },
   callbacks: {
     async redirect({ url, baseUrl, token }) {
       // Never redirect to sign-in page after successful auth
-      if (url.includes('/auth/sign-in')) {
+      if (url.includes('/sign-in')) {
         // Check if user is new (created within last 5 minutes) to redirect to onboarding
         if (token?.sub) {
           const user = await prisma.user.findUnique({
@@ -158,42 +122,67 @@ export const authOptions: NextAuthOptions = {
       return `${baseUrl}/dashboard`;
     },
     async session({ session, token }) {
-      if (session?.user && token) {
+      // If token is empty or invalid, return null to clear the session
+      if (!token || !token.sub) {
+        return null as any;
+      }
+
+      if (session?.user && token && (token.sub || token.id)) {
         const userId = (token.sub || token.id) as string;
 
-        // Validate that the user exists in the database
-        const userExists = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { id: true },
-        });
-
-        // If user doesn't exist in database, invalidate the session
-        if (!userExists) {
-          console.log(
-            'User from session not found in database, invalidating session:',
-            userId,
-          );
-          // Returning null clears the session and NextAuth will redirect to sign-in
-          return null as any;
-        }
-
         session.user.id = userId;
-        // Add any additional user properties from token
+        // Add user properties from token
         session.user.isAdmin = (token.isAdmin as boolean) || false;
         session.user.subscriptionStatus = token.subscriptionStatus as string;
         session.user.subscriptionPlan = token.subscriptionPlan as string;
         session.user.credits = (token.credits as number) || 0;
+        session.user.emailVerified = token.emailVerified as Date | null;
       }
       return session;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
+      // On initial sign-in or when updating session
       if (user) {
         token.id = user.id;
         token.isAdmin = (user as any).isAdmin || false;
         token.subscriptionStatus = (user as any).subscriptionStatus;
         token.subscriptionPlan = (user as any).subscriptionPlan;
         token.credits = (user as any).credits || 0;
+        token.emailVerified = (user as any).emailVerified;
       }
+      
+      // Always check if user exists and refresh emailVerified from database
+      if (!user && token.sub) { // Only check on subsequent requests, not initial sign-in
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: token.sub },
+            select: { 
+              emailVerified: true, 
+              isAdmin: true,
+              subscriptionStatus: true,
+              subscriptionPlan: true,
+              credits: true
+            },
+          });
+          
+          if (dbUser) {
+            token.emailVerified = dbUser.emailVerified;
+            token.isAdmin = dbUser.isAdmin || false;
+            token.subscriptionStatus = dbUser.subscriptionStatus;
+            token.subscriptionPlan = dbUser.subscriptionPlan;
+            token.credits = dbUser.credits || 0;
+          } else {
+            // User no longer exists in database - return empty token to force session clear
+            console.log('User no longer exists in database:', token.sub);
+            return {};
+          }
+        } catch (error) {
+          console.error('Error refreshing user data in JWT callback:', error);
+          // On database error, return empty token to force session clear
+          return {};
+        }
+      }
+      
       return token;
     },
   },

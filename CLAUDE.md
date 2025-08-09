@@ -555,12 +555,6 @@ Always check `docs/setup-guide.md` for setup instructions and `docs/business-eng
 - **`Navigation`** - Marketing site navigation
 - **`Footer`** - Marketing site footer
 
-### Authentication Components (`components/auth/`)
-
-- **`CenteredAuthLayout`** - Centered auth page layout
-- **`DefaultAuthLayout`** - Default auth page layout
-- **`PricingAuthLayout`** - Pricing-focused auth layout
-
 ### Provider Components (`components/providers/`)
 
 - **`QueryProvider`** - React Query provider

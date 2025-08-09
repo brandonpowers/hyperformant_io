@@ -23,7 +23,7 @@ export default function AccountLayout({
   useEffect(() => {
     if (status === 'loading') return; // Still loading
     if (!session) {
-      window.location.href = '/auth/sign-in';
+      window.location.href = '/sign-in';
     }
   }, [session, status]);
 

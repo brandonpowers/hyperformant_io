@@ -1,6 +1,5 @@
 'use client';
 import Card from 'components/ui/card';
-import Centered from 'components/auth/variants/CenteredAuthLayout';
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -66,15 +65,13 @@ function RequestAccess() {
 
   // If no session, redirect to sign-in
   if (!session && typeof window !== 'undefined') {
-    router.push('/auth/sign-in');
+    router.push('/sign-in');
     return null;
   }
 
   if (success) {
     return (
-      <Centered
-        maincard={
-          <Card extra="w-[480px] mx-auto p-8">
+      <Card extra="w-[480px] mx-auto p-8">
             <div className="text-center">
               <div className="mb-6 flex justify-center">
                 <div className="h-20 w-20 rounded-full bg-green-100 dark:bg-green-900/20 flex items-center justify-center">
@@ -90,23 +87,19 @@ function RequestAccess() {
                 request is reviewed.
               </p>
               <button
-                onClick={() => router.push('/auth/sign-in')}
+                onClick={() => router.push('/sign-in')}
                 className="linear w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
               >
                 Back to Sign In
               </button>
             </div>
-          </Card>
-        }
-      />
+      </Card>
     );
   }
 
   return (
-    <Centered
-      maincard={
-        <Card extra="w-[480px] mx-auto p-8">
-          <form onSubmit={handleSubmit}>
+    <Card extra="w-[480px] mx-auto p-8">
+      <form onSubmit={handleSubmit}>
             <div className="mb-6 flex flex-col items-center">
               <div className="mb-4 h-20 w-20 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center">
                 <IoBusinessOutline className="h-10 w-10 text-blue-600 dark:text-blue-400" />
@@ -173,16 +166,14 @@ function RequestAccess() {
               </span>
               <button
                 type="button"
-                onClick={() => router.push('/auth/sign-in')}
+                onClick={() => router.push('/sign-in')}
                 className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
               >
                 Back to Sign In
               </button>
             </div>
-          </form>
-        </Card>
-      }
-    />
+      </form>
+    </Card>
   );
 }
 
