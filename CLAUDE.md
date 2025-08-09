@@ -20,6 +20,11 @@ npm run db:migrate     # Run database migrations via Prisma
 npm run db:seed        # Run database seeds with system configuration
 npm run db:studio      # Open Prisma Studio for database management
 
+# Important: When running Prisma commands directly (not via npm scripts), always use dotenv:
+# cd web && dotenv -e .env.local -- npx prisma migrate dev
+# cd web && dotenv -e .env.local -- npx prisma migrate reset
+# cd web && dotenv -e .env.local -- npx prisma db execute --file script.sql
+
 # Deployment
 npm run import:dev     # Import N8N workflows to dev environment
 npm run import:prod    # Import N8N workflows to production

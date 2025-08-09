@@ -25,7 +25,9 @@ export const createValidationMiddleware = (schemas: ValidationSchemas) => {
           const contentType = c.req.header('content-type') || '';
           if (contentType.includes('application/json')) {
             body = await c.req.json();
-          } else if (contentType.includes('application/x-www-form-urlencoded')) {
+          } else if (
+            contentType.includes('application/x-www-form-urlencoded')
+          ) {
             body = await c.req.parseBody();
           } else {
             body = {};
@@ -41,7 +43,7 @@ export const createValidationMiddleware = (schemas: ValidationSchemas) => {
             received: body,
           });
         }
-        
+
         // Set validated body in context for use in route handlers
         c.set('validatedBody', bodyResult.data);
       }
@@ -56,7 +58,7 @@ export const createValidationMiddleware = (schemas: ValidationSchemas) => {
             received: query,
           });
         }
-        
+
         // Set validated query in context
         c.set('validatedQuery', queryResult.data);
       }
@@ -71,7 +73,7 @@ export const createValidationMiddleware = (schemas: ValidationSchemas) => {
             received: params,
           });
         }
-        
+
         // Set validated params in context
         c.set('validatedParams', paramsResult.data);
       }
@@ -81,7 +83,7 @@ export const createValidationMiddleware = (schemas: ValidationSchemas) => {
       if (error instanceof ApiError) {
         throw error;
       }
-      
+
       // Handle unexpected validation errors
       console.error('Validation middleware error:', error);
       throw ApiError.validation('Request validation failed');

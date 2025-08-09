@@ -6,16 +6,12 @@ import {
   PaginationResponseSchema,
 } from './common.schema';
 import { UserSchema } from './user.schema';
+import { EntityRoleSchema } from './entity.schema';
 
 /**
  * Company-related schemas (now aliases for Entity schemas)
  * Maps to consolidated Entity model with type='COMPANY'
  */
-
-// Entity role enum (replaces CompanyRole)
-export const EntityRoleSchema = z.enum(['ADMIN', 'EDITOR', 'VIEWER']).openapi({
-  description: 'User role within an entity/company',
-});
 
 // Re-export as CompanyRoleSchema for backward compatibility
 export const CompanyRoleSchema = EntityRoleSchema;
@@ -34,30 +30,34 @@ export const CompanySchema = z
     foundedAt: DateTimeSchema.optional(),
     hqCountry: z.string().optional(),
     hqRegion: z.string().optional(),
-    
+
     // Company-specific fields
     employees: z.number().int().positive().optional(),
     revenue: z.string().optional(),
     description: z.string().max(1000, 'Description too long').optional(),
-    
+
     // Competitive intelligence fields
     isUserCompany: z.boolean().default(false),
     externalIds: z.record(z.string(), z.any()).optional(),
-    
+
     industryId: IdSchema.optional(),
-    industry: z.object({
-      id: IdSchema,
-      name: z.string(),
-      code: z.string().optional(),
-    }).optional(),
-    
+    industry: z
+      .object({
+        id: IdSchema,
+        name: z.string(),
+        code: z.string().optional(),
+      })
+      .optional(),
+
     marketSegmentId: IdSchema.optional(),
-    marketSegment: z.object({
-      id: IdSchema,
-      name: z.string(),
-      industryId: IdSchema,
-    }).optional(),
-    
+    marketSegment: z
+      .object({
+        id: IdSchema,
+        name: z.string(),
+        industryId: IdSchema,
+      })
+      .optional(),
+
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
 
@@ -111,7 +111,7 @@ export const CreateCompanySchema = z
 export const UpdateCompanySchema =
   CreateCompanySchema.partial().openapi('UpdateCompany');
 
-// Company query parameters  
+// Company query parameters
 export const CompanyQuerySchema = PaginationQuerySchema.extend({
   industryId: IdSchema.optional().openapi({
     description: 'Filter by industry ID',

@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         message:
-          'Account created successfully! Please check your email for a verification code.',
+          'Account created successfully! Please check your email.',
         requiresVerification: true,
         needsAccessRequest: entityAssociation.needsAccessRequest,
         membershipCreated: entityAssociation.membershipCreated,

@@ -11,24 +11,26 @@ import {
  */
 
 // Connection type enum
-export const ConnectionTypeSchema = z.enum([
-  'PARTNERSHIP',
-  'COMPETITOR',
-  'CUSTOMER_SUPPLIER',
-  'INVESTOR_PORTFOLIO',
-  'OWNERSHIP',
-  'BOARD_LINK',
-  'JOINT_RD',
-  'CO_PATENT',
-  'TECH_AFFINITY',
-  'REGULATORY',
-  'LEGAL_DISPUTE',
-  'SUPPLY_CHAIN',
-  'INDUSTRY_ADJACENCY',
-  'WEAK_COMPETITOR',
-]).openapi({
-  description: 'Type of connection between entities',
-});
+export const ConnectionTypeSchema = z
+  .enum([
+    'PARTNERSHIP',
+    'COMPETITOR',
+    'CUSTOMER_SUPPLIER',
+    'INVESTOR_PORTFOLIO',
+    'OWNERSHIP',
+    'BOARD_LINK',
+    'JOINT_RD',
+    'CO_PATENT',
+    'TECH_AFFINITY',
+    'REGULATORY',
+    'LEGAL_DISPUTE',
+    'SUPPLY_CHAIN',
+    'INDUSTRY_ADJACENCY',
+    'WEAK_COMPETITOR',
+  ])
+  .openapi({
+    description: 'Type of connection between entities',
+  });
 
 // Base connection schema
 export const ConnectionSchema = z
@@ -46,21 +48,25 @@ export const ConnectionSchema = z
     since: DateTimeSchema,
     until: DateTimeSchema.optional(),
     metadata: z.record(z.string(), z.any()).optional(),
-    
+
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
-    
+
     // Relations (optional - included when requested)
-    source: z.object({
-      id: IdSchema,
-      name: z.string(),
-      type: z.string(),
-    }).optional(),
-    target: z.object({
-      id: IdSchema,
-      name: z.string(),
-      type: z.string(),
-    }).optional(),
+    source: z
+      .object({
+        id: IdSchema,
+        name: z.string(),
+        type: z.string(),
+      })
+      .optional(),
+    target: z
+      .object({
+        id: IdSchema,
+        name: z.string(),
+        type: z.string(),
+      })
+      .optional(),
   })
   .openapi('Connection');
 
@@ -140,34 +146,42 @@ export const ConnectionParamsSchema = z
 
 // Connection detail with full entities
 export const ConnectionDetailSchema = ConnectionSchema.extend({
-  events: z.array(z.object({
-    id: IdSchema,
-    signal: z.object({
-      id: IdSchema,
-      timestamp: DateTimeSchema,
-      type: z.string(),
-      summary: z.string().optional(),
-    }),
-    createdAt: DateTimeSchema,
-  })).optional(),
+  events: z
+    .array(
+      z.object({
+        id: IdSchema,
+        signal: z.object({
+          id: IdSchema,
+          timestamp: DateTimeSchema,
+          type: z.string(),
+          summary: z.string().optional(),
+        }),
+        createdAt: DateTimeSchema,
+      }),
+    )
+    .optional(),
 }).openapi('ConnectionDetail');
 
 // Network graph response for visualization
 export const NetworkGraphSchema = z
   .object({
-    nodes: z.array(z.object({
-      id: IdSchema,
-      name: z.string(),
-      type: z.string(),
-      group: z.string().optional(),
-    })),
-    edges: z.array(z.object({
-      id: IdSchema,
-      source: IdSchema,
-      target: IdSchema,
-      type: ConnectionTypeSchema,
-      strength: z.number().optional(),
-      sentiment: z.number().optional(),
-    })),
+    nodes: z.array(
+      z.object({
+        id: IdSchema,
+        name: z.string(),
+        type: z.string(),
+        group: z.string().optional(),
+      }),
+    ),
+    edges: z.array(
+      z.object({
+        id: IdSchema,
+        source: IdSchema,
+        target: IdSchema,
+        type: ConnectionTypeSchema,
+        strength: z.number().optional(),
+        sentiment: z.number().optional(),
+      }),
+    ),
   })
   .openapi('NetworkGraph');

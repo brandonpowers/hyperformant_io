@@ -112,16 +112,18 @@ export default function GoalsPage() {
               animationFillMode: 'backwards',
             }}
           >
-            <label
-              htmlFor={goal.id}
+            <div
+              onClick={() => handleGoalToggle(goal.id)}
               className="block cursor-pointer rounded-lg border-2 border-gray-200 p-4 transition-all hover:border-brand-500 dark:border-gray-700 dark:hover:border-brand-500"
             >
               <div className="flex items-start gap-4">
-                <Checkbox
-                  id={goal.id}
-                  checked={selectedGoals.includes(goal.id)}
-                  onCheckedChange={() => handleGoalToggle(goal.id)}
-                />
+                <div onClick={(e) => e.stopPropagation()}>
+                  <Checkbox
+                    id={goal.id}
+                    checked={selectedGoals.includes(goal.id)}
+                    onCheckedChange={() => handleGoalToggle(goal.id)}
+                  />
+                </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
                     <div className="text-brand-500 dark:text-brand-400">
@@ -136,7 +138,7 @@ export default function GoalsPage() {
                   </p>
                 </div>
               </div>
-            </label>
+            </div>
           </div>
         ))}
       </div>

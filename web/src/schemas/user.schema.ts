@@ -62,7 +62,7 @@ export const ChangePasswordSchema = z
       .max(100, 'Password too long')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Password must contain uppercase, lowercase, and number'
+        'Password must contain uppercase, lowercase, and number',
       ),
     confirmPassword: z.string(),
   })
@@ -87,7 +87,7 @@ export const UserQuerySchema = PaginationQuerySchema.extend({
     .optional()
     .transform((val) => val === 'true')
     .openapi({
-      description: 'Filter by active status', 
+      description: 'Filter by active status',
       example: 'true',
     }),
   sortBy: z

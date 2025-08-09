@@ -85,9 +85,9 @@ function openBrowser(url: string): boolean {
 // Check if Docker daemon is running
 function isDockerRunning(): boolean {
   try {
-    execSync('docker version --format "{{.Server.Version}}"', { 
+    execSync('docker version --format "{{.Server.Version}}"', {
       stdio: 'ignore',
-      timeout: 2000 // 2 second timeout to avoid hanging
+      timeout: 2000, // 2 second timeout to avoid hanging
     });
     return true;
   } catch {
@@ -97,8 +97,7 @@ function isDockerRunning(): boolean {
 
 // Get platform-specific Docker start instructions
 function getDockerStartInstructions(): string {
-  const platform = os.platform();
-  
+
   const instructions = `
 ${c.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 ${c.bright}${c.red}❌ Docker daemon is not running${c.reset}
@@ -135,7 +134,7 @@ ${c.bright}${c.cyan}WSL2 (Windows Subsystem for Linux):${c.reset}
 
 ${c.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 `;
-  
+
   return instructions;
 }
 
@@ -487,7 +486,9 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
       execSync('docker compose up -d', { stdio: 'inherit' });
     } catch (error) {
       console.log(`\n${c.red}❌ Failed to start Docker services${c.reset}`);
-      console.log(`${c.dim}Please check your docker-compose.yml configuration${c.reset}`);
+      console.log(
+        `${c.dim}Please check your docker-compose.yml configuration${c.reset}`
+      );
       process.exit(1);
     }
 

@@ -6,7 +6,6 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 import { PrismaAdapter } from '@auth/prisma-adapter';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
-import { sendEmail, emailTemplates } from 'lib/email';
 
 const prisma = new PrismaClient();
 
@@ -32,15 +31,23 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
+          console.log('Missing credentials:', { email: !!credentials?.email, password: !!credentials?.password });
           return null;
         }
 
         try {
+          console.log('Looking up user:', credentials.email);
           const user = await prisma.user.findUnique({
             where: { email: credentials.email },
           });
 
-          if (!user || !user.password) {
+          if (!user) {
+            console.log('User not found:', credentials.email);
+            return null;
+          }
+
+          if (!user.password) {
+            console.log('User has no password (OAuth user?):', credentials.email);
             return null;
           }
 
@@ -48,15 +55,18 @@ export const authOptions: NextAuthOptions = {
           // The middleware will handle redirecting unverified users to verification page
 
           // Verify password
+          console.log('Verifying password for user:', credentials.email);
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password,
           );
 
           if (!isPasswordValid) {
+            console.log('Password invalid for user:', credentials.email);
             return null;
           }
 
+          console.log('Authentication successful for user:', credentials.email);
           return {
             id: user.id,
             email: user.email,
@@ -140,7 +150,7 @@ export const authOptions: NextAuthOptions = {
       }
       return session;
     },
-    async jwt({ token, user, trigger }) {
+    async jwt({ token, user }) {
       // On initial sign-in or when updating session
       if (user) {
         token.id = user.id;
@@ -150,21 +160,22 @@ export const authOptions: NextAuthOptions = {
         token.credits = (user as any).credits || 0;
         token.emailVerified = (user as any).emailVerified;
       }
-      
+
       // Always check if user exists and refresh emailVerified from database
-      if (!user && token.sub) { // Only check on subsequent requests, not initial sign-in
+      if (!user && token.sub) {
+        // Only check on subsequent requests, not initial sign-in
         try {
           const dbUser = await prisma.user.findUnique({
             where: { id: token.sub },
-            select: { 
-              emailVerified: true, 
+            select: {
+              emailVerified: true,
               isAdmin: true,
               subscriptionStatus: true,
               subscriptionPlan: true,
-              credits: true
+              credits: true,
             },
           });
-          
+
           if (dbUser) {
             token.emailVerified = dbUser.emailVerified;
             token.isAdmin = dbUser.isAdmin || false;
@@ -182,7 +193,7 @@ export const authOptions: NextAuthOptions = {
           return {};
         }
       }
-      
+
       return token;
     },
   },

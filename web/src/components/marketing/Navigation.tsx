@@ -56,11 +56,7 @@ export function Navigation() {
               >
                 Sign In
               </Link>
-              <Button
-                className="h-10 font-semibold"
-                asChild
-                href="/sign-up"
-              >
+              <Button className="h-10 font-semibold" asChild href="/sign-up">
                 Sign Up
               </Button>
             </div>

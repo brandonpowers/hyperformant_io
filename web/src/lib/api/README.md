@@ -19,6 +19,7 @@ src/lib/api/
 ## 🔐 Authentication Middleware
 
 ### `createAuthMiddleware()`
+
 Validates NextAuth JWT sessions and sets user context.
 
 ```typescript
@@ -34,6 +35,7 @@ app.get('/protected-route', authMiddleware, async (c) => {
 ```
 
 ### `createAdminMiddleware()`
+
 Requires admin privileges (must be used after `authMiddleware`).
 
 ```typescript
@@ -50,10 +52,11 @@ app.get('/admin-only', authMiddleware, adminMiddleware, async (c) => {
 ## ✅ Validation Middleware
 
 ### Request Validation
+
 Validates request body, query parameters, and path parameters using Zod schemas.
 
 ```typescript
-import { 
+import {
   createValidationMiddleware,
   validateBody,
   validateQuery,
@@ -97,6 +100,7 @@ app.post('/users/:id/update', validation, async (c) => {
 ## 🗄️ Database Utilities
 
 ### Shared Database Instance
+
 ```typescript
 import { db, getDb, withTransaction } from '../lib/api/database';
 
@@ -112,14 +116,15 @@ app.get('/users', async (c) => {
 // Transactions
 const result = await withTransaction(async (tx) => {
   const user = await tx.user.create({ data: userData });
-  const profile = await tx.profile.create({ 
-    data: { userId: user.id, ...profileData } 
+  const profile = await tx.profile.create({
+    data: { userId: user.id, ...profileData },
   });
   return { user, profile };
 });
 ```
 
 ### Database Middleware
+
 ```typescript
 import { createDatabaseMiddleware } from '../lib/api/database';
 
@@ -130,6 +135,7 @@ app.use('*', dbMiddleware);
 ```
 
 ### Error Handling
+
 ```typescript
 import { handleDatabaseError } from '../lib/api/database';
 
@@ -137,11 +143,11 @@ try {
   await db.user.create({ data: userData });
 } catch (error) {
   const dbError = handleDatabaseError(error);
-  
+
   if (dbError.type === 'UNIQUE_CONSTRAINT') {
     throw ApiError.duplicate(dbError.message);
   }
-  
+
   throw ApiError.server(dbError.message);
 }
 ```
@@ -149,6 +155,7 @@ try {
 ## 📝 Logging Middleware
 
 ### Request Logging
+
 ```typescript
 import { createLoggingMiddleware } from '../lib/api/logging-middleware';
 
@@ -164,6 +171,7 @@ app.use('*', loggingMiddleware);
 ```
 
 ### Error Logging
+
 ```typescript
 import { createErrorLoggingMiddleware } from '../lib/api/logging-middleware';
 
@@ -174,6 +182,7 @@ app.use('*', errorLoggingMiddleware);
 ```
 
 ### Development Debug
+
 ```typescript
 import { createDebugMiddleware } from '../lib/api/logging-middleware';
 
@@ -185,6 +194,7 @@ app.use('*', debugMiddleware);
 ## 🚨 Error Handling
 
 ### Standard Error Types
+
 ```typescript
 import { ApiError } from '../lib/api/errors';
 
@@ -201,7 +211,9 @@ throw new ApiError(418, 'TEAPOT_ERROR', 'I am a teapot');
 ```
 
 ### Global Error Handler
+
 The global error handler in `/src/routers/index.ts` automatically handles:
+
 - `ApiError` instances
 - Prisma database errors
 - Zod validation errors
@@ -210,6 +222,7 @@ The global error handler in `/src/routers/index.ts` automatically handles:
 ## 📊 Response Formatting
 
 ### Standard Responses
+
 ```typescript
 import { ApiResponse } from '../lib/api/responses';
 
@@ -231,9 +244,11 @@ return c.json(ApiResponse.accepted('task-123'));
 ## 🏗️ Creating New Routers
 
 ### 1. Use the Template
+
 Copy `/src/lib/api/router-template.ts` and customize it for your resource.
 
 ### 2. Standard Router Setup
+
 ```typescript
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { createAuthMiddleware } from '../lib/api/auth-middleware';
@@ -260,6 +275,7 @@ yourResourceApp.get('/your-resource', authMiddleware, async (c) => {
 ```
 
 ### 3. Mount in Main Router
+
 ```typescript
 // In /src/routers/index.ts
 import { yourResourceApp } from './your-resource.router';
@@ -270,10 +286,15 @@ apiApp.route('/', yourResourceApp);
 ## 🧪 Testing
 
 ### Testing with Authentication
+
 ```typescript
 // Mock authenticated user
 const mockAuthMiddleware = async (c: any, next: any) => {
-  c.set('user', { id: 'test-user', name: 'Test User', email: 'test@example.com' });
+  c.set('user', {
+    id: 'test-user',
+    name: 'Test User',
+    email: 'test@example.com',
+  });
   await next();
 };
 
@@ -282,6 +303,7 @@ app.get('/test-route', mockAuthMiddleware, routeHandler);
 ```
 
 ### Testing Validation
+
 ```typescript
 // Test validation middleware
 const request = new Request('/test', {
@@ -297,22 +319,26 @@ expect(response.status).toBe(400);
 ## 🚀 Performance Best Practices
 
 ### 1. Database Optimization
+
 - Use `select` to limit returned fields
 - Use `include` carefully to avoid N+1 queries
 - Use transactions for multi-step operations
 - Implement proper indexing in Prisma schema
 
 ### 2. Middleware Order
+
 Apply middleware in this order for optimal performance:
+
 ```typescript
-app.use('*', loggingMiddleware);      // 1. Logging (for all requests)
-app.use('*', corsMiddleware);         // 2. CORS (if needed)
-app.use('/api/*', authMiddleware);    // 3. Auth (only for protected routes)
+app.use('*', loggingMiddleware); // 1. Logging (for all requests)
+app.use('*', corsMiddleware); // 2. CORS (if needed)
+app.use('/api/*', authMiddleware); // 3. Auth (only for protected routes)
 app.use('/api/*', rateLimitMiddleware); // 4. Rate limiting
-app.use('*', validationMiddleware);   // 5. Validation (per route)
+app.use('*', validationMiddleware); // 5. Validation (per route)
 ```
 
 ### 3. Caching
+
 - Use Redis for session caching
 - Implement HTTP caching headers
 - Cache expensive database queries
@@ -320,16 +346,19 @@ app.use('*', validationMiddleware);   // 5. Validation (per route)
 ## 🔒 Security Considerations
 
 ### 1. Authentication
+
 - Always use `authMiddleware` for protected routes
 - Validate JWT tokens properly
 - Handle session expiration gracefully
 
 ### 2. Input Validation
+
 - Validate all inputs with Zod schemas
 - Sanitize user inputs
 - Use parameterized queries (Prisma handles this)
 
 ### 3. Rate Limiting
+
 - Implement rate limiting for public endpoints
 - Use different limits for authenticated users
 - Monitor and alert on unusual traffic patterns
@@ -337,18 +366,20 @@ app.use('*', validationMiddleware);   // 5. Validation (per route)
 ## 📈 Monitoring
 
 ### 1. Request Logging
+
 - All requests are logged with timing information
 - Errors are logged with full context
 - Slow requests (>1s) are flagged
 
 ### 2. Database Health
+
 ```typescript
 import { dbHealthCheck } from '../lib/api/database';
 
 // Health check endpoint
 app.get('/health', async (c) => {
   const dbHealthy = await dbHealthCheck();
-  
+
   return c.json({
     status: dbHealthy ? 'healthy' : 'unhealthy',
     database: dbHealthy,
@@ -360,12 +391,14 @@ app.get('/health', async (c) => {
 ## 🔄 Migration Guide
 
 ### From Individual Middleware to Shared
+
 1. Replace inline middleware with imports from `../lib/api/*`
 2. Update route definitions to use shared middleware
 3. Test all routes to ensure consistent behavior
 4. Update any custom error handling to use `ApiError`
 
 ### Example Migration
+
 ```typescript
 // Before
 const authMiddleware = async (c: any, next: any) => {
@@ -397,7 +430,9 @@ const authMiddleware = createAuthMiddleware();
    - Ensure middleware is imported and applied correctly
 
 ### Debug Mode
+
 Set `NODE_ENV=development` to enable:
+
 - Detailed request logging
 - Database query logging
 - Debug middleware output

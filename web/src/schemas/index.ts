@@ -6,13 +6,15 @@
 // Common schemas
 export * from './common.schema';
 
-// Domain-specific schemas
-export * from './company.schema';
+// Core schemas (order matters - entity must come before company)
 export * from './user.schema';
 export * from './auth.schema';
+export * from './entity.schema';
+
+// Domain-specific schemas (depends on entity.schema)
+export * from './company.schema';
 
 // Competitive Intelligence schemas
-export * from './entity.schema';
 export * from './signal.schema';
 export * from './connection.schema';
 export * from './metric.schema';

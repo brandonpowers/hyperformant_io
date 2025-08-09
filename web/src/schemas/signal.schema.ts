@@ -11,69 +11,68 @@ import {
  */
 
 // Signal category enum
-export const SignalCategorySchema = z.enum([
-  'MARKET',
-  'COMPETITIVE',
-  'DEAL',
-  'PRODUCT',
-  'TALENT',
-  'RISK',
-  'ENGAGEMENT',
-]).openapi({
-  description: 'Category of signal/event',
-});
+export const SignalCategorySchema = z
+  .enum([
+    'MARKET',
+    'COMPETITIVE',
+    'DEAL',
+    'PRODUCT',
+    'TALENT',
+    'RISK',
+    'ENGAGEMENT',
+  ])
+  .openapi({
+    description: 'Category of signal/event',
+  });
 
 // Signal type enum
-export const SignalTypeSchema = z.enum([
-  'ACQUISITION',
-  'FUNDING_ROUND',
-  'PARTNERSHIP',
-  'COMPETITOR_LAUNCH',
-  'PRICING_CHANGE',
-  'MARKET_ENTRY',
-  'CUSTOMER_WIN',
-  'CUSTOMER_LOSS',
-  'PRESS_MENTION',
-  'SOCIAL_POST',
-  'REVIEW',
-  'PRODUCT_LAUNCH',
-  'MAJOR_UPDATE',
-  'PATENT_FILED',
-  'EXEC_HIRE',
-  'EXEC_DEPARTURE',
-  'LAYOFF',
-  'LAWSUIT',
-  'SECURITY_BREACH',
-  'REGULATORY_CHANGE',
-  'TRAFFIC_SPIKE',
-  'SEO_RANK_CHANGE',
-  'ANALYST_FORECAST',
-  'TREND_REPORT',
-  'IPO',
-  'MERGER',
-  'CONTROVERSY',
-]).openapi({
-  description: 'Specific type of signal/event',
-});
+export const SignalTypeSchema = z
+  .enum([
+    'ACQUISITION',
+    'FUNDING_ROUND',
+    'PARTNERSHIP',
+    'COMPETITOR_LAUNCH',
+    'PRICING_CHANGE',
+    'MARKET_ENTRY',
+    'CUSTOMER_WIN',
+    'CUSTOMER_LOSS',
+    'PRESS_MENTION',
+    'SOCIAL_POST',
+    'REVIEW',
+    'PRODUCT_LAUNCH',
+    'MAJOR_UPDATE',
+    'PATENT_FILED',
+    'EXEC_HIRE',
+    'EXEC_DEPARTURE',
+    'LAYOFF',
+    'LAWSUIT',
+    'SECURITY_BREACH',
+    'REGULATORY_CHANGE',
+    'TRAFFIC_SPIKE',
+    'SEO_RANK_CHANGE',
+    'ANALYST_FORECAST',
+    'TREND_REPORT',
+    'IPO',
+    'MERGER',
+    'CONTROVERSY',
+  ])
+  .openapi({
+    description: 'Specific type of signal/event',
+  });
 
 // Sentiment label enum
-export const SentimentLabelSchema = z.enum([
-  'NEGATIVE',
-  'NEUTRAL',
-  'POSITIVE',
-]).openapi({
-  description: 'Sentiment classification',
-});
+export const SentimentLabelSchema = z
+  .enum(['NEGATIVE', 'NEUTRAL', 'POSITIVE'])
+  .openapi({
+    description: 'Sentiment classification',
+  });
 
 // Impact role enum
-export const ImpactRoleSchema = z.enum([
-  'SUBJECT',
-  'ACTOR',
-  'TARGET',
-  'MENTIONED',
-]).openapi({
-  description: 'Role of entity in signal impact',
-});
+export const ImpactRoleSchema = z
+  .enum(['SUBJECT', 'ACTOR', 'TARGET', 'MENTIONED'])
+  .openapi({
+    description: 'Role of entity in signal impact',
+  });
 
 // Signal impact schema
 export const SignalImpactSchema = z
@@ -107,9 +106,9 @@ export const SignalSchema = z
       description: 'Days for signal importance to decay by half',
     }),
     tags: z.array(z.string()).default([]),
-    
+
     createdAt: DateTimeSchema,
-    
+
     // Relations (optional - included when requested)
     impacts: z.array(SignalImpactSchema).optional(),
   })
@@ -196,6 +195,6 @@ export const SignalDetailSchema = SignalSchema.extend({
         name: z.string(),
         type: z.string(),
       }),
-    })
+    }),
   ),
 }).openapi('SignalDetail');

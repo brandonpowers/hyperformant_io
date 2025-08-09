@@ -113,12 +113,12 @@ const OnboardingLayout = ({ children }: { children: React.ReactNode }) => {
               className="hidden h-8 w-auto dark:block"
             />
           </Link>
-          
+
           {/* Progress indicator in center - absolutely positioned */}
           <div className="absolute left-1/2 transform -translate-x-1/2">
             <StepProgress steps={steps} />
           </div>
-          
+
           {/* Skip to dashboard link */}
           <Link
             href="/dashboard"

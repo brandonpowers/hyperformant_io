@@ -11,15 +11,11 @@ import {
  */
 
 // Entity type enum
-export const EntityTypeSchema = z.enum([
-  'COMPANY',
-  'PRODUCT',
-  'PERSON',
-  'MARKET',
-  'SEGMENT',
-]).openapi({
-  description: 'Type of entity in the competitive intelligence system',
-});
+export const EntityTypeSchema = z
+  .enum(['COMPANY', 'PRODUCT', 'PERSON', 'MARKET', 'SEGMENT'])
+  .openapi({
+    description: 'Type of entity in the competitive intelligence system',
+  });
 
 // Entity role enum
 export const EntityRoleSchema = z.enum(['ADMIN', 'EDITOR', 'VIEWER']).openapi({
@@ -60,32 +56,34 @@ export const EntitySchema = z
     foundedAt: DateTimeSchema.optional(),
     hqCountry: z.string().optional(),
     hqRegion: z.string().optional(),
-    
+
     // Company-specific fields
     employees: z.number().int().positive().optional(),
     revenue: z.string().optional(),
     description: z.string().optional(),
-    
+
     // Competitive intelligence fields
     isUserCompany: z.boolean().default(false),
     externalIds: z.record(z.string(), z.any()).optional(),
-    
+
     industryId: IdSchema.optional(),
     industry: IndustrySchema.optional(),
     marketSegmentId: IdSchema.optional(),
     marketSegment: MarketSegmentSchema.optional(),
-    
+
     // User management fields (for company entities)
     createdByUserId: IdSchema.optional(),
-    createdBy: z.object({
-      id: IdSchema,
-      name: z.string().optional(),
-      email: z.string().optional(),
-    }).optional(),
-    
+    createdBy: z
+      .object({
+        id: IdSchema,
+        name: z.string().optional(),
+        email: z.string().optional(),
+      })
+      .optional(),
+
     createdAt: DateTimeSchema,
     updatedAt: DateTimeSchema,
-    
+
     // Relations (optional - included when requested)
     members: z
       .array(
@@ -124,12 +122,12 @@ export const CreateEntitySchema = z
     foundedAt: DateTimeSchema.optional(),
     hqCountry: z.string().optional(),
     hqRegion: z.string().optional(),
-    
+
     // Company-specific fields
     employees: z.number().int().positive().optional(),
     revenue: z.string().optional(),
     description: z.string().optional(),
-    
+
     // Competitive intelligence fields
     isUserCompany: z.boolean().default(false),
     externalIds: z.record(z.string(), z.any()).optional(),
@@ -139,7 +137,8 @@ export const CreateEntitySchema = z
   .openapi('CreateEntity');
 
 // Update entity request
-export const UpdateEntitySchema = CreateEntitySchema.partial().openapi('UpdateEntity');
+export const UpdateEntitySchema =
+  CreateEntitySchema.partial().openapi('UpdateEntity');
 
 // Entity query parameters
 export const EntityQuerySchema = PaginationQuerySchema.extend({

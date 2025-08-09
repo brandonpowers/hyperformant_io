@@ -23,33 +23,37 @@ const LOG_LEVELS = {
   test: ['error'],
 } as const;
 
-const currentLogLevel = LOG_LEVELS[process.env.NODE_ENV as keyof typeof LOG_LEVELS] || LOG_LEVELS.development;
+const currentLogLevel =
+  LOG_LEVELS[process.env.NODE_ENV as keyof typeof LOG_LEVELS] ||
+  LOG_LEVELS.development;
 
 /**
  * Format log entry for console output
  */
 const formatLogEntry = (entry: LogEntry): string => {
-  const { timestamp, method, path, statusCode, duration, userId, error } = entry;
-  
+  const { timestamp, method, path, statusCode, duration, userId, error } =
+    entry;
+
   let logLine = `[${timestamp}] ${method} ${path}`;
-  
+
   if (statusCode) {
-    const statusColor = statusCode >= 400 ? '🔴' : statusCode >= 300 ? '🟡' : '🟢';
+    const statusColor =
+      statusCode >= 400 ? '🔴' : statusCode >= 300 ? '🟡' : '🟢';
     logLine += ` ${statusColor} ${statusCode}`;
   }
-  
+
   if (duration !== undefined) {
     logLine += ` (${duration}ms)`;
   }
-  
+
   if (userId) {
     logLine += ` [User: ${userId}]`;
   }
-  
+
   if (error) {
     logLine += ` ❌ ${error}`;
   }
-  
+
   return logLine;
 };
 
@@ -63,12 +67,14 @@ const shouldLog = (level: string): boolean => {
 /**
  * Create request logging middleware
  */
-export const createLoggingMiddleware = (options: {
-  logRequests?: boolean;
-  logResponses?: boolean;
-  logErrors?: boolean;
-  excludePaths?: string[];
-} = {}) => {
+export const createLoggingMiddleware = (
+  options: {
+    logRequests?: boolean;
+    logResponses?: boolean;
+    logErrors?: boolean;
+    excludePaths?: string[];
+  } = {},
+) => {
   const {
     logRequests = true,
     logResponses = true,
@@ -81,7 +87,7 @@ export const createLoggingMiddleware = (options: {
     const timestamp = new Date().toISOString();
     const method = c.req.method;
     const path = c.req.path;
-    
+
     // Skip logging for excluded paths
     if (excludePaths.includes(path)) {
       await next();
@@ -90,9 +96,8 @@ export const createLoggingMiddleware = (options: {
 
     // Get request info
     const userAgent = c.req.header('user-agent');
-    const ip = c.req.header('x-forwarded-for') || 
-               c.req.header('x-real-ip') || 
-               'unknown';
+    const ip =
+      c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
 
     let userId: string | undefined;
     let error: string | undefined;
@@ -108,7 +113,7 @@ export const createLoggingMiddleware = (options: {
           userAgent: userAgent?.substring(0, 100),
           ip,
         };
-        
+
         console.log(`📥 ${formatLogEntry(entry)}`);
       }
 
@@ -123,7 +128,6 @@ export const createLoggingMiddleware = (options: {
 
       // Get response status
       statusCode = c.res?.status || 200;
-
     } catch (err: any) {
       error = err.message || 'Unknown error';
       statusCode = err.status || 500;
@@ -137,7 +141,7 @@ export const createLoggingMiddleware = (options: {
       // Log response
       if (logResponses && shouldLog('info')) {
         const duration = Date.now() - startTime;
-        
+
         const entry: LogEntry = {
           timestamp,
           method,
@@ -173,7 +177,7 @@ export const createErrorLoggingMiddleware = () => {
       const method = c.req.method;
       const path = c.req.path;
       const user = c.get('user');
-      
+
       console.error(`[${timestamp}] ERROR in ${method} ${path}`, {
         error: error.message,
         stack: error.stack,
@@ -181,7 +185,7 @@ export const createErrorLoggingMiddleware = () => {
         statusCode: error.status,
         details: error.details,
       });
-      
+
       throw error;
     }
   };
@@ -201,7 +205,7 @@ export const createMetricsMiddleware = () => {
   return async (c: any, next: any) => {
     const startTime = Date.now();
     metrics.requestCount++;
-    
+
     try {
       await next();
     } catch (error) {
@@ -210,7 +214,8 @@ export const createMetricsMiddleware = () => {
     } finally {
       const duration = Date.now() - startTime;
       metrics.responseTimeSum += duration;
-      metrics.averageResponseTime = metrics.responseTimeSum / metrics.requestCount;
+      metrics.averageResponseTime =
+        metrics.responseTimeSum / metrics.requestCount;
     }
   };
 };
@@ -222,18 +227,18 @@ export const createDebugMiddleware = () => {
   return async (c: any, next: any) => {
     if (process.env.NODE_ENV === 'development') {
       console.log(`🔧 Debug: ${c.req.method} ${c.req.path}`);
-      
+
       // Log request headers in development
       const headers = Object.fromEntries(c.req.raw.headers.entries());
       console.log('📋 Headers:', headers);
-      
+
       // Log query params
       const query = c.req.query();
       if (Object.keys(query).length > 0) {
         console.log('🔍 Query:', query);
       }
     }
-    
+
     await next();
   };
 };

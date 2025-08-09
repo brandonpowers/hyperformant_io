@@ -1,9 +1,9 @@
 /**
  * ROUTER TEMPLATE
- * 
+ *
  * Use this template when creating new API routers.
  * Copy this file and replace the placeholders with your specific implementation.
- * 
+ *
  * This template includes:
  * - Proper imports for all shared middleware
  * - Standard middleware setup
@@ -14,11 +14,8 @@
 
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { z } from 'zod';
-import { 
-  createAuthMiddleware, 
-  createAdminMiddleware 
-} from './auth-middleware';
-import { 
+import { createAuthMiddleware, createAdminMiddleware } from './auth-middleware';
+import {
   createValidationMiddleware,
   validateBody,
   validateQuery,
@@ -27,16 +24,16 @@ import {
   getValidatedQuery,
   getValidatedParams,
 } from './validation-middleware';
-import { 
-  db, 
+import {
+  db,
   createDatabaseMiddleware,
   getDb,
   withTransaction,
-  handleDatabaseError 
+  handleDatabaseError,
 } from './database';
-import { 
+import {
   createLoggingMiddleware,
-  createErrorLoggingMiddleware 
+  createErrorLoggingMiddleware,
 } from './logging-middleware';
 import { ApiError } from './errors';
 import { ApiResponse } from './responses';
@@ -68,7 +65,7 @@ yourResourceApp.use('*', dbMiddleware);
 // Example: Public endpoint (no auth required)
 yourResourceApp.get('/your-resource/public', async (c) => {
   const db = getDb(c);
-  
+
   try {
     // Your logic here
     const data = await db.yourModel.findMany({
@@ -87,7 +84,7 @@ yourResourceApp.get('/your-resource/public', async (c) => {
 yourResourceApp.get('/your-resource', authMiddleware, async (c) => {
   const user = c.get('user');
   const db = getDb(c);
-  
+
   try {
     const data = await db.yourModel.findMany({
       where: { userId: user.id },
@@ -108,7 +105,7 @@ yourResourceApp.get(
   adminMiddleware,
   async (c) => {
     const db = getDb(c);
-    
+
     try {
       const data = await db.yourModel.findMany({
         include: { user: true },
@@ -119,7 +116,7 @@ yourResourceApp.get(
       const dbError = handleDatabaseError(error);
       throw ApiError.server(dbError.message);
     }
-  }
+  },
 );
 
 // Example: Endpoint with validation
@@ -270,7 +267,7 @@ yourResourceApp.post(
 
 /**
  * OPENAPI DOCUMENTATION EXAMPLE
- * 
+ *
  * Use this pattern for OpenAPI route definitions:
  */
 /*
@@ -309,9 +306,9 @@ yourResourceApp.openapi({
 
 /**
  * DEVELOPMENT CHECKLIST
- * 
+ *
  * When creating a new router, ensure you:
- * 
+ *
  * ✅ Import all necessary middleware
  * ✅ Set up proper authentication for protected routes
  * ✅ Use validation middleware for all inputs

@@ -34,10 +34,7 @@ export const ROUTE_CONFIG = {
    * Routes accessible without email verification
    * These routes can be accessed with a session but unverified email
    */
-  unverifiedAllowed: [
-    '/auth/verification',
-    '/onboarding',
-  ],
+  unverifiedAllowed: ['/auth/verification', '/onboarding'],
 
   /**
    * Redirect destinations
@@ -51,8 +48,8 @@ export const ROUTE_CONFIG = {
 } as const;
 
 // Type-safe route helpers
-export type PublicRoute = typeof ROUTE_CONFIG.public[number];
-export type ProtectedPrefix = typeof ROUTE_CONFIG.protected[number];
+export type PublicRoute = (typeof ROUTE_CONFIG.public)[number];
+export type ProtectedPrefix = (typeof ROUTE_CONFIG.protected)[number];
 
 /**
  * Check if a pathname is a public route
@@ -65,8 +62,8 @@ export function isPublicRoute(pathname: string): boolean {
  * Check if a pathname is a protected route (by prefix)
  */
 export function isProtectedRoute(pathname: string): boolean {
-  return ROUTE_CONFIG.protected.some(prefix => 
-    pathname === prefix || pathname.startsWith(prefix + '/')
+  return ROUTE_CONFIG.protected.some(
+    (prefix) => pathname === prefix || pathname.startsWith(prefix + '/'),
   );
 }
 
@@ -74,7 +71,7 @@ export function isProtectedRoute(pathname: string): boolean {
  * Check if a pathname allows unverified users
  */
 export function isUnverifiedAllowed(pathname: string): boolean {
-  return ROUTE_CONFIG.unverifiedAllowed.some(route =>
-    pathname === route || pathname.startsWith(route + '/')
+  return ROUTE_CONFIG.unverifiedAllowed.some(
+    (route) => pathname === route || pathname.startsWith(route + '/'),
   );
 }

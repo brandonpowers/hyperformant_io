@@ -1,7 +1,7 @@
 // theme-renderer.ts
 // TypeScript contract + helper stubs for mapping data → visuals per ThemeConfig
 
-import type { ThemeConfig } from "./theme-config";
+import type { ThemeConfig } from './theme-config';
 
 /** ------- Data Layer Contracts (your unified domains) ------- */
 
@@ -17,14 +17,34 @@ export type EntityProfile = {
     // ...more static attributes
   };
   metric: Record<string, number | undefined>; // e.g., marketCap, revenue, traffic, growth, etc.
-  index:  Record<string, number | undefined>; // e.g., momentum, techVelocity, mindshare, threat, etc.
+  index: Record<string, number | undefined>; // e.g., momentum, techVelocity, mindshare, threat, etc.
   signal: {
-    positive?: number;   // recent window magnitude (0..1)
-    negative?: number;   // recent window magnitude (0..1)
-    competitive?: number;
-    product?: number;
-    deal?: number;
-    // extend freely
+    // Sentiment-based signals (0..1 magnitude)
+    positive?: number; // POSITIVE sentiment signals
+    negative?: number; // NEGATIVE sentiment signals
+    neutral?: number; // NEUTRAL sentiment signals
+
+    // Category-based signals (complete SignalCategory coverage)
+    market?: number; // MARKET category signals
+    competitive?: number; // COMPETITIVE category signals
+    deal?: number; // DEAL category signals
+    product?: number; // PRODUCT category signals
+    talent?: number; // TALENT category signals
+    risk?: number; // RISK category signals
+    engagement?: number; // ENGAGEMENT category signals
+
+    // Activity-based signals (grouped by SignalType)
+    major_events?: number; // ACQUISITION, FUNDING_ROUND, PARTNERSHIP
+    customer_activity?: number; // CUSTOMER_WIN, CUSTOMER_LOSS
+    product_activity?: number; // PRODUCT_LAUNCH, MAJOR_UPDATE
+    competitive_activity?: number; // COMPETITOR_LAUNCH, PRICING_CHANGE, MARKET_ENTRY
+
+    // Summary metrics
+    total_signals?: number; // Total signal count
+    avg_magnitude?: number; // Average signal magnitude
+    avg_sentiment?: number; // Average sentiment score (-1 to 1)
+
+    // Allow additional custom signals
     [k: string]: number | undefined;
   };
 };
@@ -34,7 +54,7 @@ export type Connection = {
   target: EntityId;
   type: string; // e.g., partnership, competitor, mna, investorPortfolio, etc.
   sentiment?: number; // -1..1
-  strength?: number;  // 0..1 generic strength
+  strength?: number; // 0..1 generic strength
   overlapScore?: number;
   depth?: number;
   dealValue?: number;
@@ -56,19 +76,19 @@ export type Vec3 = { x: number; y: number; z: number };
 export type VisualNode = {
   id: EntityId;
   name: string;
-  position: Vec3;      // normalized -0.5..+0.5 cube
-  size: number;        // 0..1 normalized; renderer scales to world units
-  color: number;       // packed color (0xRRGGBB) or use string if you prefer
-  glow: number;        // 0..1 pulse intensity
-  drift: Vec3;         // small vector for micro-movement
+  position: Vec3; // normalized -0.5..+0.5 cube
+  size: number; // 0..1 normalized; renderer scales to world units
+  color: number; // packed color (0xRRGGBB) or use string if you prefer
+  glow: number; // 0..1 pulse intensity
+  drift: Vec3; // small vector for micro-movement
   meta: EntityProfile; // keep for tooltips/side panel
 };
 
 export type VisualEdge = {
   source: EntityId;
   target: EntityId;
-  thickness: number;           // normalized 0..1
-  color: number;               // packed color or string
+  thickness: number; // normalized 0..1
+  color: number; // packed color or string
   dashed: boolean;
   particles: boolean;
   pulsesOnActive: boolean;
@@ -76,7 +96,7 @@ export type VisualEdge = {
 };
 
 export type VisualBackground = {
-  clustersBy?: "industry"|"market";
+  clustersBy?: 'industry' | 'market';
   halos: boolean;
   axes: boolean;
 };
@@ -88,16 +108,16 @@ export type ThemeInputs = {
   entities: EntityProfile[];
   connections: Connection[];
   palette: {
-    industry: (industry?: string) => number;     // mapping fn → color
-    market: (market?: string) => number;         // optional
-    typeColor: (type: string) => number;         // connection type → color
-    sentimentColor: (s?: number) => number;      // -1..1 → color
-    scaleColor: (v?: number) => number;          // 0..1 → color ramp
+    industry: (industry?: string) => number; // mapping fn → color
+    market: (market?: string) => number; // optional
+    typeColor: (type: string) => number; // connection type → color
+    sentimentColor: (s?: number) => number; // -1..1 → color
+    scaleColor: (v?: number) => number; // 0..1 → color ramp
   };
   normalize: {
-    position: (v?: number) => number;            // 0..1 clamp; renderer will center to [-0.5, 0.5]
-    size: (v?: number) => number;                // map raw metric to 0..1 (handles fallbacks)
-    thickness: (v?: number, scale?: "linear"|"log") => number;
+    position: (v?: number) => number; // 0..1 clamp; renderer will center to [-0.5, 0.5]
+    size: (v?: number) => number; // map raw metric to 0..1 (handles fallbacks)
+    thickness: (v?: number, scale?: 'linear' | 'log') => number;
   };
   getCompound: (entity: EntityProfile, keyExpr: string) => number | undefined;
   getConnValue: (conn: Connection, keyExpr: string) => number | undefined;
@@ -112,22 +132,34 @@ export function applyTheme(inputs: ThemeInputs): {
   edges: VisualEdge[];
   background: VisualBackground;
 } {
-  const { theme, entities, connections, palette, normalize, getCompound, getConnValue } = inputs;
+  const {
+    theme,
+    entities,
+    connections,
+    palette,
+    normalize,
+    getCompound,
+    getConnValue,
+  } = inputs;
 
-  const nodes: VisualNode[] = entities.map(e => {
+  const nodes: VisualNode[] = entities.map((e) => {
     // Position from indices
     const x = normalize.position(getCompound(e, theme.encodings.position.x));
     const y = normalize.position(getCompound(e, theme.encodings.position.y));
     const z = normalize.position(getCompound(e, theme.encodings.position.z));
     // Center to [-0.5, 0.5] for 3D scene convenience
-    const position = { x: (x ?? 0.5) - 0.5, y: (y ?? 0.5) - 0.5, z: (z ?? 0.5) - 0.5 };
+    const position = {
+      x: (x ?? 0.5) - 0.5,
+      y: (y ?? 0.5) - 0.5,
+      z: (z ?? 0.5) - 0.5,
+    };
 
     // Size (supports fallbacks via "a|b|c")
     const size = normalize.size(getCompound(e, theme.encodings.size));
 
     // Color
     let color = 0xffffff;
-    if (theme.encodings.color.mode === "palette") {
+    if (theme.encodings.color.mode === 'palette') {
       color = palette.industry(e.profile.industry);
     } else {
       color = palette.scaleColor(getCompound(e, theme.encodings.color.key));
@@ -136,10 +168,13 @@ export function applyTheme(inputs: ThemeInputs): {
     // Glow intensity from signals
     const glowKey = theme.encodings.glow.key;
     const rawGlow = getCompound(e, glowKey);
-    const glow = clamp01((rawGlow ?? 0) * glowIntensityMultiplier(theme.encodings.glow.intensity));
+    const glow = clamp01(
+      (rawGlow ?? 0) * glowIntensityMultiplier(theme.encodings.glow.intensity),
+    );
 
     // Drift vector from trend key
-    const driftMag = clamp01(getCompound(e, theme.encodings.drift.key) ?? 0) * 0.015; // small
+    const driftMag =
+      clamp01(getCompound(e, theme.encodings.drift.key) ?? 0) * 0.015; // small
     const drift: Vec3 = { x: driftMag, y: 0, z: 0 }; // simple X drift; replace with nicer vector field if desired
 
     return {
@@ -150,26 +185,32 @@ export function applyTheme(inputs: ThemeInputs): {
       color,
       glow,
       drift,
-      meta: e
+      meta: e,
     };
   });
 
   const includeSet = new Set(theme.connections.include);
   const edges: VisualEdge[] = connections
-    .filter(c => includeSet.has(c.type))
-    .map(c => {
+    .filter((c) => includeSet.has(c.type))
+    .map((c) => {
       // Thickness
       const tVal = getConnValue(c, theme.connections.thickness.key);
-      const thickness = normalize.thickness(tVal, theme.connections.thickness.scale);
+      const thickness = normalize.thickness(
+        tVal,
+        theme.connections.thickness.scale,
+      );
 
       // Color
       let edgeColor = 0xffffff;
-      if (theme.connections.color.by === "type") edgeColor = palette.typeColor(c.type);
-      else if (theme.connections.color.by === "sentiment") edgeColor = palette.sentimentColor(c.sentiment);
+      if (theme.connections.color.by === 'type')
+        edgeColor = palette.typeColor(c.type);
+      else if (theme.connections.color.by === 'sentiment')
+        edgeColor = palette.sentimentColor(c.sentiment);
       else edgeColor = hybridTypeSentiment(palette, c.type, c.sentiment);
 
       // Pattern / animation
-      const dashed = !!theme.connections.pattern.rivalryDashed && c.type === "competitor";
+      const dashed =
+        !!theme.connections.pattern.rivalryDashed && c.type === 'competitor';
       const particles = !!theme.connections.animation.particles;
       const pulsesOnActive = !!theme.connections.animation.pulsesOnActive;
 
@@ -181,14 +222,14 @@ export function applyTheme(inputs: ThemeInputs): {
         dashed,
         particles,
         pulsesOnActive,
-        meta: c
+        meta: c,
       };
     });
 
   const background: VisualBackground = {
     clustersBy: theme.background.clustersBy,
     halos: theme.background.halos,
-    axes: theme.background.axes
+    axes: theme.background.axes,
   };
 
   return { nodes, edges, background };
@@ -196,19 +237,22 @@ export function applyTheme(inputs: ThemeInputs): {
 
 /** ------- Default helpers (you can replace with your own) ------- */
 
-export function defaultGetCompound(entity: EntityProfile, keyExpr: string | undefined): number | undefined {
+export function defaultGetCompound(
+  entity: EntityProfile,
+  keyExpr: string | undefined,
+): number | undefined {
   if (!keyExpr) return undefined;
   // support fallbacks: "metric.marketCap|metric.revenue|metric.traffic"
-  for (const key of keyExpr.split("|")) {
-    const [domain, field] = key.split(".");
-    if (domain === "profile") continue; // profiles aren't numeric
-    if (domain === "metric") {
+  for (const key of keyExpr.split('|')) {
+    const [domain, field] = key.split('.');
+    if (domain === 'profile') continue; // profiles aren't numeric
+    if (domain === 'metric' && entity.metric) {
       const v = entity.metric[field];
       if (isFiniteNumber(v)) return v as number;
-    } else if (domain === "index") {
+    } else if (domain === 'index' && entity.index) {
       const v = entity.index[field];
       if (isFiniteNumber(v)) return v as number;
-    } else if (domain === "signal") {
+    } else if (domain === 'signal' && entity.signal) {
       const v = entity.signal[field];
       if (isFiniteNumber(v)) return v as number;
     }
@@ -216,10 +260,13 @@ export function defaultGetCompound(entity: EntityProfile, keyExpr: string | unde
   return undefined;
 }
 
-export function defaultGetConnValue(conn: Connection, keyExpr: string | undefined): number | undefined {
+export function defaultGetConnValue(
+  conn: Connection,
+  keyExpr: string | undefined,
+): number | undefined {
   if (!keyExpr) return undefined;
-  for (const key of keyExpr.split("|")) {
-    const [, field] = key.split("."); // "connection.strength" → "strength"
+  for (const key of keyExpr.split('|')) {
+    const [, field] = key.split('.'); // "connection.strength" → "strength"
     const v = (conn as any)[field];
     if (isFiniteNumber(v)) return v as number;
   }
@@ -227,37 +274,42 @@ export function defaultGetConnValue(conn: Connection, keyExpr: string | undefine
 }
 
 export const defaultNormalize = {
-  position: (v?: number) => clamp01(v ?? 0.5),                   // already 0..1 indices preferred
-  size: (v?: number) => clamp01(scaleToUnit(v)),                 // map metric to 0..1
-  thickness: (v?: number, scale: "linear"|"log" = "linear") => {
+  position: (v?: number) => clamp01(v ?? 0.5), // already 0..1 indices preferred
+  size: (v?: number) => clamp01(scaleToUnit(v)), // map metric to 0..1
+  thickness: (v?: number, scale: 'linear' | 'log' = 'linear') => {
     const val = Math.max(0, v ?? 0);
-    if (scale === "log") return clamp01(Math.log10(1 + val) / Math.log10(1 + 1e3)); // assumes max ~1e3
+    if (scale === 'log')
+      return clamp01(Math.log10(1 + val) / Math.log10(1 + 1e3)); // assumes max ~1e3
     return clamp01(val);
-  }
+  },
 };
 
 export const defaultPalette = {
-  industry: (industry?: string) => hashColor(industry ?? "unknown"),
-  market: (market?: string) => hashColor(market ?? "unknown"),
+  industry: (industry?: string) => hashColor(industry ?? 'unknown'),
+  market: (market?: string) => hashColor(market ?? 'unknown'),
   typeColor: (type: string) => hashColor(type),
   sentimentColor: (s?: number) => {
     const v = clamp01(((s ?? 0) + 1) / 2); // -1..1 → 0..1
     return lerpColor(0x3b82f6, 0xf59e0b, v); // blue→amber
   },
-  scaleColor: (v?: number) => lerpColor(0x60a5fa, 0xf97316, clamp01(v ?? 0))
+  scaleColor: (v?: number) => lerpColor(0x60a5fa, 0xf97316, clamp01(v ?? 0)),
 };
 
 /** ------- Tiny utilities ------- */
 
-function clamp01(n: number) { return Math.max(0, Math.min(1, n)); }
-function isFiniteNumber(v: any): v is number { return typeof v === "number" && Number.isFinite(v); }
+function clamp01(n: number) {
+  return Math.max(0, Math.min(1, n));
+}
+function isFiniteNumber(v: any): v is number {
+  return typeof v === 'number' && Number.isFinite(v);
+}
 function scaleToUnit(v?: number) {
   if (v == null || !Number.isFinite(v)) return 0;
   // naive: assume already normalized-ish; replace with z-score/minmax as needed
   return Math.max(0, Math.min(1, v));
 }
-function glowIntensityMultiplier(level: "low"|"med"|"high") {
-  return level === "high" ? 1.0 : level === "med" ? 0.6 : 0.35;
+function glowIntensityMultiplier(level: 'low' | 'med' | 'high') {
+  return level === 'high' ? 1.0 : level === 'med' ? 0.6 : 0.35;
 }
 function hybridTypeSentiment(palette: any, type: string, s?: number) {
   const base = palette.typeColor(type);
@@ -272,16 +324,23 @@ function tintColor(hex: number, factor: number) {
   return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
 }
 function lerpColor(a: number, b: number, t: number) {
-  const ar = (a >> 16) & 0xff, ag = (a >> 8) & 0xff, ab = a & 0xff;
-  const br = (b >> 16) & 0xff, bg = (b >> 8) & 0xff, bb = b & 0xff;
+  const ar = (a >> 16) & 0xff,
+    ag = (a >> 8) & 0xff,
+    ab = a & 0xff;
+  const br = (b >> 16) & 0xff,
+    bg = (b >> 8) & 0xff,
+    bb = b & 0xff;
   const r = Math.round(ar + (br - ar) * t);
   const g = Math.round(ag + (bg - ag) * t);
   const bl = Math.round(ab + (bb - ab) * t);
   return (r << 16) | (g << 8) | bl;
 }
 function hashColor(s: string) {
-  let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  const r = (h & 0xff0000) >> 16, g = (h & 0x00ff00) >> 8, b = h & 0x0000ff;
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+  const r = (h & 0xff0000) >> 16,
+    g = (h & 0x00ff00) >> 8,
+    b = h & 0x0000ff;
   return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
 }
 

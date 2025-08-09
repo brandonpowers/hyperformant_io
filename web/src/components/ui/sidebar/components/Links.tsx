@@ -58,8 +58,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                       mini === false
                         ? ' justify-between'
                         : mini === true && hovered === true
-                        ? ' justify-between'
-                        : ' justify-center'
+                          ? ' justify-between'
+                          : ' justify-center'
                     }`}
                   >
                     <div>
@@ -69,8 +69,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                             mini === false
                               ? 'mr-3.5'
                               : mini === true && hovered
-                              ? 'mr-3.5'
-                              : 'mx-auto'
+                                ? 'mr-3.5'
+                                : 'mx-auto'
                           } ${
                             activeRoute(route.path.toLowerCase())
                               ? 'text-brand-500 dark:text-white'
@@ -89,8 +89,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                             mini === false
                               ? 'block'
                               : mini === true && hovered === true
-                              ? 'block'
-                              : 'block xl:hidden'
+                                ? 'block'
+                                : 'block xl:hidden'
                           } ${
                             activeRoute(route.path.toLowerCase())
                               ? 'text-700 font-medium text-navy-700 dark:text-white'
@@ -108,15 +108,15 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                             mini === false
                               ? 'block'
                               : mini === true && hovered === true
-                              ? 'block'
-                              : 'block xl:hidden'
+                                ? 'block'
+                                : 'block xl:hidden'
                           }`}
                       display={
                         mini === false
                           ? 'block'
                           : mini === true && hovered === true
-                          ? 'block'
-                          : { base: 'block', xl: 'none' }
+                            ? 'block'
+                            : { base: 'block', xl: 'none' }
                       }
                       transform={route.icon ? null : 'translateX(-70%)'}
                     />
@@ -127,8 +127,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                       mini === false
                         ? 'ml-5 pl-12'
                         : mini === true && hovered === true
-                        ? 'ml-5 pl-12'
-                        : 'ml-5 pl-12 xl:ml-[unset] xl:justify-center xl:pl-8 xl:pr-7 '
+                          ? 'ml-5 pl-12'
+                          : 'ml-5 pl-12 xl:ml-[unset] xl:justify-center xl:pl-8 xl:pr-7 '
                     } pr-7`}
                   >
                     <div>
@@ -146,8 +146,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                         {mini === false
                           ? route.name
                           : mini === true && hovered === true
-                          ? route.name
-                          : route.name[0]}
+                            ? route.name
+                            : route.name[0]}
                       </p>
                     </div>
                     <AccordionIcon
@@ -157,15 +157,15 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                             mini === false
                               ? 'block'
                               : mini === true && hovered === true
-                              ? 'block'
-                              : 'block xl:hidden'
+                                ? 'block'
+                                : 'block xl:hidden'
                           }`}
                       display={
                         mini === false
                           ? 'block'
                           : mini === true && hovered === true
-                          ? 'block'
-                          : 'none'
+                            ? 'block'
+                            : 'none'
                       }
                       transform={null}
                     />
@@ -180,20 +180,20 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                     ? mini === false
                       ? '8px'
                       : mini === true && hovered === true
-                      ? '8px'
-                      : 'base:8px xl:0px'
+                        ? '8px'
+                        : 'base:8px xl:0px'
                     : mini === false
-                    ? '8px'
-                    : mini === true && hovered === true
-                    ? '8px'
-                    : 'base:8px xl:0px'
+                      ? '8px'
+                      : mini === true && hovered === true
+                        ? '8px'
+                        : 'base:8px xl:0px'
                 }
                 display={
                   mini === false
                     ? 'block'
                     : mini === true && hovered === true
-                    ? 'block'
-                    : 'base:block xl:flex'
+                      ? 'block'
+                      : 'base:block xl:flex'
                 }
               >
                 <ul>
@@ -242,8 +242,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                   mini === false
                     ? ''
                     : mini === true && hovered === true
-                    ? ''
-                    : 'xl:justify-center'
+                      ? ''
+                      : 'xl:justify-center'
                 } hover:cursor-pointer`}
               >
                 <li
@@ -255,8 +255,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                       mini === false
                         ? 'ml-9'
                         : mini === true && hovered === true
-                        ? 'ml-9'
-                        : 'ml-9 xl:ml-0'
+                          ? 'ml-9'
+                          : 'ml-9 xl:ml-0'
                     } ${
                       activeRoute(route.path) === true
                         ? 'font-medium text-navy-700 dark:text-white'
@@ -266,8 +266,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                     {mini === false
                       ? route.name
                       : mini === true && hovered === true
-                      ? route.name
-                      : route.name[0]}
+                        ? route.name
+                        : route.name[0]}
                   </span>
                 </li>
               </div>
@@ -291,8 +291,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                 mini === false
                   ? 'ml-7'
                   : mini === true && hovered === true
-                  ? 'ml-7'
-                  : 'ml-7 xl:ml-4'
+                    ? 'ml-7'
+                    : 'ml-7 xl:ml-4'
               } mb-1 flex hover:cursor-pointer`}
             >
               <li
@@ -312,8 +312,8 @@ export function SidebarLinks(props: { routes: IRoute[]; [x: string]: any }) {
                   {mini === false
                     ? route.name
                     : mini === true && hovered === true
-                    ? route.name
-                    : route.name[0]}
+                      ? route.name
+                      : route.name[0]}
                 </span>
               </li>
             </div>

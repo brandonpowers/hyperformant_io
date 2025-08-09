@@ -1,5 +1,6 @@
 'use client';
 import Card from 'components/ui/card';
+import Link from 'next/link';
 import InputField from 'components/ui/fields/InputField';
 import { FcGoogle } from 'react-icons/fc';
 import { SiMicrosoft } from 'react-icons/si';
@@ -67,7 +68,7 @@ function SignUpDefault() {
       } else if (data.requiresVerification) {
         // Store password for auto-login after verification
         sessionStorage.setItem('temp_password', formData.password);
-        
+
         // Create session immediately (user exists but not verified)
         try {
           await signIn('credentials', {
@@ -79,15 +80,13 @@ function SignUpDefault() {
           // If sign-in fails, continue to verification anyway
           console.log('Initial sign-in failed:', err);
         }
-        
+
         // Normal verification flow
         router.push(
           `/auth/verification?email=${encodeURIComponent(formData.email)}&message=${encodeURIComponent(data.message)}`,
         );
       } else {
-        router.push(
-          `/sign-in?message=${encodeURIComponent(data.message)}`,
-        );
+        router.push(`/sign-in?message=${encodeURIComponent(data.message)}`);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Registration failed');
@@ -119,133 +118,139 @@ function SignUpDefault() {
           Sign Up
         </h3>
 
-            {error && (
-              <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                {error}
-              </div>
-            )}
-            <div className="mt-9">
-              <button
-                type="button"
-                onClick={handleGoogleSignUp}
-                disabled={isLoading}
-                className="mb-3 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="rounded-full text-xl">
-                  <FcGoogle />
-                </div>
-                <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  Sign Up with Google
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={handleMicrosoftSignUp}
-                disabled={isLoading}
-                className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="rounded-full text-xl text-blue-600">
-                  <SiMicrosoft />
-                </div>
-                <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  Sign Up with Microsoft
-                </p>
-              </button>
+        {error && (
+          <div className="mt-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            {error}
+          </div>
+        )}
+        <div className="mt-9">
+          <button
+            type="button"
+            onClick={handleGoogleSignUp}
+            disabled={isLoading}
+            className="mb-3 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="rounded-full text-xl">
+              <FcGoogle />
             </div>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
-              <p className="text-base font-medium text-gray-600"> or </p>
-              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+            <p className="text-sm font-medium text-navy-700 dark:text-white">
+              Sign Up with Google
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={handleMicrosoftSignUp}
+            disabled={isLoading}
+            className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="rounded-full text-xl text-blue-600">
+              <SiMicrosoft />
             </div>
-            {/* user info */}
-            <div className="mb-3 flex w-full items-center justify-center gap-4">
-              <div className="w-1/2">
-                <InputField
-                  variant="auth"
-                  extra="mb-3"
-                  label=""
-                  placeholder="First name"
-                  id="firstname"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={handleInputChange('firstName')}
-                />
-              </div>
-
-              <div className="w-1/2">
-                <InputField
-                  variant="auth"
-                  extra="mb-3"
-                  label=""
-                  placeholder="Last name"
-                  id="lastname"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={handleInputChange('lastName')}
-                />
-              </div>
-            </div>
-            {/* Email */}
+            <p className="text-sm font-medium text-navy-700 dark:text-white">
+              Sign Up with Microsoft
+            </p>
+          </button>
+        </div>
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+          <p className="text-base font-medium text-gray-600"> or </p>
+          <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+        </div>
+        {/* user info */}
+        <div className="mb-3 flex w-full items-center justify-center gap-4">
+          <div className="w-1/2">
             <InputField
               variant="auth"
               extra="mb-3"
               label=""
-              placeholder="Email"
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
+              placeholder="First name"
+              id="firstname"
+              type="text"
+              value={formData.firstName}
+              onChange={handleInputChange('firstName')}
             />
-            {/* Password */}
+          </div>
+
+          <div className="w-1/2">
             <InputField
               variant="auth"
               extra="mb-3"
               label=""
-              placeholder="Password"
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange('password')}
+              placeholder="Last name"
+              id="lastname"
+              type="text"
+              value={formData.lastName}
+              onChange={handleInputChange('lastName')}
             />
-            {/* Checkbox */}
-            <div className="mt-2 flex items-center justify-between px-2">
-              <div className="flex">
-                <input
-                  type="checkbox"
-                  id="terms"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                />
-                <label
-                  htmlFor="terms"
-                  className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
-                >
-                  By creating an account means you agree to the Terms and
-                  Conditions, and our Privacy Policy
-                </label>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+          </div>
+        </div>
+        {/* Email */}
+        <InputField
+          variant="auth"
+          extra="mb-3"
+          label=""
+          placeholder="Email"
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={handleInputChange('email')}
+        />
+        {/* Password */}
+        <InputField
+          variant="auth"
+          extra="mb-3"
+          label=""
+          placeholder="Password"
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={handleInputChange('password')}
+        />
+        {/* Checkbox */}
+        <div className="mt-2 flex items-center justify-between px-2">
+          <div className="flex">
+            <input
+              type="checkbox"
+              id="terms"
+              checked={agreedToTerms}
+              onChange={(e) => setAgreedToTerms(e.target.checked)}
+              className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+            />
+            <label
+              htmlFor="terms"
+              className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
             >
-              {isLoading ? 'Creating account...' : 'Create my account'}
-            </button>
-
-            <div className="mt-3">
-              <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
-                Already a member?
-              </span>
-              <a
-                href="/sign-in"
+              Agree to our simple, transparent
+              <Link
+                href="/terms"
                 className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
               >
-                Sign In
-              </a>
-            </div>
+                terms
+              </Link>
+              .
+            </label>
+          </div>
+        </div>
+
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+        >
+          {isLoading ? 'Creating account...' : 'Create my account'}
+        </button>
+
+        <div className="mt-3">
+          <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
+            Already a member?
+          </span>
+          <a
+            href="/sign-in"
+            className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+          >
+            Sign In
+          </a>
+        </div>
       </form>
     </Card>
   );

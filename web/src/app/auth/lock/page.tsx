@@ -75,52 +75,52 @@ function Lock() {
   return (
     <Card extra="w-[480px] mx-auto p-8">
       <form onSubmit={handleSubmit}>
-            <div className="mb-6 flex flex-col items-center">
-              <UserAvatar size="xl" />
-              <h3 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
-                Hi, {userName}
-              </h3>
-              <p className="text-base text-gray-600">
-                Enter your password to unlock
-              </p>
-            </div>
+        <div className="mb-6 flex flex-col items-center">
+          <UserAvatar size="xl" />
+          <h3 className="mt-4 text-2xl font-bold text-gray-900 dark:text-white">
+            Hi, {userName}
+          </h3>
+          <p className="text-base text-gray-600">
+            Enter your password to unlock
+          </p>
+        </div>
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                {error}
-              </div>
-            )}
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            {error}
+          </div>
+        )}
 
-            <InputField
-              variant="auth"
-              extra="mb-6"
-              label=""
-              placeholder="Password"
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
+        <InputField
+          variant="auth"
+          extra="mb-6"
+          label=""
+          placeholder="Password"
+          id="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
 
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
-            >
-              {isLoading ? 'Unlocking...' : 'Unlock'}
-            </button>
+        <button
+          type="submit"
+          disabled={isLoading}
+          className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+        >
+          {isLoading ? 'Unlocking...' : 'Unlock'}
+        </button>
 
-            <div className="mt-6 text-center">
-              <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
-                Not your account?
-              </span>
-              <Link
-                href="/sign-in"
-                className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-              >
-                Sign in with different account
-              </Link>
-            </div>
+        <div className="mt-6 text-center">
+          <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
+            Not your account?
+          </span>
+          <Link
+            href="/sign-in"
+            className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+          >
+            Sign in with different account
+          </Link>
+        </div>
       </form>
     </Card>
   );

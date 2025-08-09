@@ -47,30 +47,29 @@ function Verification() {
       const data = await response.json();
 
       if (response.ok) {
-        const successMessage = data.message.includes('already verified') 
-          ? 'Email already verified! Redirecting...' 
+        const successMessage = data.message.includes('already verified')
+          ? 'Email already verified! Redirecting...'
           : 'Email verified successfully! Setting up your account...';
-        
+
         setMessage(successMessage);
         setIsSuccess(true);
 
         try {
           // Update the session to reflect the new emailVerified status
           await updateSession();
-          
+
           setMessage('Success! Redirecting to onboarding...');
-          
+
           // Clean up stored password
           sessionStorage.removeItem('temp_password');
-          
+
           // Small delay to show success message then redirect
           setTimeout(() => {
             router.push('/onboarding/goals');
           }, 1500);
-          
         } catch (error) {
           console.error('Session update failed:', error);
-          
+
           // Fallback: try manual sign-in if session update fails
           const storedPassword = sessionStorage.getItem('temp_password');
           if (storedPassword && email) {
@@ -90,7 +89,7 @@ function Verification() {
               console.error('Fallback sign-in failed:', signInError);
             }
           }
-          
+
           // Final fallback: redirect to sign-in
           sessionStorage.removeItem('temp_password');
           setTimeout(() => {
@@ -142,79 +141,78 @@ function Verification() {
   return (
     <Card extra="w-[480px] mx-auto p-8">
       <div>
-            <div className="mb-6 flex flex-col items-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
-                <MdCheckCircle className="h-8 w-8 text-green-500" />
-              </div>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Verify Your Email
-              </h3>
-              <p className="mt-2 text-center text-base text-gray-600">
-                We've sent a verification code to{' '}
-                {email ? email : 'your email address'}. Please enter the code
-                below.
-              </p>
-            </div>
+        <div className="mb-6 flex flex-col items-center">
+          <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900">
+            <MdCheckCircle className="h-8 w-8 text-green-500" />
+          </div>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Verify Your Email
+          </h3>
+          <p className="mt-2 text-center text-base text-gray-600">
+            We've sent a verification code to{' '}
+            {email ? email : 'your email address'}. Please enter the code below.
+          </p>
+        </div>
 
-            {registrationMessage && !message && (
-              <div className="mb-4 rounded-lg bg-blue-50 p-3 text-sm text-blue-600 dark:bg-blue-900/20 dark:text-blue-400">
-                {registrationMessage}
+        {/* Show verification progress and messages in the same spot */}
+        {(registrationMessage || message || isLoading) && (
+          <div
+            className={`mb-4 rounded-lg p-3 text-sm text-center ${
+              isLoading
+                ? 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+                : isSuccess && message
+                  ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
+                  : hasError && message
+                    ? 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
+                    : 'bg-blue-50 text-blue-600 dark:bg-blue-900/20 dark:text-blue-400'
+            }`}
+          >
+            {isLoading ? (
+              <div className="flex items-center justify-center gap-2">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent dark:border-blue-400"></div>
+                Verifying...
               </div>
+            ) : message ? (
+              message
+            ) : (
+              registrationMessage
             )}
+          </div>
+        )}
 
-            {message && (
-              <div
-                className={`mb-4 rounded-lg p-3 text-sm ${
-                  isSuccess
-                    ? 'bg-green-50 text-green-600 dark:bg-green-900/20 dark:text-green-400'
-                    : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'
-                }`}
-              >
-                {message}
-              </div>
-            )}
+        <div className="mb-6">
+          <VerificationCodeInput
+            length={6}
+            onComplete={handleCodeComplete}
+            disabled={isLoading || isSuccess || isSubmitting}
+            error={hasError}
+            initialValue={urlCode || ''}
+          />
+        </div>
 
-            <div className="mb-6">
-              <VerificationCodeInput
-                length={6}
-                onComplete={handleCodeComplete}
-                disabled={isLoading || isSuccess || isSubmitting}
-                error={hasError}
-                initialValue={urlCode || ''}
-              />
-            </div>
 
-            {isLoading && (
-              <div className="text-center mb-4">
-                <div className="inline-flex items-center gap-2 text-sm text-brand-500">
-                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-brand-500 border-t-transparent"></div>
-                  Verifying...
-                </div>
-              </div>
-            )}
+        <div className="mt-6 text-center">
+          <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
+            Didn't receive the code?
+          </span>
+          <button
+            type="button"
+            onClick={handleResendCode}
+            disabled={isResending || !email}
+            className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed dark:text-white"
+          >
+            {isResending ? 'Sending...' : 'Resend Code'}
+          </button>
+        </div>
 
-            <div className="mt-6 text-center">
-              <span className="text-sm font-medium text-navy-700 dark:text-gray-500">
-                Didn't receive the code?
-              </span>
-              <button
-                type="button"
-                onClick={handleResendCode}
-                disabled={isResending || !email}
-                className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 disabled:opacity-50 disabled:cursor-not-allowed dark:text-white"
-              >
-                {isResending ? 'Sending...' : 'Resend Code'}
-              </button>
-            </div>
-
-            <div className="mt-3 text-center">
-              <Link
-                href="/sign-in"
-                className="text-sm font-medium text-gray-600 hover:text-brand-500 dark:text-gray-400"
-              >
-                Back to Sign In
-              </Link>
-            </div>
+        <div className="mt-3 text-center">
+          <Link
+            href="/sign-in"
+            className="text-sm font-medium text-gray-600 hover:text-brand-500 dark:text-gray-400"
+          >
+            Back to Sign In
+          </Link>
+        </div>
       </div>
     </Card>
   );

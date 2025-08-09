@@ -15,19 +15,22 @@ export const runtime = 'nodejs';
 // API documentation will be added in future iteration
 
 // Handler function for Next.js App Router with path reconstruction
-async function handler(request: Request, context: { params: Promise<{ route?: string[] }> }) {
+async function handler(
+  request: Request,
+  context: { params: Promise<{ route?: string[] }> },
+) {
   try {
     // Await params as required by Next.js App Router
     const params = await context.params;
-    
+
     // Reconstruct the path from the catch-all route params
     const routePath = params.route ? `/${params.route.join('/')}` : '/';
-    
+
     // Create a new request with the correct path for Hono
     const url = new URL(request.url);
     // Pass the path directly to Hono (without /api/v1 prefix)
     url.pathname = routePath;
-    
+
     const honoRequest = new Request(url.toString(), {
       method: request.method,
       headers: request.headers,
@@ -35,10 +38,10 @@ async function handler(request: Request, context: { params: Promise<{ route?: st
       // Preserve the original request for NextAuth compatibility
       duplex: 'half' as any, // Required for streaming bodies
     });
-    
+
     // Store the original request in the Hono request for NextAuth
     (honoRequest as any).originalRequest = request;
-    
+
     return await apiApp.fetch(honoRequest);
   } catch (error) {
     console.error('API Handler error:', error);

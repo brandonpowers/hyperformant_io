@@ -1,0 +1,188 @@
+erDiagram
+  Industry ||--o{ MarketSegment : "has"
+  Industry ||--o{ Entity : "classifies"
+  MarketSegment ||--o{ Entity : "segments"
+
+  Entity ||--o{ MetricPoint : "has"
+  MetricDefinition ||--o{ MetricPoint : "defines"
+
+  Entity ||--o{ IndexValue : "has"
+  IndexDefinition ||--o{ IndexValue : "defines"
+
+  Signal ||--o{ SignalImpact : "affects"
+  Entity ||--o{ SignalImpact : "is affected by"
+
+  Entity ||--o{ Connection : "source"
+  Entity ||--o{ Connection : "target"
+  Connection ||--o{ ConnectionEvent : "has"
+  Signal ||--o{ ConnectionEvent : "created/updated by"
+
+  ContextDimension ||--o{ ContextValue : "has"
+  Industry ||--o{ ContextValue : "context for"
+  MarketSegment ||--o{ ContextValue : "context for"
+
+  DataSource ||--o{ IngestionRun : "produces"
+
+  Industry {
+    UUID id PK
+    string name
+    string code?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  MarketSegment {
+    UUID id PK
+    string name
+    UUID industryId FK
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  Entity {
+    UUID id PK
+    enum EntityType type
+    string name
+    string domain?
+    string ticker?
+    datetime foundedAt?
+    string hqCountry?
+    string hqRegion?
+    bool isUserCompany
+    json externalIds?
+    UUID industryId? FK
+    UUID marketSegmentId? FK
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  MetricDefinition {
+    UUID id PK
+    string key UNIQUE
+    enum MetricKind kind
+    string unit?
+    string description?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  MetricPoint {
+    UUID id PK
+    UUID entityId FK
+    UUID metricDefinitionId FK
+    datetime timestamp
+    enum TimeWindow window
+    float value
+    string source?
+    json metadata?
+    datetime createdAt
+  }
+
+  IndexDefinition {
+    UUID id PK
+    string key UNIQUE
+    string name
+    string description?
+    json formula?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  IndexValue {
+    UUID id PK
+    UUID entityId FK
+    UUID indexDefinitionId FK
+    datetime asOf
+    float value
+    float normalized?
+    datetime createdAt
+  }
+
+  Signal {
+    UUID id PK
+    datetime timestamp
+    string source
+    enum SignalCategory category
+    enum SignalType type
+    float magnitude
+    float sentimentScore?
+    enum SentimentLabel sentimentLabel?
+    string summary?
+    json details?
+    int decayHalfLifeDays?
+    string[] tags
+    datetime createdAt
+  }
+
+  SignalImpact {
+    UUID signalId FK
+    UUID entityId FK
+    enum ImpactRole role
+    float weight
+  }
+
+  Connection {
+    UUID id PK
+    UUID sourceEntityId FK
+    UUID targetEntityId FK
+    enum ConnectionType type
+    float strength?
+    float sentimentScore?
+    datetime since
+    datetime until?
+    json metadata?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  ConnectionEvent {
+    UUID id PK
+    UUID connectionId FK
+    UUID signalId FK
+    datetime createdAt
+  }
+
+  ContextDimension {
+    UUID id PK
+    string key UNIQUE
+    string name
+    string description?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  ContextValue {
+    UUID id PK
+    UUID contextDimensionId FK
+    UUID industryId? FK
+    UUID marketSegmentId? FK
+    string region?
+    datetime asOf
+    float value
+    string source?
+    json metadata?
+    datetime createdAt
+  }
+
+  DataSource {
+    UUID id PK
+    enum DataSourceType type
+    string name
+    string credRef?
+    float trustScore?
+    json metadata?
+    datetime createdAt
+    datetime updatedAt
+  }
+
+  IngestionRun {
+    UUID id PK
+    UUID dataSourceId FK
+    enum RunStatus status
+    datetime startedAt
+    datetime finishedAt?
+    int itemsIn?
+    int itemsOut?
+    string error?
+    json metadata?
+  }

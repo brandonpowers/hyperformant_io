@@ -211,50 +211,473 @@ async function main() {
   const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
   const thisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-  await prisma.metricPoint.createMany({
-    data: [
-      {
+  // Create sample metrics for Hyperformant using upsert to avoid conflicts
+  await prisma.metricPoint.upsert({
+    where: {
+      entityId_metricDefinitionId_timestamp_window: {
         entityId: hyperformant.id,
         metricDefinitionId: revenueMetric.id,
         timestamp: lastMonth,
         window: 'MONTH',
-        value: 85000,
-        source: 'internal',
       },
-      {
+    },
+    update: {},
+    create: {
+      entityId: hyperformant.id,
+      metricDefinitionId: revenueMetric.id,
+      timestamp: lastMonth,
+      window: 'MONTH',
+      value: 85000,
+      source: 'internal',
+    },
+  });
+
+  await prisma.metricPoint.upsert({
+    where: {
+      entityId_metricDefinitionId_timestamp_window: {
         entityId: hyperformant.id,
         metricDefinitionId: revenueMetric.id,
         timestamp: thisMonth,
         window: 'MONTH',
-        value: 120000,
-        source: 'internal',
       },
-      {
+    },
+    update: {},
+    create: {
+      entityId: hyperformant.id,
+      metricDefinitionId: revenueMetric.id,
+      timestamp: thisMonth,
+      window: 'MONTH',
+      value: 120000,
+      source: 'internal',
+    },
+  });
+
+  await prisma.metricPoint.upsert({
+    where: {
+      entityId_metricDefinitionId_timestamp_window: {
         entityId: hyperformant.id,
         metricDefinitionId: trafficMetric.id,
         timestamp: lastMonth,
         window: 'MONTH',
-        value: 25000,
-        source: 'analytics',
       },
-      {
+    },
+    update: {},
+    create: {
+      entityId: hyperformant.id,
+      metricDefinitionId: trafficMetric.id,
+      timestamp: lastMonth,
+      window: 'MONTH',
+      value: 25000,
+      source: 'analytics',
+    },
+  });
+
+  await prisma.metricPoint.upsert({
+    where: {
+      entityId_metricDefinitionId_timestamp_window: {
         entityId: hyperformant.id,
         metricDefinitionId: trafficMetric.id,
         timestamp: thisMonth,
         window: 'MONTH',
-        value: 38000,
-        source: 'analytics',
       },
-      {
+    },
+    update: {},
+    create: {
+      entityId: hyperformant.id,
+      metricDefinitionId: trafficMetric.id,
+      timestamp: thisMonth,
+      window: 'MONTH',
+      value: 38000,
+      source: 'analytics',
+    },
+  });
+
+  await prisma.metricPoint.upsert({
+    where: {
+      entityId_metricDefinitionId_timestamp_window: {
         entityId: hyperformant.id,
         metricDefinitionId: sentimentMetric.id,
         timestamp: thisMonth,
         window: 'MONTH',
-        value: 0.65,
+      },
+    },
+    update: {},
+    create: {
+      entityId: hyperformant.id,
+      metricDefinitionId: sentimentMetric.id,
+      timestamp: thisMonth,
+      window: 'MONTH',
+      value: 0.65,
+      source: 'sentiment_analysis',
+    },
+  });
+
+  // Create metrics for competitor entities
+  for (const entity of competitorEntities) {
+    // Revenue metrics
+    await prisma.metricPoint.upsert({
+      where: {
+        entityId_metricDefinitionId_timestamp_window: {
+          entityId: entity.id,
+          metricDefinitionId: revenueMetric.id,
+          timestamp: thisMonth,
+          window: 'MONTH',
+        },
+      },
+      update: {},
+      create: {
+        entityId: entity.id,
+        metricDefinitionId: revenueMetric.id,
+        timestamp: thisMonth,
+        window: 'MONTH',
+        value: entity.name === 'Salesforce' ? 8500000 : // $8.5M monthly
+               entity.name === 'HubSpot' ? 142000 : // $142K monthly  
+               entity.name === 'Apollo.io' ? 8300 : // $8.3K monthly
+               entity.name === 'Outreach' ? 16700 : // $16.7K monthly
+               entity.name === 'Gong' ? 25000 : 50000, // $25K-50K monthly
+        source: 'external_estimate',
+      },
+    });
+
+    // Traffic metrics
+    await prisma.metricPoint.upsert({
+      where: {
+        entityId_metricDefinitionId_timestamp_window: {
+          entityId: entity.id,
+          metricDefinitionId: trafficMetric.id,
+          timestamp: thisMonth,
+          window: 'MONTH',
+        },
+      },
+      update: {},
+      create: {
+        entityId: entity.id,
+        metricDefinitionId: trafficMetric.id,
+        timestamp: thisMonth,
+        window: 'MONTH',
+        value: entity.name === 'Salesforce' ? 2500000 : // 2.5M visits
+               entity.name === 'HubSpot' ? 1800000 : // 1.8M visits
+               entity.name === 'Apollo.io' ? 850000 : // 850K visits
+               entity.name === 'Outreach' ? 450000 : // 450K visits
+               entity.name === 'Gong' ? 320000 : 100000, // 320K-100K visits
+        source: 'web_analytics',
+      },
+    });
+
+    // Sentiment metrics
+    await prisma.metricPoint.upsert({
+      where: {
+        entityId_metricDefinitionId_timestamp_window: {
+          entityId: entity.id,
+          metricDefinitionId: sentimentMetric.id,
+          timestamp: thisMonth,
+          window: 'MONTH',
+        },
+      },
+      update: {},
+      create: {
+        entityId: entity.id,
+        metricDefinitionId: sentimentMetric.id,
+        timestamp: thisMonth,
+        window: 'MONTH',
+        value: entity.name === 'Salesforce' ? 0.4 : // Mixed sentiment  
+               entity.name === 'HubSpot' ? 0.7 : // Positive
+               entity.name === 'Apollo.io' ? 0.6 : // Positive
+               entity.name === 'Outreach' ? 0.3 : // Mixed
+               entity.name === 'Gong' ? 0.8 : 0.5, // Very positive to neutral
         source: 'sentiment_analysis',
       },
-    ],
-  });
+    });
+  }
+
+  console.log('✅ Created competitor metrics');
+
+  // Create index definitions for visualization
+  const indexDefinitions = [
+    {
+      key: 'momentum',
+      name: 'Market Momentum',
+      description: 'Growth velocity and market traction',
+    },
+    {
+      key: 'techVelocity', 
+      name: 'Tech Velocity',
+      description: 'Innovation and technical advancement speed',
+    },
+    {
+      key: 'mindshare',
+      name: 'Market Mindshare',
+      description: 'Brand awareness and market presence',
+    },
+    {
+      key: 'threat',
+      name: 'Competitive Threat',
+      description: 'Threat level to user company',
+    },
+    {
+      key: 'growth',
+      name: 'Growth Score',
+      description: 'Overall growth trajectory',
+    }
+  ];
+
+  const createdIndices = [];
+  for (const indexDef of indexDefinitions) {
+    const index = await prisma.indexDefinition.upsert({
+      where: { key: indexDef.key },
+      update: {},
+      create: indexDef,
+    });
+    createdIndices.push(index);
+  }
+
+  console.log('✅ Created index definitions');
+
+  // Create index values for all entities
+  const allEntities = [hyperformant, ...competitorEntities];
+  for (const entity of allEntities) {
+    for (const indexDef of createdIndices) {
+      let value;
+      const isUserCompany = entity.id === hyperformant.id;
+      
+      switch (indexDef.key) {
+        case 'momentum':
+          value = isUserCompany ? 0.85 : // High momentum for user company
+                  entity.name === 'Apollo.io' ? 0.92 : // Very high
+                  entity.name === 'Gong' ? 0.78 :
+                  entity.name === 'HubSpot' ? 0.65 :
+                  entity.name === 'Outreach' ? 0.58 :
+                  0.45; // Salesforce - slower to adapt
+          break;
+          
+        case 'techVelocity':
+          value = isUserCompany ? 0.90 : // High tech velocity
+                  entity.name === 'Gong' ? 0.85 : // AI-first
+                  entity.name === 'Apollo.io' ? 0.75 :
+                  entity.name === 'Outreach' ? 0.70 :
+                  entity.name === 'HubSpot' ? 0.55 :
+                  0.40; // Salesforce - legacy platform
+          break;
+          
+        case 'mindshare':
+          value = isUserCompany ? 0.25 : // Low mindshare (startup)
+                  entity.name === 'Salesforce' ? 0.95 : // Dominant
+                  entity.name === 'HubSpot' ? 0.80 :
+                  entity.name === 'Outreach' ? 0.60 :
+                  entity.name === 'Gong' ? 0.55 :
+                  0.45; // Apollo.io
+          break;
+          
+        case 'threat':
+          value = isUserCompany ? 0.10 : // No self-threat
+                  entity.name === 'Apollo.io' ? 0.75 : // Direct competitor
+                  entity.name === 'Outreach' ? 0.70 :
+                  entity.name === 'Gong' ? 0.45 :
+                  entity.name === 'HubSpot' ? 0.35 :
+                  0.25; // Salesforce - different market
+          break;
+          
+        case 'growth':
+          value = isUserCompany ? 0.88 : // High growth startup
+                  entity.name === 'Gong' ? 0.82 :
+                  entity.name === 'Apollo.io' ? 0.75 :
+                  entity.name === 'Outreach' ? 0.60 :
+                  entity.name === 'HubSpot' ? 0.55 :
+                  0.35; // Salesforce - mature, slower growth
+          break;
+          
+        default:
+          value = Math.random() * 0.8 + 0.1; // 0.1 to 0.9
+      }
+
+      await prisma.indexValue.upsert({
+        where: {
+          entityId_indexDefinitionId_asOf: {
+            entityId: entity.id,
+            indexDefinitionId: indexDef.id,
+            asOf: new Date(),
+          },
+        },
+        update: {},
+        create: {
+          entityId: entity.id,
+          indexDefinitionId: indexDef.id,
+          asOf: new Date(),
+          value: value,
+          normalized: value, // Already 0-1 normalized
+        },
+      });
+    }
+  }
+
+  console.log('✅ Created index values');
+
+  // Create signals using correct enum values with strategic distribution
+  const signalTypes = [
+    'ACQUISITION', 'FUNDING_ROUND', 'PARTNERSHIP', 'COMPETITOR_LAUNCH', 
+    'PRICING_CHANGE', 'MARKET_ENTRY', 'CUSTOMER_WIN', 'CUSTOMER_LOSS', 
+    'PRESS_MENTION', 'SOCIAL_POST', 'REVIEW', 'PRODUCT_LAUNCH', 
+    'MAJOR_UPDATE', 'PATENT_FILED', 'EXEC_HIRE'
+  ];
+  const signalCategories = ['MARKET', 'COMPETITIVE', 'DEAL', 'PRODUCT', 'TALENT', 'RISK', 'ENGAGEMENT'];
+  const sentimentLabels = ['POSITIVE', 'NEGATIVE', 'NEUTRAL'];
+  const impactRoles = ['SUBJECT', 'ACTOR', 'TARGET', 'MENTIONED']; // Using correct enum values
+  const signals = [];
+  
+  for (const entity of allEntities) {
+    // Create different signal patterns based on entity type and characteristics
+    const isUserCompany = entity.id === hyperformant.id;
+    const signalCount = isUserCompany ? 12 : 8; // More signals for user company
+    
+    for (let i = 0; i < signalCount; i++) {
+      // Strategic signal type selection based on entity
+      let type, category, sentimentLabel;
+      
+      if (isUserCompany) {
+        // User company gets more product launches, funding, and positive signals
+        const userCompanyTypes = ['PRODUCT_LAUNCH', 'FUNDING_ROUND', 'PARTNERSHIP', 'CUSTOMER_WIN', 'PRESS_MENTION'];
+        type = i < 6 ? userCompanyTypes[Math.floor(Math.random() * userCompanyTypes.length)] : 
+               signalTypes[Math.floor(Math.random() * signalTypes.length)];
+        // 70% positive sentiment for user company
+        sentimentLabel = Math.random() < 0.7 ? 'POSITIVE' : (Math.random() < 0.8 ? 'NEUTRAL' : 'NEGATIVE');
+      } else {
+        type = signalTypes[Math.floor(Math.random() * signalTypes.length)];
+        // More balanced sentiment for competitors
+        const rand = Math.random();
+        sentimentLabel = rand < 0.4 ? 'POSITIVE' : (rand < 0.7 ? 'NEUTRAL' : 'NEGATIVE');
+      }
+      
+      // Category selection based on signal type
+      category = getSignalCategory(type);
+      
+      const role = impactRoles[Math.floor(Math.random() * impactRoles.length)];
+      const daysAgo = Math.floor(Math.random() * 30); // Last 30 days
+      
+      const signal = await prisma.signal.create({
+        data: {
+          timestamp: new Date(Date.now() - (daysAgo * 24 * 60 * 60 * 1000)),
+          source: getSignalSource(type),
+          category: category,
+          type: type,
+          magnitude: getMagnitudeForType(type, sentimentLabel),
+          sentimentScore: getSentimentScore(sentimentLabel),
+          sentimentLabel: sentimentLabel,
+          summary: `${type.toLowerCase().replace('_', ' ')} signal for ${entity.name} (${sentimentLabel.toLowerCase()})`,
+          details: {
+            source_confidence: 0.7 + Math.random() * 0.3,
+            automated: true,
+            keywords: [category.toLowerCase(), type.toLowerCase()],
+            entity_role: role.toLowerCase(),
+          },
+          decayHalfLifeDays: getDecayForType(type),
+          tags: [category.toLowerCase(), type.toLowerCase(), sentimentLabel.toLowerCase()],
+          createdAt: new Date(Date.now() - (daysAgo * 24 * 60 * 60 * 1000)),
+        },
+      });
+      signals.push(signal);
+
+      // Create signal impact with strategic role and weight
+      await prisma.signalImpact.create({
+        data: {
+          signalId: signal.id,
+          entityId: entity.id,
+          role: role,
+          weight: getWeightForRole(role, type, isUserCompany),
+        },
+      });
+    }
+  }
+
+  // Helper functions for strategic signal generation
+  function getSignalCategory(signalType) {
+    const typeToCategory = {
+      'ACQUISITION': 'DEAL',
+      'FUNDING_ROUND': 'DEAL', 
+      'PARTNERSHIP': 'DEAL',
+      'COMPETITOR_LAUNCH': 'COMPETITIVE',
+      'PRICING_CHANGE': 'COMPETITIVE',
+      'MARKET_ENTRY': 'MARKET',
+      'CUSTOMER_WIN': 'MARKET',
+      'CUSTOMER_LOSS': 'RISK',
+      'PRESS_MENTION': 'ENGAGEMENT',
+      'SOCIAL_POST': 'ENGAGEMENT',
+      'REVIEW': 'ENGAGEMENT',
+      'PRODUCT_LAUNCH': 'PRODUCT',
+      'MAJOR_UPDATE': 'PRODUCT',
+      'PATENT_FILED': 'PRODUCT',
+      'EXEC_HIRE': 'TALENT'
+    };
+    return typeToCategory[signalType] || 'MARKET';
+  }
+
+  function getSignalSource(signalType) {
+    const sources = {
+      'SOCIAL_POST': 'Social Media',
+      'PRESS_MENTION': 'Press Release',
+      'REVIEW': 'Review Sites',
+      'FUNDING_ROUND': 'SEC Filings',
+      'ACQUISITION': 'Business News',
+      'PRODUCT_LAUNCH': 'Company Blog',
+    };
+    return sources[signalType] || 'Market Intelligence';
+  }
+
+  function getMagnitudeForType(signalType, sentimentLabel) {
+    const baseMagnitude = {
+      'ACQUISITION': 0.9,
+      'FUNDING_ROUND': 0.8,
+      'PRODUCT_LAUNCH': 0.7,
+      'COMPETITOR_LAUNCH': 0.6,
+      'CUSTOMER_WIN': 0.6,
+      'CUSTOMER_LOSS': 0.7,
+    };
+    
+    const base = baseMagnitude[signalType] || 0.5;
+    const sentimentModifier = sentimentLabel === 'POSITIVE' ? 0.1 : 
+                             sentimentLabel === 'NEGATIVE' ? 0.2 : 0.05;
+    
+    return Math.min(1.0, base + sentimentModifier + (Math.random() * 0.2 - 0.1));
+  }
+
+  function getSentimentScore(sentimentLabel) {
+    switch (sentimentLabel) {
+      case 'POSITIVE': return 0.3 + Math.random() * 0.7; // 0.3 to 1.0
+      case 'NEGATIVE': return -0.3 - Math.random() * 0.7; // -1.0 to -0.3
+      case 'NEUTRAL': return -0.2 + Math.random() * 0.4; // -0.2 to 0.2
+      default: return 0;
+    }
+  }
+
+  function getDecayForType(signalType) {
+    const decayDays = {
+      'ACQUISITION': 60,
+      'FUNDING_ROUND': 45,
+      'PRODUCT_LAUNCH': 30,
+      'SOCIAL_POST': 7,
+      'PRESS_MENTION': 14,
+    };
+    return decayDays[signalType] || 21;
+  }
+
+  function getWeightForRole(role, signalType, isUserCompany) {
+    const baseWeights = {
+      'SUBJECT': 0.9,
+      'ACTOR': 0.7,
+      'TARGET': 0.8,
+      'MENTIONED': 0.3,
+    };
+    
+    let weight = baseWeights[role] || 0.5;
+    
+    // User company gets higher weights for positive signals
+    if (isUserCompany && ['PRODUCT_LAUNCH', 'FUNDING_ROUND', 'CUSTOMER_WIN'].includes(signalType)) {
+      weight = Math.min(1.0, weight + 0.1);
+    }
+    
+    return weight + (Math.random() * 0.2 - 0.1); // Add some randomness
+  }
+
+  console.log('✅ Created signals and impacts');
 
   console.log('✅ Created sample metrics');
 
@@ -274,7 +697,7 @@ async function main() {
     },
     {
       targetId: competitorEntities[2].id, // Apollo.io
-      type: 'TECH_AFFINITY',
+      type: 'COMPETITOR',
       strength: 0.7,
       sentimentScore: 0.2,
     },
@@ -306,92 +729,6 @@ async function main() {
   }
 
   console.log('✅ Created connections');
-
-  // Create sample signals
-  const signals = [
-    {
-      timestamp: new Date('2024-08-01'),
-      source: 'techcrunch',
-      category: 'COMPETITIVE',
-      type: 'FUNDING_ROUND',
-      magnitude: 0.8,
-      sentimentScore: 0.6,
-      sentimentLabel: 'POSITIVE',
-      summary: 'Hyperformant raises $5M Series A for AI-powered sales automation',
-      details: {
-        amount: '$5M',
-        lead_investor: 'Tech Ventures',
-        round: 'Series A',
-      },
-      impacts: [{ entityId: hyperformant.id, role: 'SUBJECT', weight: 1.0 }],
-    },
-    {
-      timestamp: new Date('2024-08-05'),
-      source: 'salesforce_news',
-      category: 'COMPETITIVE',
-      type: 'PRODUCT_LAUNCH',
-      magnitude: 0.7,
-      sentimentScore: -0.4,
-      sentimentLabel: 'NEGATIVE',
-      summary: 'Salesforce launches new AI automation features',
-      details: {
-        product: 'Einstein Automation',
-        features: ['AI-powered workflows', 'Smart routing'],
-      },
-      impacts: [
-        { entityId: competitorEntities[0].id, role: 'SUBJECT', weight: 1.0 },
-        { entityId: hyperformant.id, role: 'TARGET', weight: 0.6 },
-      ],
-    },
-    {
-      timestamp: new Date('2024-08-08'),
-      source: 'reddit',
-      category: 'ENGAGEMENT',
-      type: 'SOCIAL_POST',
-      magnitude: 0.4,
-      sentimentScore: 0.8,
-      sentimentLabel: 'POSITIVE',
-      summary: 'Positive customer feedback on Hyperformant automation',
-      details: {
-        platform: 'Reddit',
-        subreddit: 'r/sales',
-        upvotes: 156,
-        comments: 23,
-      },
-      impacts: [{ entityId: hyperformant.id, role: 'SUBJECT', weight: 1.0 }],
-    },
-  ];
-
-  for (const signal of signals) {
-    const createdSignal = await prisma.signal.create({
-      data: {
-        timestamp: signal.timestamp,
-        source: signal.source,
-        category: signal.category,
-        type: signal.type,
-        magnitude: signal.magnitude,
-        sentimentScore: signal.sentimentScore,
-        sentimentLabel: signal.sentimentLabel,
-        summary: signal.summary,
-        details: signal.details,
-        tags: ['demo', 'seed_data'],
-      },
-    });
-
-    // Create signal impacts
-    for (const impact of signal.impacts) {
-      await prisma.signalImpact.create({
-        data: {
-          signalId: createdSignal.id,
-          entityId: impact.entityId,
-          role: impact.role,
-          weight: impact.weight,
-        },
-      });
-    }
-  }
-
-  console.log('✅ Created sample signals with impacts');
 
   // Create sample report for Hyperformant
   const sampleReport = await prisma.report.create({

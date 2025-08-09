@@ -5,7 +5,7 @@ import { HTTPException } from 'hono/http-exception';
  */
 export const ErrorCodes = {
   VALIDATION_ERROR: 'VALIDATION_ERROR',
-  UNAUTHORIZED: 'UNAUTHORIZED', 
+  UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
   NOT_FOUND: 'NOT_FOUND',
   DUPLICATE_ERROR: 'DUPLICATE_ERROR',
@@ -20,12 +20,7 @@ export class ApiError extends HTTPException {
   public readonly code: string;
   public readonly details?: any;
 
-  constructor(
-    status: number,
-    code: string,
-    message: string,
-    details?: any
-  ) {
+  constructor(status: number, code: string, message: string, details?: any) {
     super(status, { message });
     this.code = code;
     this.details = details;
@@ -64,41 +59,53 @@ export const errorHandler = async (err: Error, c: any) => {
 
   // Handle our custom ApiError
   if (err instanceof ApiError) {
-    return c.json({
-      error: {
-        code: err.code,
-        message: err.message,
-        details: err.details,
+    return c.json(
+      {
+        error: {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+        },
       },
-    }, err.status);
+      err.status,
+    );
   }
 
   // Handle Prisma errors
   if (err.code === 'P2002') {
-    return c.json({
-      error: {
-        code: ErrorCodes.DUPLICATE_ERROR,
-        message: 'A resource with this information already exists',
+    return c.json(
+      {
+        error: {
+          code: ErrorCodes.DUPLICATE_ERROR,
+          message: 'A resource with this information already exists',
+        },
       },
-    }, 400);
+      400,
+    );
   }
 
   // Handle validation errors (Zod)
   if (err.name === 'ZodError') {
-    return c.json({
-      error: {
-        code: ErrorCodes.VALIDATION_ERROR,
-        message: 'Validation failed',
-        details: err.issues,
+    return c.json(
+      {
+        error: {
+          code: ErrorCodes.VALIDATION_ERROR,
+          message: 'Validation failed',
+          details: err.issues,
+        },
       },
-    }, 400);
+      400,
+    );
   }
 
   // Default server error
-  return c.json({
-    error: {
-      code: ErrorCodes.SERVER_ERROR,
-      message: 'Internal server error',
+  return c.json(
+    {
+      error: {
+        code: ErrorCodes.SERVER_ERROR,
+        message: 'Internal server error',
+      },
     },
-  }, 500);
+    500,
+  );
 };

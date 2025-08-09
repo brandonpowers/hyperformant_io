@@ -110,118 +110,118 @@ function SignInDefault() {
   return (
     <Card extra="w-[480px] mx-auto p-8">
       <form onSubmit={handleSubmit}>
-            <h3 className="mb-[10px] text-4xl font-bold text-gray-900 dark:text-white">
-              Sign In
-            </h3>
+        <h3 className="mb-[10px] text-4xl font-bold text-gray-900 dark:text-white">
+          Sign In
+        </h3>
 
-            {message && (
-              <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
-                {message}
-              </div>
-            )}
+        {message && (
+          <div className="mb-4 rounded-lg bg-green-50 p-3 text-sm text-green-600 dark:bg-green-900/20 dark:text-green-400">
+            {message}
+          </div>
+        )}
 
-            {error && (
-              <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
-                {error}
-              </div>
-            )}
-            <div className="mt-9">
-              <button
-                type="button"
-                onClick={handleGoogleSignIn}
-                disabled={isLoading || isRedirecting}
-                className="mb-3 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="rounded-full text-xl">
-                  <FcGoogle />
-                </div>
-                <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  Sign In with Google
-                </p>
-              </button>
-              <button
-                type="button"
-                onClick={handleMicrosoftSignIn}
-                disabled={isLoading || isRedirecting}
-                className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <div className="rounded-full text-xl text-blue-600">
-                  <SiMicrosoft />
-                </div>
-                <p className="text-sm font-medium text-navy-700 dark:text-white">
-                  Sign In with Microsoft
-                </p>
-              </button>
+        {error && (
+          <div className="mb-4 rounded-lg bg-red-50 p-3 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-400">
+            {error}
+          </div>
+        )}
+        <div className="mt-9">
+          <button
+            type="button"
+            onClick={handleGoogleSignIn}
+            disabled={isLoading || isRedirecting}
+            className="mb-3 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="rounded-full text-xl">
+              <FcGoogle />
             </div>
-            <div className="mb-4 flex items-center gap-3">
-              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
-              <p className="text-base font-medium text-gray-600"> or </p>
-              <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+            <p className="text-sm font-medium text-navy-700 dark:text-white">
+              Sign In with Google
+            </p>
+          </button>
+          <button
+            type="button"
+            onClick={handleMicrosoftSignIn}
+            disabled={isLoading || isRedirecting}
+            className="mb-6 flex h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-lightPrimary hover:bg-gray-100 dark:bg-navy-700 dark:hover:bg-navy-600 dark:text-white transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <div className="rounded-full text-xl text-blue-600">
+              <SiMicrosoft />
             </div>
-            <InputField
-              variant="auth"
-              extra="mb-3"
-              label=""
-              placeholder="Email"
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={handleInputChange('email')}
+            <p className="text-sm font-medium text-navy-700 dark:text-white">
+              Sign In with Microsoft
+            </p>
+          </button>
+        </div>
+        <div className="mb-4 flex items-center gap-3">
+          <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+          <p className="text-base font-medium text-gray-600"> or </p>
+          <div className="h-px w-full bg-gray-200 dark:!bg-navy-700" />
+        </div>
+        <InputField
+          variant="auth"
+          extra="mb-3"
+          label=""
+          placeholder="Email"
+          id="email"
+          type="email"
+          value={formData.email}
+          onChange={handleInputChange('email')}
+        />
+        <InputField
+          variant="auth"
+          extra="mb-3"
+          label=""
+          placeholder="Password"
+          id="password"
+          type="password"
+          value={formData.password}
+          onChange={handleInputChange('password')}
+        />
+        <div className="mt-2 flex items-center justify-between px-2">
+          <div className="flex items-center">
+            <input
+              type="checkbox"
+              id="rememberMe"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
             />
-            <InputField
-              variant="auth"
-              extra="mb-3"
-              label=""
-              placeholder="Password"
-              id="password"
-              type="password"
-              value={formData.password}
-              onChange={handleInputChange('password')}
-            />
-            <div className="mt-2 flex items-center justify-between px-2">
-              <div className="flex items-center">
-                <input
-                  type="checkbox"
-                  id="rememberMe"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="mr-2 h-4 w-4 rounded border-gray-300 text-brand-500 focus:ring-brand-500"
-                />
-                <label
-                  htmlFor="rememberMe"
-                  className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
-                >
-                  Keep me logged In
-                </label>
-              </div>
-            </div>
-            <button
-              type="submit"
-              disabled={isLoading || isRedirecting}
-              className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+            <label
+              htmlFor="rememberMe"
+              className="ml-2 text-sm font-medium text-navy-700 dark:text-white"
             >
-              {isRedirecting 
-                ? 'Redirecting...' 
-                : isLoading 
-                ? 'Signing in...' 
-                : 'Sign In'}
-            </button>
-            <div className="mt-3">
-              <div className="flex items-center justify-between">
-                <a
-                  href="/sign-up"
-                  className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-                >
-                  Create an Account
-                </a>
-                <a
-                  className="text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
-                  href="/forgot-password"
-                >
-                  Forgot password?
-                </a>
-              </div>
-            </div>
+              Keep me logged In
+            </label>
+          </div>
+        </div>
+        <button
+          type="submit"
+          disabled={isLoading || isRedirecting}
+          className="linear mt-4 w-full rounded-xl bg-brand-500 py-3 text-base font-medium text-white transition duration-200 hover:bg-brand-600 active:bg-brand-700 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-brand-400 dark:text-white dark:hover:bg-brand-300 dark:active:bg-brand-200"
+        >
+          {isRedirecting
+            ? 'Redirecting...'
+            : isLoading
+              ? 'Signing in...'
+              : 'Sign In'}
+        </button>
+        <div className="mt-3">
+          <div className="flex items-center justify-between">
+            <a
+              href="/sign-up"
+              className="ml-1 text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+            >
+              Create an Account
+            </a>
+            <a
+              className="text-sm font-medium text-brand-500 hover:text-brand-500 dark:text-white"
+              href="/forgot-password"
+            >
+              Forgot password?
+            </a>
+          </div>
+        </div>
       </form>
     </Card>
   );

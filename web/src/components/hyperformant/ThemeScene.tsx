@@ -10,19 +10,19 @@ export type Vec3 = { x: number; y: number; z: number };
 export type VisualNode = {
   id: string;
   name: string;
-  position: Vec3;     // normalized [-0.5..0.5]
-  size: number;       // 0..1 (we scale to world units)
-  color: number;      // 0xRRGGBB
-  glow: number;       // 0..1 pulse intensity
-  drift: Vec3;        // small vector for micro-movement
+  position: Vec3; // normalized [-0.5..0.5]
+  size: number; // 0..1 (we scale to world units)
+  color: number; // 0xRRGGBB
+  glow: number; // 0..1 pulse intensity
+  drift: Vec3; // small vector for micro-movement
   meta?: any;
 };
 
 export type VisualEdge = {
   source: string;
   target: string;
-  thickness: number;     // 0..1 (see note re: line width below)
-  color: number;         // 0xRRGGBB
+  thickness: number; // 0..1 (see note re: line width below)
+  color: number; // 0xRRGGBB
   dashed: boolean;
   particles: boolean;
   pulsesOnActive: boolean;
@@ -39,7 +39,7 @@ export type ThemeSceneProps = {
   nodes: VisualNode[];
   edges: VisualEdge[];
   background: VisualBackground;
-  focusId?: string;                // center on a node if provided
+  focusId?: string; // center on a node if provided
   showLabels?: boolean;
   onNodeClick?: (id: string) => void;
   onEdgeClick?: (e: VisualEdge) => void;
@@ -47,17 +47,22 @@ export type ThemeSceneProps = {
 
 export default function ThemeScene(props: ThemeSceneProps) {
   const {
-    nodes, edges, background,
-    focusId, showLabels = true, onNodeClick, onEdgeClick
+    nodes,
+    edges,
+    background,
+    focusId,
+    showLabels = true,
+    onNodeClick,
+    onEdgeClick,
   } = props;
 
   const focusPos = useMemo(() => {
     if (!focusId) return new THREE.Vector3(0, 0, 0);
-    const n = nodes.find(n => n.id === focusId);
+    const n = nodes.find((n) => n.id === focusId);
     return new THREE.Vector3(
-      (n?.position.x ?? 0),
-      (n?.position.y ?? 0),
-      (n?.position.z ?? 0)
+      n?.position.x ?? 0,
+      n?.position.y ?? 0,
+      n?.position.z ?? 0,
     );
   }, [focusId, nodes]);
 
@@ -74,18 +79,10 @@ export default function ThemeScene(props: ThemeSceneProps) {
         {background.axes && <Axes />}
 
         {/* Stars / nodes */}
-        <Nodes
-          nodes={nodes}
-          focusId={focusId}
-          onClick={onNodeClick}
-        />
+        <Nodes nodes={nodes} focusId={focusId} onClick={onNodeClick} />
 
         {/* Edges */}
-        <Edges
-          nodes={nodes}
-          edges={edges}
-          onEdgeClick={onEdgeClick}
-        />
+        <Edges nodes={nodes} edges={edges} onEdgeClick={onEdgeClick} />
 
         {/* Cluster halos (subtle volumetric spheres) */}
         {background.halos && <Halos nodes={nodes} />}
@@ -110,7 +107,7 @@ export default function ThemeScene(props: ThemeSceneProps) {
 function Nodes({
   nodes,
   focusId,
-  onClick
+  onClick,
 }: {
   nodes: VisualNode[];
   focusId?: string;
@@ -118,8 +115,14 @@ function Nodes({
 }) {
   const meshRef = useRef<THREE.InstancedMesh>(null!);
   const dummy = useMemo(() => new THREE.Object3D(), []);
-  const colorArray = useMemo(() => new Float32Array(nodes.length * 3), [nodes.length]);
-  const glowArray = useMemo(() => new Float32Array(nodes.length), [nodes.length]);
+  const colorArray = useMemo(
+    () => new Float32Array(nodes.length * 3),
+    [nodes.length],
+  );
+  const glowArray = useMemo(
+    () => new Float32Array(nodes.length),
+    [nodes.length],
+  );
 
   // Init transforms & colors
   useEffect(() => {
@@ -150,7 +153,11 @@ function Nodes({
       const drift = n.drift ?? { x: 0, y: 0, z: 0 };
       const pulse = (n.glow ?? 0) * 0.18 * Math.sin(t * 2.2 + i * 0.37);
       const base = 0.06 + (n.size ?? 0) * 0.22;
-      dummy.position.set(p.x + drift.x * Math.sin(t * 0.8), p.y + drift.y, p.z + drift.z * Math.cos(t * 0.8));
+      dummy.position.set(
+        p.x + drift.x * Math.sin(t * 0.8),
+        p.y + drift.y,
+        p.z + drift.z * Math.cos(t * 0.8),
+      );
       dummy.scale.setScalar(base + pulse);
       dummy.updateMatrix();
       meshRef.current.setMatrixAt(i, dummy.matrix);
@@ -168,7 +175,11 @@ function Nodes({
   };
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, nodes.length]} onPointerDown={onPointerDown}>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, nodes.length]}
+      onPointerDown={onPointerDown}
+    >
       <sphereGeometry args={[1, 16, 16]} />
       <meshBasicMaterial vertexColors toneMapped={false} />
     </instancedMesh>
@@ -180,7 +191,7 @@ function Nodes({
 function Edges({
   nodes,
   edges,
-  onEdgeClick
+  onEdgeClick,
 }: {
   nodes: VisualNode[];
   edges: VisualEdge[];
@@ -189,14 +200,17 @@ function Edges({
   const ref = useRef<THREE.LineSegments>(null!);
 
   // Map nodeId → index + position
-  const posIndex = useMemo(() => new Map(nodes.map((n, i) => [n.id, { i, p: n.position }])), [nodes]);
+  const posIndex = useMemo(
+    () => new Map(nodes.map((n, i) => [n.id, { i, p: n.position }])),
+    [nodes],
+  );
 
   // Build position & color buffers
   const { positions, colors, alphas, dashArray } = useMemo(() => {
     const pos: number[] = [];
     const cols: number[] = [];
-    const alphas: number[] = [];   // use per-vertex alpha via shaderMaterial later if desired
-    const dash: number[] = [];     // store dash flags per segment (0/1)
+    const alphas: number[] = []; // use per-vertex alpha via shaderMaterial later if desired
+    const dash: number[] = []; // store dash flags per segment (0/1)
     edges.forEach((e) => {
       const A = posIndex.get(e.source);
       const B = posIndex.get(e.target);
@@ -206,7 +220,11 @@ function Edges({
       // encode color twice (both vertices)
       cols.push(c.r, c.g, c.b, c.r, c.g, c.b);
       // approximate thickness by opacity (browser lineWidth is limited)
-      const opacity = THREE.MathUtils.clamp(0.25 + (e.thickness ?? 0) * 0.75, 0.25, 1.0);
+      const opacity = THREE.MathUtils.clamp(
+        0.25 + (e.thickness ?? 0) * 0.75,
+        0.25,
+        1.0,
+      );
       alphas.push(opacity, opacity);
       dash.push(e.dashed ? 1 : 0, e.dashed ? 1 : 0);
     });
@@ -241,8 +259,16 @@ function Edges({
     <>
       <lineSegments ref={ref} onPointerDown={handlePointerDown}>
         <bufferGeometry>
-          <bufferAttribute attach="attributes-position" array={positions} itemSize={3} />
-          <bufferAttribute attach="attributes-color" array={colors} itemSize={3} />
+          <bufferAttribute
+            attach="attributes-position"
+            array={positions}
+            itemSize={3}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            array={colors}
+            itemSize={3}
+          />
         </bufferGeometry>
         {/* NOTE: WebGL line width is effectively 1px in most browsers. We encode "thickness" as per-segment opacity + color emphasis.
                  For true thick lines, upgrade later to Line2 from three-stdlib or tubes. */}
@@ -250,36 +276,59 @@ function Edges({
       </lineSegments>
 
       {/* Edge particles for directional/active edges */}
-      <EdgeParticles nodes={nodes} edges={edges.filter(e => e.particles)} />
+      <EdgeParticles nodes={nodes} edges={edges.filter((e) => e.particles)} />
     </>
   );
 }
 
 /* ===================== Edge Particles ===================== */
 
-function EdgeParticles({ nodes, edges }: { nodes: VisualNode[]; edges: VisualEdge[] }) {
-  const posIndex = useMemo(() => new Map(nodes.map(n => [n.id, n.position])), [nodes]);
+function EdgeParticles({
+  nodes,
+  edges,
+}: {
+  nodes: VisualNode[];
+  edges: VisualEdge[];
+}) {
+  const posIndex = useMemo(
+    () => new Map(nodes.map((n) => [n.id, n.position])),
+    [nodes],
+  );
 
   // Build a particle per edge (you can scale this up if needed)
   const particles = useMemo(() => {
-    return edges.map((e, i) => {
-      const a = posIndex.get(e.source);
-      const b = posIndex.get(e.target);
-      if (!a || !b) return null;
-      return {
-        start: new THREE.Vector3(a.x, a.y, a.z),
-        end: new THREE.Vector3(b.x, b.y, b.z),
-        color: new THREE.Color(e.color),
-        speed: 0.25 + 0.75 * (e.thickness ?? 0), // thicker = faster
-        id: i
-      };
-    }).filter(Boolean) as { start: THREE.Vector3; end: THREE.Vector3; color: THREE.Color; speed: number; id: number; }[];
+    return edges
+      .map((e, i) => {
+        const a = posIndex.get(e.source);
+        const b = posIndex.get(e.target);
+        if (!a || !b) return null;
+        return {
+          start: new THREE.Vector3(a.x, a.y, a.z),
+          end: new THREE.Vector3(b.x, b.y, b.z),
+          color: new THREE.Color(e.color),
+          speed: 0.25 + 0.75 * (e.thickness ?? 0), // thicker = faster
+          id: i,
+        };
+      })
+      .filter(Boolean) as {
+      start: THREE.Vector3;
+      end: THREE.Vector3;
+      color: THREE.Color;
+      speed: number;
+      id: number;
+    }[];
   }, [edges, posIndex]);
 
   const geomRef = useRef<THREE.BufferGeometry>(null!);
   const matRef = useRef<THREE.PointsMaterial>(null!);
-  const positions = useMemo(() => new Float32Array((particles.length || 0) * 3), [particles.length]);
-  const colors = useMemo(() => new Float32Array((particles.length || 0) * 3), [particles.length]);
+  const positions = useMemo(
+    () => new Float32Array((particles.length || 0) * 3),
+    [particles.length],
+  );
+  const colors = useMemo(
+    () => new Float32Array((particles.length || 0) * 3),
+    [particles.length],
+  );
 
   useEffect(() => {
     particles.forEach((p, i) => {
@@ -287,12 +336,20 @@ function EdgeParticles({ nodes, edges }: { nodes: VisualNode[]; edges: VisualEdg
       colors.set([p.color.r, p.color.g, p.color.b], i * 3);
     });
     if (geomRef.current) {
-      geomRef.current.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-      geomRef.current.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+      geomRef.current.setAttribute(
+        'position',
+        new THREE.BufferAttribute(positions, 3),
+      );
+      geomRef.current.setAttribute(
+        'color',
+        new THREE.BufferAttribute(colors, 3),
+      );
     }
   }, [particles, positions, colors]);
 
   useFrame(({ clock }) => {
+    if (!geomRef.current) return;
+
     const t = clock.getElapsedTime();
     particles.forEach((p, i) => {
       // ping-pong along the edge
@@ -304,7 +361,11 @@ function EdgeParticles({ nodes, edges }: { nodes: VisualNode[]; edges: VisualEdg
       positions[i * 3 + 1] = y;
       positions[i * 3 + 2] = z;
     });
-    (geomRef.current.getAttribute('position') as THREE.BufferAttribute).needsUpdate = true;
+
+    const positionAttribute = geomRef.current.getAttribute('position');
+    if (positionAttribute) {
+      (positionAttribute as THREE.BufferAttribute).needsUpdate = true;
+    }
   });
 
   if (particles.length === 0) return null;
@@ -312,7 +373,14 @@ function EdgeParticles({ nodes, edges }: { nodes: VisualNode[]; edges: VisualEdg
   return (
     <points>
       <bufferGeometry ref={geomRef} />
-      <pointsMaterial ref={matRef} size={0.025} vertexColors depthWrite={false} transparent opacity={0.9} />
+      <pointsMaterial
+        ref={matRef}
+        size={0.025}
+        vertexColors
+        depthWrite={false}
+        transparent
+        opacity={0.9}
+      />
     </points>
   );
 }
@@ -326,7 +394,10 @@ function Halos({ nodes }: { nodes: VisualNode[] }) {
       {nodes.slice(0, 60).map((n) => {
         const scale = 0.45 + (n.size ?? 0) * 0.9;
         return (
-          <mesh key={`halo-${n.id}`} position={[n.position.x, n.position.y, n.position.z]}>
+          <mesh
+            key={`halo-${n.id}`}
+            position={[n.position.x, n.position.y, n.position.z]}
+          >
             <sphereGeometry args={[1, 20, 20]} />
             <meshBasicMaterial color={n.color} transparent opacity={0.06} />
             <group scale={[scale, scale, scale]} />
@@ -339,15 +410,20 @@ function Halos({ nodes }: { nodes: VisualNode[] }) {
 
 function Labels({ nodes, max = 200 }: { nodes: VisualNode[]; max?: number }) {
   const sorted = useMemo(
-    () => [...nodes].sort((a, b) => (b.size ?? 0) - (a.size ?? 0)).slice(0, max),
-    [nodes, max]
+    () =>
+      [...nodes].sort((a, b) => (b.size ?? 0) - (a.size ?? 0)).slice(0, max),
+    [nodes, max],
   );
   return (
     <>
       {sorted.map((n) => (
         <Html
           key={`lbl-${n.id}`}
-          position={[n.position.x, n.position.y + (0.09 + n.size * 0.22), n.position.z]}
+          position={[
+            n.position.x,
+            n.position.y + (0.09 + n.size * 0.22),
+            n.position.z,
+          ]}
           center
           occlude
           transform

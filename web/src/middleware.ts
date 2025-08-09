@@ -1,10 +1,10 @@
 import { withAuth } from 'next-auth/middleware';
 import { NextResponse } from 'next/server';
-import { 
-  isPublicRoute, 
-  isProtectedRoute, 
+import {
+  isPublicRoute,
+  isProtectedRoute,
   isUnverifiedAllowed,
-  ROUTE_CONFIG 
+  ROUTE_CONFIG,
 } from './config/routes.config';
 
 export default withAuth(
@@ -23,13 +23,20 @@ export default withAuth(
     }
 
     // Check if user's email is verified
-    const isEmailVerified = token.emailVerified !== null && token.emailVerified !== undefined;
+    const isEmailVerified =
+      token.emailVerified !== null && token.emailVerified !== undefined;
 
     // If email is not verified and route requires verification
     if (!isEmailVerified && !isUnverifiedAllowed(pathname)) {
-      const verificationUrl = new URL(ROUTE_CONFIG.redirects.requiresVerification, req.url);
+      const verificationUrl = new URL(
+        ROUTE_CONFIG.redirects.requiresVerification,
+        req.url,
+      );
       verificationUrl.searchParams.set('email', token.email || '');
-      verificationUrl.searchParams.set('message', 'Please verify your email to continue.');
+      verificationUrl.searchParams.set(
+        'message',
+        'Please verify your email to continue.',
+      );
       return NextResponse.redirect(verificationUrl);
     }
 
@@ -40,17 +47,17 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const { pathname } = req.nextUrl;
-        
+
         // Public routes are always accessible
         if (isPublicRoute(pathname)) {
           return true;
         }
-        
+
         // Protected routes require authentication
         if (isProtectedRoute(pathname)) {
           return !!token;
         }
-        
+
         // Default to public for any unconfigured routes (safety fallback)
         console.warn(`Route ${pathname} is not configured in routes.config.ts`);
         return true;
@@ -59,7 +66,7 @@ export default withAuth(
     pages: {
       signIn: '/sign-in', // Use the new clean URL
     },
-  }
+  },
 );
 
 export const config = {

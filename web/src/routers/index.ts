@@ -7,6 +7,7 @@ import { signalsApp } from './signals.router';
 import { connectionsApp } from './connections.router';
 import { metricsApp } from './metrics.router';
 import { intelligenceApp } from './intelligence.router';
+import { visualizationApp } from './visualization.router';
 import { errorHandler } from '../lib/api/errors';
 import { createLoggingMiddleware } from '../lib/api/logging-middleware';
 import { dbHealthCheck } from '../lib/api/database';
@@ -24,10 +25,12 @@ export const apiApp = new OpenAPIHono({
   openapi: '3.1.0',
   servers: [
     {
-      url: process.env.NODE_ENV === 'production' 
-        ? 'https://api.hyperformant.io/v1' 
-        : 'http://localhost:3000/api/v1',
-      description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
+      url:
+        process.env.NODE_ENV === 'production'
+          ? 'https://api.hyperformant.io/v1'
+          : 'http://localhost:3000/api/v1',
+      description:
+        process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
     },
   ],
 });
@@ -54,10 +57,13 @@ apiApp.route('/', connectionsApp);
 apiApp.route('/', metricsApp);
 apiApp.route('/', intelligenceApp);
 
+// Mount visualization router
+apiApp.route('/', visualizationApp);
+
 // System endpoints
 apiApp.get('/health', async (c) => {
   const dbHealthy = await dbHealthCheck();
-  
+
   return c.json({
     status: dbHealthy ? 'healthy' : 'unhealthy',
     database: dbHealthy,
@@ -82,10 +88,11 @@ apiApp.get('/info', (c) => {
       connections: '/api/v1/connections',
       metrics: '/api/v1/metrics',
       intelligence: '/api/v1/intelligence',
+      visualization: '/api/v1/viz',
     },
     features: [
       'REST API',
-      'Authentication with NextAuth.js', 
+      'Authentication with NextAuth.js',
       'Hono framework',
       'Competitive Intelligence',
       'Entity Relationship Mapping',
@@ -101,15 +108,17 @@ apiApp.doc('/openapi.json', {
   openapi: '3.1.0',
   info: {
     title: 'Hyperformant API',
-    version: '1.0.0', 
+    version: '1.0.0',
     description: 'AI-powered B2B automation and consulting pipeline system',
   },
   servers: [
     {
-      url: process.env.NODE_ENV === 'production' 
-        ? 'https://api.hyperformant.io/v1' 
-        : 'http://localhost:3000/api/v1',
-      description: process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
+      url:
+        process.env.NODE_ENV === 'production'
+          ? 'https://api.hyperformant.io/v1'
+          : 'http://localhost:3000/api/v1',
+      description:
+        process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
     },
   ],
 });

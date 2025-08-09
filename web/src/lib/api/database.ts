@@ -5,23 +5,26 @@ import { PrismaClient } from '@prisma/client';
  */
 class DatabaseManager {
   private static instance: PrismaClient;
-  
+
   public static getInstance(): PrismaClient {
     if (!DatabaseManager.instance) {
       DatabaseManager.instance = new PrismaClient({
-        log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+        log:
+          process.env.NODE_ENV === 'development'
+            ? ['query', 'error', 'warn']
+            : ['error'],
         errorFormat: 'pretty',
       });
-      
+
       // Handle graceful shutdown
       process.on('beforeExit', async () => {
         await DatabaseManager.instance.$disconnect();
       });
     }
-    
+
     return DatabaseManager.instance;
   }
-  
+
   /**
    * Health check for database connection
    */
@@ -35,7 +38,7 @@ class DatabaseManager {
       return false;
     }
   }
-  
+
   /**
    * Get database connection statistics
    */
@@ -92,7 +95,7 @@ export const getDb = (c: any): PrismaClient => {
  * Transaction helper for complex operations
  */
 export const withTransaction = async <T>(
-  operation: (tx: PrismaClient) => Promise<T>
+  operation: (tx: PrismaClient) => Promise<T>,
 ): Promise<T> => {
   return await db.$transaction(operation);
 };
@@ -102,7 +105,7 @@ export const withTransaction = async <T>(
  */
 export const handleDatabaseError = (error: any) => {
   console.error('Database error:', error);
-  
+
   // Handle specific Prisma errors
   if (error.code === 'P2002') {
     return {
@@ -111,21 +114,21 @@ export const handleDatabaseError = (error: any) => {
       field: error.meta?.target?.[0] || 'unknown',
     };
   }
-  
+
   if (error.code === 'P2025') {
     return {
       type: 'RECORD_NOT_FOUND',
       message: 'The requested record was not found',
     };
   }
-  
+
   if (error.code === 'P2003') {
     return {
       type: 'FOREIGN_KEY_CONSTRAINT',
       message: 'This record is referenced by other data and cannot be deleted',
     };
   }
-  
+
   // Generic database error
   return {
     type: 'DATABASE_ERROR',

@@ -11,26 +11,18 @@ import {
  */
 
 // Metric kind enum
-export const MetricKindSchema = z.enum([
-  'FINANCIAL',
-  'DIGITAL',
-  'OPERATIONAL',
-  'SENTIMENT',
-  'INNOVATION',
-]).openapi({
-  description: 'Category of metric',
-});
+export const MetricKindSchema = z
+  .enum(['FINANCIAL', 'DIGITAL', 'OPERATIONAL', 'SENTIMENT', 'INNOVATION'])
+  .openapi({
+    description: 'Category of metric',
+  });
 
 // Time window enum
-export const TimeWindowSchema = z.enum([
-  'DAY',
-  'WEEK',
-  'MONTH',
-  'QUARTER',
-  'YEAR',
-]).openapi({
-  description: 'Time aggregation window',
-});
+export const TimeWindowSchema = z
+  .enum(['DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR'])
+  .openapi({
+    description: 'Time aggregation window',
+  });
 
 // Metric definition schema
 export const MetricDefinitionSchema = z
@@ -67,7 +59,7 @@ export const MetricPointSchema = z
     source: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
     createdAt: DateTimeSchema,
-    
+
     // Relations (optional)
     metricDefinition: MetricDefinitionSchema.optional(),
   })
@@ -106,9 +98,12 @@ export const MetricSeriesQuerySchema = z
     fromDate: DateTimeSchema.optional(),
     toDate: DateTimeSchema.optional(),
     window: TimeWindowSchema.optional(),
-    aggregation: z.enum(['avg', 'sum', 'min', 'max', 'last']).optional().openapi({
-      description: 'Aggregation method for multiple points',
-    }),
+    aggregation: z
+      .enum(['avg', 'sum', 'min', 'max', 'last'])
+      .optional()
+      .openapi({
+        description: 'Aggregation method for multiple points',
+      }),
   })
   .openapi('MetricSeriesQuery');
 
@@ -116,15 +111,19 @@ export const MetricSeriesQuerySchema = z
 export const MetricSeriesResponseSchema = z
   .object({
     entityId: IdSchema,
-    series: z.array(z.object({
-      metricDefinition: MetricDefinitionSchema,
-      points: z.array(z.object({
-        timestamp: DateTimeSchema,
-        value: z.number(),
-        window: TimeWindowSchema,
-        source: z.string().optional(),
-      })),
-    })),
+    series: z.array(
+      z.object({
+        metricDefinition: MetricDefinitionSchema,
+        points: z.array(
+          z.object({
+            timestamp: DateTimeSchema,
+            value: z.number(),
+            window: TimeWindowSchema,
+            source: z.string().optional(),
+          }),
+        ),
+      }),
+    ),
   })
   .openapi('MetricSeriesResponse');
 
@@ -147,17 +146,19 @@ export const MetricAggregationQuerySchema = z
 // Metric aggregation response
 export const MetricAggregationResponseSchema = z
   .object({
-    aggregations: z.array(z.object({
-      entityId: IdSchema.optional(),
-      metricKey: z.string().optional(),
-      window: TimeWindowSchema,
-      timestamp: DateTimeSchema.optional(),
-      value: z.number(),
-      count: z.number(),
-      min: z.number(),
-      max: z.number(),
-      avg: z.number(),
-    })),
+    aggregations: z.array(
+      z.object({
+        entityId: IdSchema.optional(),
+        metricKey: z.string().optional(),
+        window: TimeWindowSchema,
+        timestamp: DateTimeSchema.optional(),
+        value: z.number(),
+        count: z.number(),
+        min: z.number(),
+        max: z.number(),
+        avg: z.number(),
+      }),
+    ),
   })
   .openapi('MetricAggregationResponse');
 

@@ -11,24 +11,18 @@ import {
  */
 
 // Data source type enum
-export const DataSourceTypeSchema = z.enum([
-  'API',
-  'SCRAPER',
-  'MANUAL',
-  'LLM',
-]).openapi({
-  description: 'Type of data source',
-});
+export const DataSourceTypeSchema = z
+  .enum(['API', 'SCRAPER', 'MANUAL', 'LLM'])
+  .openapi({
+    description: 'Type of data source',
+  });
 
 // Run status enum
-export const RunStatusSchema = z.enum([
-  'PENDING',
-  'RUNNING',
-  'SUCCESS',
-  'FAILED',
-]).openapi({
-  description: 'Status of ingestion run',
-});
+export const RunStatusSchema = z
+  .enum(['PENDING', 'RUNNING', 'SUCCESS', 'FAILED'])
+  .openapi({
+    description: 'Status of ingestion run',
+  });
 
 // Index definition schema
 export const IndexDefinitionSchema = z
@@ -65,7 +59,7 @@ export const IndexValueSchema = z
       description: 'Normalized value (0-1) for visualization',
     }),
     createdAt: DateTimeSchema,
-    
+
     // Relations (optional)
     indexDefinition: IndexDefinitionSchema.optional(),
   })
@@ -116,7 +110,7 @@ export const ContextValueSchema = z
     source: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
     createdAt: DateTimeSchema,
-    
+
     // Relations (optional)
     dimension: ContextDimensionSchema.optional(),
   })
@@ -173,7 +167,7 @@ export const IngestionRunSchema = z
     itemsOut: z.number().int().min(0).optional(),
     error: z.string().optional(),
     metadata: z.record(z.string(), z.any()).optional(),
-    
+
     // Relations (optional)
     dataSource: DataSourceSchema.optional(),
   })
@@ -205,10 +199,12 @@ export const AnalyzeRequestSchema = z
   .object({
     entityIds: z.array(IdSchema).min(1).max(10),
     analysisType: z.enum(['competitive', 'market', 'risk', 'opportunity']),
-    timeframe: z.object({
-      from: DateTimeSchema,
-      to: DateTimeSchema,
-    }).optional(),
+    timeframe: z
+      .object({
+        from: DateTimeSchema,
+        to: DateTimeSchema,
+      })
+      .optional(),
     includeConnections: z.boolean().default(true),
     includeSignals: z.boolean().default(true),
     includeMetrics: z.boolean().default(true),
@@ -218,14 +214,16 @@ export const AnalyzeRequestSchema = z
 // Intelligence analysis response
 export const AnalysisResponseSchema = z
   .object({
-    entities: z.array(z.object({
-      id: IdSchema,
-      name: z.string(),
-      scores: z.record(z.string(), z.number()),
-      insights: z.array(z.string()),
-      risks: z.array(z.string()),
-      opportunities: z.array(z.string()),
-    })),
+    entities: z.array(
+      z.object({
+        id: IdSchema,
+        name: z.string(),
+        scores: z.record(z.string(), z.number()),
+        insights: z.array(z.string()),
+        risks: z.array(z.string()),
+        opportunities: z.array(z.string()),
+      }),
+    ),
     marketContext: z.record(z.string(), z.any()),
     recommendations: z.array(z.string()),
     generatedAt: DateTimeSchema,

@@ -14,18 +14,18 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
   const { routes, open, setOpen, variant, setHovered, hovered } = props;
   const context = useContext(ConfiguratorContext);
   const { mini } = context;
-  
+
   // Track viewport height for responsive blue card
   const [showCard, setShowCard] = useState(true);
-  
+
   useEffect(() => {
     const checkViewportHeight = () => {
       setShowCard(window.innerHeight >= 650); // Hide card if height is less than 650px
     };
-    
+
     checkViewportHeight();
     window.addEventListener('resize', checkViewportHeight);
-    
+
     return () => window.removeEventListener('resize', checkViewportHeight);
   }, []);
   return (
@@ -34,17 +34,15 @@ function SidebarHorizon(props: { routes: IRoute[]; [x: string]: any }) {
         mini === false
           ? 'w-[285px]'
           : mini === true && hovered === true
-          ? 'w-[285px]'
-          : 'w-[285px] xl:!w-[120px]'
+            ? 'w-[285px]'
+            : 'w-[285px] xl:!w-[120px]'
       } duration-175 linear transition-all flex-shrink-0 sticky top-6 overflow-visible ${
         variant === 'auth' ? 'xl:hidden' : 'xl:block'
       } ${open ? '' : 'hidden xl:block'}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      <Card
-        extra={`w-full h-auto flex flex-col overflow-visible`}
-      >
+      <Card extra={`w-full h-auto flex flex-col overflow-visible`}>
         <div className="flex flex-col">
           <div className="flex-shrink-0">
             <span

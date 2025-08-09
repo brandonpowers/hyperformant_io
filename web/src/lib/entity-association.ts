@@ -27,15 +27,16 @@ export interface EntityAssociationResult {
  */
 export async function associateUserWithEntity(
   userId: string,
-  email: string
+  email: string,
 ): Promise<EntityAssociationResult> {
   const emailDomain = email.split('@')[1];
   const companyName = emailDomain.split('.')[0];
-  const formattedCompanyName = companyName.charAt(0).toUpperCase() + companyName.slice(1);
+  const formattedCompanyName =
+    companyName.charAt(0).toUpperCase() + companyName.slice(1);
 
   // Check if company entity already exists
   const existingEntity = await prisma.entity.findFirst({
-    where: { 
+    where: {
       domain: emailDomain,
       type: 'COMPANY',
     },
@@ -110,7 +111,7 @@ export async function createEntityAccessRequest(
   userId: string,
   entityId: string,
   requestedRole: 'ADMIN' | 'EDITOR' | 'VIEWER' = 'VIEWER',
-  message?: string
+  message?: string,
 ) {
   // Check if user already has access or pending request
   const [existingMember, existingRequest] = await Promise.all([
@@ -164,7 +165,12 @@ export async function createEntityAccessRequest(
  */
 export async function findOrCreateEntityByDomain(
   domain: string,
-  entityType: 'COMPANY' | 'PRODUCT' | 'PERSON' | 'MARKET' | 'SEGMENT' = 'COMPANY',
+  entityType:
+    | 'COMPANY'
+    | 'PRODUCT'
+    | 'PERSON'
+    | 'MARKET'
+    | 'SEGMENT' = 'COMPANY',
   additionalData?: Partial<{
     name: string;
     ticker: string;
@@ -175,7 +181,7 @@ export async function findOrCreateEntityByDomain(
     description: string;
     industryId: string;
     marketSegmentId: string;
-  }>
+  }>,
 ) {
   const existing = await prisma.entity.findFirst({
     where: { domain, type: entityType },
@@ -186,8 +192,10 @@ export async function findOrCreateEntityByDomain(
   }
 
   // Generate name from domain if not provided
-  const defaultName = additionalData?.name || 
-    domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1);
+  const defaultName =
+    additionalData?.name ||
+    domain.split('.')[0].charAt(0).toUpperCase() +
+      domain.split('.')[0].slice(1);
 
   return await prisma.entity.create({
     data: {

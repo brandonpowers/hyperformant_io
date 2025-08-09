@@ -27,7 +27,7 @@ export const RegisterSchema = z
       .max(100, 'Password too long')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Password must contain uppercase, lowercase, and number'
+        'Password must contain uppercase, lowercase, and number',
       ),
     confirmPassword: z.string(),
   })
@@ -54,7 +54,7 @@ export const ResetPasswordSchema = z
       .max(100, 'Password too long')
       .regex(
         /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        'Password must contain uppercase, lowercase, and number'
+        'Password must contain uppercase, lowercase, and number',
       ),
     confirmPassword: z.string(),
   })
@@ -124,7 +124,7 @@ export const CreateApiTokenSchema = z
           'users:read',
           'admin:read',
           'admin:write',
-        ])
+        ]),
       )
       .default(['companies:read']),
     expiresIn: z
