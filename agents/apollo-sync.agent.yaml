@@ -1,0 +1,85 @@
+name: apollo-sync
+version: "1.0"
+description: "Sync Apollo.io data with local database"
+schedule: "0 */6 * * *"  # Every 6 hours
+dependencies: []
+timeout: 300  # 5 minutes
+retry:
+  attempts: 3
+  delay: 30  # 30 seconds between retries
+
+environment:
+  required:
+    - APOLLO_API_KEY
+    - DATABASE_URL
+  optional:
+    - APOLLO_BATCH_SIZE
+
+config:
+  batch_size: 100
+  max_pages: 10
+  target_industries: ["Software", "SaaS", "Technology", "FinTech"]
+  company_size_range: [1, 50]
+  job_titles: ["CEO", "Founder", "Co-Founder", "CTO", "VP"]
+
+steps:
+  - name: fetch-organizations
+    type: api-call
+    description: "Fetch organizations from Apollo.io"
+    endpoint: "https://api.apollo.io/v1/organizations/search"
+    method: POST
+    headers:
+      X-Api-Key: "${APOLLO_API_KEY}"
+      Content-Type: "application/json"
+    body:
+      q_organization_industries: "{{ config.target_industries }}"
+      organization_sizes: ["{{ config.company_size_range[0] }},{{ config.company_size_range[1] }}"]
+      person_titles: "{{ config.job_titles }}"
+      page: 1
+      per_page: "{{ config.batch_size }}"
+    output: apollo_organizations
+    
+  - name: process-companies
+    type: data-transform
+    description: "Transform Apollo data to our schema"
+    input: "{{ steps.fetch-organizations.output }}"
+    script: |
+      const companies = input.organizations.map(org => ({
+        name: org.name,
+        domain: org.website_url?.replace(/https?:\/\//, '').replace(/\/$/, ''),
+        apollo_id: org.id,
+        industry: org.industry,
+        employee_count: org.estimated_num_employees,
+        founded_year: org.founded_year,
+        city: org.primary_city,
+        state: org.primary_state,
+        country: org.primary_country,
+        annual_revenue: org.estimated_annual_revenue,
+        last_synced_at: new Date().toISOString()
+      })).filter(company => company.domain);
+      return companies;
+    output: processed_companies
+
+  - name: sync-database
+    type: database-operation
+    description: "Upsert companies to database"
+    operation: upsert
+    table: companies
+    conflict_target: apollo_id
+    input: "{{ steps.process-companies.output }}"
+    output: sync_results
+
+  - name: log-results
+    type: log
+    level: info
+    message: "Apollo sync completed: {{ steps.sync-database.output.upserted }} companies upserted"
+
+notifications:
+  on_failure:
+    - type: log
+      level: error
+      message: "Apollo sync failed: {{ error.message }}"
+  on_success:
+    - type: log
+      level: info
+      message: "Apollo sync completed successfully"

@@ -15,10 +15,10 @@
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",
     "test:all": "npm run test && npm run test:e2e",
-    "playwright:install": "playwright install"
+    "playwright:install": "playwright install",
+    "test:data-pipeline": "npx dotenv -e .env.local -- npx tsx scripts/test-data-pipeline.ts"
   },
   "dependencies": {
-    "@auth/prisma-adapter": "^2.10.0",
     "@babel/traverse": "^7.24.6",
     "@chakra-ui/accordion": "^2.1.4",
     "@chakra-ui/hooks": "^2.1.4",
@@ -40,7 +40,6 @@
     "@hono/zod-openapi": "^1.1.0",
     "@hono/zod-validator": "^0.7.2",
     "@lemonsqueezy/lemonsqueezy.js": "^4.0.0",
-    "@prisma/client": "^6.13.0",
     "@react-three/drei": "^10.6.1",
     "@react-three/fiber": "^9.3.0",
     "@remixicon/react": "^4.6.0",
@@ -78,7 +77,6 @@
     "next-transpile-modules": "^9.0.0",
     "nodemailer": "^7.0.5",
     "openai": "^5.12.2",
-    "prisma": "^6.13.0",
     "rc-slider": "^10.0.1",
     "react": "^19.1.1",
     "react-accessible-accordion": "^5.0.0",

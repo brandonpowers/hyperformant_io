@@ -139,8 +139,8 @@ export async function getVizConnections(
       cr.last_updated,
       cr.interaction_count
     FROM mv_connection_rollup cr
-    WHERE cr.source_entity_id = ANY(${userEntities})
-      AND cr.target_entity_id = ANY(${userEntities})
+    WHERE cr.source_entity_id = ANY(${userEntities}::uuid[])
+      AND cr.target_entity_id = ANY(${userEntities}::uuid[])
       AND (${filters.connectionTypes?.length || 0} = 0 OR cr.connection_type = ANY(${filters.connectionTypes || []}))
       AND (${filters.minStrength || 0} <= cr.avg_strength)
     ORDER BY cr.avg_strength DESC, cr.last_updated DESC

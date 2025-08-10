@@ -1,0 +1,123 @@
+name: sentiment-collector
+version: "1.0"
+description: "Multi-source sentiment analysis for competitor intelligence"
+schedule: "0 8,16 * * *"  # Twice daily at 8am and 4pm
+dependencies: ["apollo-sync"]  # Run after Apollo sync
+timeout: 600  # 10 minutes
+retry:
+  attempts: 2
+  delay: 60
+
+environment:
+  required:
+    - DATABASE_URL
+    - OPENAI_API_KEY
+  optional:
+    - REDDIT_CLIENT_ID
+    - TWITTER_BEARER_TOKEN
+
+config:
+  max_companies_per_run: 25
+  sentiment_sources: ["reddit", "hackernews", "google_trends"]
+  analysis_window_days: 30
+  ai_model: "gpt-4o-mini"
+
+steps:
+  - name: get-target-companies
+    type: database-query
+    description: "Get companies that need sentiment analysis"
+    query: |
+      SELECT id, name, domain, industry 
+      FROM companies 
+      WHERE last_sentiment_analysis_at IS NULL 
+         OR last_sentiment_analysis_at < NOW() - INTERVAL '{{ config.analysis_window_days }} days'
+      ORDER BY created_at DESC 
+      LIMIT {{ config.max_companies_per_run }}
+    output: target_companies
+
+  - name: collect-reddit-sentiment
+    type: api-call
+    condition: "{{ 'reddit' in config.sentiment_sources }}"
+    description: "Collect sentiment from Reddit"
+    endpoint: "https://www.reddit.com/search.json"
+    method: GET
+    params:
+      q: "{{ company.name }} OR {{ company.domain }}"
+      sort: "relevance"
+      t: "month"
+      limit: 25
+    iterate: "{{ steps.get-target-companies.output }}"
+    output: reddit_sentiment
+
+  - name: collect-hackernews-sentiment
+    type: api-call
+    condition: "{{ 'hackernews' in config.sentiment_sources }}"
+    description: "Collect sentiment from HackerNews"
+    endpoint: "https://hn.algolia.com/api/v1/search"
+    method: GET
+    params:
+      query: "{{ company.name }}"
+      tags: "story,comment"
+      numericFilters: "created_at_i>{{ Date.now()/1000 - 30*24*3600 }}"
+    iterate: "{{ steps.get-target-companies.output }}"
+    output: hackernews_sentiment
+
+  - name: analyze-sentiment
+    type: ai-analysis
+    description: "AI sentiment analysis of collected data"
+    model: "{{ config.ai_model }}"
+    prompt: |
+      Analyze the sentiment and competitive intelligence for {{ company.name }} ({{ company.domain }}) 
+      based on the following social media mentions:
+      
+      Reddit mentions: {{ reddit_data }}
+      HackerNews mentions: {{ hackernews_data }}
+      
+      Provide:
+      1. Overall sentiment score (-1 to 1)
+      2. Key themes and topics
+      3. Competitive vulnerabilities mentioned
+      4. Customer pain points
+      5. Market opportunities
+      
+      Return as JSON with fields: sentiment_score, themes, vulnerabilities, pain_points, opportunities
+    input_data:
+      reddit_data: "{{ steps.collect-reddit-sentiment.output }}"
+      hackernews_data: "{{ steps.collect-hackernews-sentiment.output }}"
+    iterate: "{{ steps.get-target-companies.output }}"
+    output: sentiment_analysis
+
+  - name: store-sentiment-data
+    type: database-operation
+    description: "Store sentiment analysis results"
+    operation: insert
+    table: consumer_sentiment_data
+    input: |
+      {{ steps.sentiment-analysis.output.map(analysis => ({
+        company_id: analysis.company_id,
+        data_source: 'multi-source',
+        sentiment_score: analysis.sentiment_score,
+        themes: JSON.stringify(analysis.themes),
+        vulnerabilities: JSON.stringify(analysis.vulnerabilities),
+        pain_points: JSON.stringify(analysis.pain_points),
+        opportunities: JSON.stringify(analysis.opportunities),
+        collected_at: new Date().toISOString()
+      })) }}
+    output: storage_results
+
+  - name: update-company-timestamps
+    type: database-operation
+    description: "Update last sentiment analysis timestamp"
+    operation: update
+    table: companies
+    set:
+      last_sentiment_analysis_at: "NOW()"
+    where:
+      id: "IN ({{ steps.get-target-companies.output.map(c => c.id).join(',') }})"
+    output: update_results
+
+notifications:
+  on_success:
+    - type: log
+      level: info
+      message: "Sentiment analysis completed for {{ steps.get-target-companies.output.length }} companies"

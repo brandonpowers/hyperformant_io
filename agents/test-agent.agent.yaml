@@ -1,0 +1,40 @@
+name: test-agent
+version: "1.0"
+description: "Simple test agent to verify the system works"
+schedule: null
+dependencies: []
+timeout: 60
+retry:
+  attempts: 1
+  delay: 5
+
+environment:
+  required:
+    - DATABASE_URL
+
+steps:
+  - name: log-start
+    type: log
+    level: info
+    message: "Test agent starting execution"
+
+  - name: check-database
+    type: database-query
+    description: "Test database connection"
+    query: "SELECT 1 as test_value"
+    output: db_test
+
+  - name: log-result
+    type: log
+    level: info
+    message: "Database test completed - got result"
+
+notifications:
+  on_success:
+    - type: log
+      level: info
+      message: "Test agent completed successfully"
+  on_failure:
+    - type: log
+      level: error
+      message: "Test agent failed"

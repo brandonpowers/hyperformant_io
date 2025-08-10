@@ -1,0 +1,365 @@
+{
+  "name": "Apollo.io Data Sync",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 4
+            }
+          ]
+        }
+      },
+      "id": "f8b8c1de-8b4a-4f4a-9b8a-3e4c5d6e7f8a",
+      "name": "Schedule Trigger",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "apollo-sync",
+        "responseMode": "responseNode"
+      },
+      "id": "a1b2c3d4-e5f6-4a1b-8c9d-0e1f2a3b4c5d",
+      "name": "Webhook Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        480
+      ],
+      "webhookId": "apollo-sync-webhook"
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:3000/api/admin/data-sources/collect",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sourceType",
+              "value": "APOLLO_CRM"
+            },
+            {
+              "name": "action", 
+              "value": "discover_companies"
+            },
+            {
+              "name": "params",
+              "value": "={{ {\n  \"keywords\": [\"saas\", \"software\", \"fintech\", \"healthtech\"],\n  \"employeeRanges\": [\"11-50\", \"51-200\", \"201-1000\"],\n  \"limit\": 50\n} }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "b2c3d4e5-f6a7-4b2c-9d0e-1f2a3b4c5d6e",
+      "name": "Discover Companies",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        460,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "c3d4e5f6-a7b8-4c3d-0e1f-2a3b4c5d6e7f",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "d4e5f6a7-b8c9-4d4e-1f2a-3b4c5d6e7f8a",
+      "name": "Check Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        680,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"IngestionRun\" (id, \"dataSourceId\", status, \"startedAt\", \"finishedAt\", \"itemsIn\", \"itemsOut\", metadata) VALUES (gen_random_uuid(), (SELECT id FROM \"DataSource\" WHERE type = 'APOLLO_CRM' LIMIT 1), 'SUCCESS', NOW(), NOW(), {{ $json.results.itemsIn }}, {{ $json.results.itemsOut }}, '{{ JSON.stringify($json.results) }}');"
+      },
+      "id": "e5f6a7b8-c9d0-4e5f-2a3b-4c5d6e7f8a9b",
+      "name": "Log Success",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        900,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO \"IngestionRun\" (id, \"dataSourceId\", status, \"startedAt\", \"finishedAt\", error, metadata) VALUES (gen_random_uuid(), (SELECT id FROM \"DataSource\" WHERE type = 'APOLLO_CRM' LIMIT 1), 'FAILED', NOW(), NOW(), '{{ $json.error }}', '{{ JSON.stringify($json) }}');"
+      },
+      "id": "f6a7b8c9-d0e1-4f6a-3b4c-5d6e7f8a9b0c",
+      "name": "Log Failure",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        900,
+        360
+      ]
+    },
+    {
+      "parameters": {
+        "url": "=http://localhost:3000/api/admin/data-sources/collect",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sourceType",
+              "value": "APOLLO_CRM"
+            },
+            {
+              "name": "action",
+              "value": "sync_sequence_metrics"
+            },
+            {
+              "name": "params",
+              "value": "={{ {\n  \"sequenceId\": $json.sequenceId\n} }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a7b8c9d0-e1f2-4a7b-4c5d-6e7f8a9b0c1d",
+      "name": "Sync Sequence Metrics",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1120,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT \"apolloId\" as \"sequenceId\" FROM \"apollo_sequences\" WHERE \"isActive\" = true LIMIT 10;"
+      },
+      "id": "b8c9d0e1-f2a3-4b8c-5d6e-7f8a9b0c1d2e",
+      "name": "Get Active Sequences",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.4,
+      "position": [
+        1120,
+        120
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://localhost:3000/api/viz/refresh-materialized-views",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "httpBasicAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "views",
+              "value": "[\"mv_signal_rollup\", \"mv_latest_metric\", \"mv_connection_rollup\"]"
+            }
+          ]
+        }
+      },
+      "id": "c9d0e1f2-a3b4-4c9d-6e7f-8a9b0c1d2e3f",
+      "name": "Refresh Materialized Views",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        1340,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ {\n  \"success\": true,\n  \"message\": \"Apollo.io sync completed\",\n  \"timestamp\": new Date().toISOString(),\n  \"companiesDiscovered\": $json.results?.itemsOut || 0,\n  \"sequencesSynced\": $json.sequencesSynced || 0\n} }}"
+      },
+      "id": "d0e1f2a3-b4c5-4d0e-7f8a-9b0c1d2e3f4a",
+      "name": "Respond Success",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Discover Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook Trigger": {
+      "main": [
+        [
+          {
+            "node": "Discover Companies",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Discover Companies": {
+      "main": [
+        [
+          {
+            "node": "Check Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Success": {
+      "main": [
+        [
+          {
+            "node": "Log Success",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Get Active Sequences",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Log Failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Log Success": {
+      "main": [
+        [
+          {
+            "node": "Refresh Materialized Views",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Active Sequences": {
+      "main": [
+        [
+          {
+            "node": "Sync Sequence Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Sync Sequence Metrics": {
+      "main": [
+        [
+          {
+            "node": "Refresh Materialized Views",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh Materialized Views": {
+      "main": [
+        [
+          {
+            "node": "Respond Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {},
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2024-01-15T10:00:00.000Z",
+      "updatedAt": "2024-01-15T10:00:00.000Z",
+      "id": "apollo-integration",
+      "name": "Apollo Integration"
+    }
+  ],
+  "triggerCount": 2,
+  "updatedAt": "2024-01-15T10:00:00.000Z",
+  "versionId": "1"
+}

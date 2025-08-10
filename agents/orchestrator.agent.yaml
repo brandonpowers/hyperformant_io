@@ -1,0 +1,126 @@
+name: orchestrator
+version: "1.0"
+description: "Minimal orchestrator for coordinating agent workflows"
+schedule: "0 6 * * *"  # Daily at 6am
+dependencies: []
+timeout: 1800  # 30 minutes
+retry:
+  attempts: 1
+  delay: 300
+
+environment:
+  required:
+    - DATABASE_URL
+  optional:
+    - SLACK_WEBHOOK_URL
+
+config:
+  execution_mode: "parallel"  # parallel or sequential
+  max_concurrent_agents: 3
+  enable_notifications: true
+  daily_targets:
+    companies_synced: 100
+    sentiment_analyzed: 25
+    reports_generated: 5
+
+steps:
+  - name: check-system-health
+    type: health-check
+    description: "Verify system prerequisites"
+    checks:
+      - database_connection
+      - apollo_api_status
+      - disk_space
+    output: health_status
+
+  - name: determine-daily-workload
+    type: database-query
+    description: "Calculate today's work requirements"
+    query: |
+      SELECT 
+        COUNT(*) FILTER (WHERE last_synced_at < NOW() - INTERVAL '6 hours') as companies_to_sync,
+        COUNT(*) FILTER (WHERE last_sentiment_analysis_at IS NULL OR last_sentiment_analysis_at < NOW() - INTERVAL '7 days') as companies_need_sentiment,
+        COUNT(*) FILTER (WHERE id NOT IN (SELECT company_id FROM reports WHERE created_at >= NOW() - INTERVAL '30 days')) as companies_need_reports
+      FROM companies
+    output: workload_assessment
+
+  - name: execute-apollo-sync
+    type: agent-execution
+    condition: "{{ steps.determine-daily-workload.output.companies_to_sync > 0 }}"
+    agent: "apollo-sync"
+    mode: "async"
+    timeout: 300
+    output: apollo_sync_result
+
+  - name: execute-sentiment-collection
+    type: agent-execution
+    condition: "{{ steps.determine-daily-workload.output.companies_need_sentiment > 0 }}"
+    agent: "sentiment-collector"
+    mode: "async"
+    depends_on: ["execute-apollo-sync"]
+    timeout: 600
+    output: sentiment_result
+
+  - name: execute-report-generation
+    type: agent-execution
+    condition: "{{ steps.determine-daily-workload.output.companies_need_reports > 0 }}"
+    agent: "report-generator"
+    mode: "async" 
+    depends_on: ["execute-sentiment-collection"]
+    timeout: 900
+    output: report_result
+
+  - name: wait-for-completion
+    type: wait-for-agents
+    description: "Wait for all agents to complete"
+    agents: 
+      - "{{ steps.execute-apollo-sync.agent_id if steps.execute-apollo-sync.executed }}"
+      - "{{ steps.execute-sentiment-collection.agent_id if steps.execute-sentiment-collection.executed }}"
+      - "{{ steps.execute-report-generation.agent_id if steps.execute-report-generation.executed }}"
+    timeout: 1800
+    output: completion_status
+
+  - name: generate-daily-summary
+    type: data-aggregation
+    description: "Create daily execution summary"
+    data:
+      execution_date: "{{ new Date().toISOString().split('T')[0] }}"
+      apollo_sync_status: "{{ steps.execute-apollo-sync.output.status || 'skipped' }}"
+      companies_synced: "{{ steps.execute-apollo-sync.output.companies_synced || 0 }}"
+      sentiment_analysis_status: "{{ steps.execute-sentiment-collection.output.status || 'skipped' }}"
+      companies_analyzed: "{{ steps.execute-sentiment-collection.output.companies_analyzed || 0 }}"
+      report_generation_status: "{{ steps.execute-report-generation.output.status || 'skipped' }}"
+      reports_generated: "{{ steps.execute-report-generation.output.reports_generated || 0 }}"
+      total_execution_time: "{{ Date.now() - execution_start_time }}"
+    output: daily_summary
+
+  - name: store-orchestration-log
+    type: database-operation
+    description: "Store orchestration execution log"
+    operation: insert
+    table: daily_business_metrics
+    input:
+      date: "{{ steps.generate-daily-summary.output.execution_date }}"
+      apollo_companies_synced: "{{ steps.generate-daily-summary.output.companies_synced }}"
+      sentiment_companies_analyzed: "{{ steps.generate-daily-summary.output.companies_analyzed }}"
+      reports_generated: "{{ steps.generate-daily-summary.output.reports_generated }}"
+      orchestration_duration_seconds: "{{ Math.floor(steps.generate-daily-summary.output.total_execution_time / 1000) }}"
+      execution_status: "{{ steps.wait-for-completion.output.all_success ? 'success' : 'partial_failure' }}"
+    output: log_result
+
+notifications:
+  on_success:
+    - type: log
+      level: info
+      message: "Daily orchestration completed: {{ steps.generate-daily-summary.output.companies_synced }} synced, {{ steps.generate-daily-summary.output.companies_analyzed }} analyzed, {{ steps.generate-daily-summary.output.reports_generated }} reports"
+    - type: slack
+      condition: "{{ config.enable_notifications && env.SLACK_WEBHOOK_URL }}"
+      message: "🎯 Hyperformant Daily Pipeline Complete\n• Companies Synced: {{ steps.generate-daily-summary.output.companies_synced }}\n• Sentiment Analyzed: {{ steps.generate-daily-summary.output.companies_analyzed }}\n• Reports Generated: {{ steps.generate-daily-summary.output.reports_generated }}"
+  
+  on_failure:
+    - type: log
+      level: error
+      message: "Daily orchestration failed: {{ error.message }}"
+    - type: slack
+      condition: "{{ config.enable_notifications && env.SLACK_WEBHOOK_URL }}"
+      message: "🚨 Hyperformant Pipeline Failure\n• Error: {{ error.message }}\n• Time: {{ new Date().toISOString() }}"

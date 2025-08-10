@@ -716,8 +716,20 @@ async function main() {
   ];
 
   for (const conn of connections) {
-    await prisma.connection.create({
-      data: {
+    await prisma.connection.upsert({
+      where: {
+        sourceEntityId_targetEntityId_type_since: {
+          sourceEntityId: hyperformant.id,
+          targetEntityId: conn.targetId,
+          type: conn.type,
+          since: new Date('2024-01-01'),
+        },
+      },
+      update: {
+        strength: conn.strength,
+        sentimentScore: conn.sentimentScore,
+      },
+      create: {
         sourceEntityId: hyperformant.id,
         targetEntityId: conn.targetId,
         type: conn.type,

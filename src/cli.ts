@@ -10,6 +10,7 @@ import { validateEnvironment, getEnvironment } from './lib/environment';
 import { spawn, execSync, ChildProcess } from 'child_process';
 import os from 'os';
 import dotenv from 'dotenv';
+import { AgentExecutor } from './lib/agents/agent-executor';
 
 // ANSI color codes
 const c = {
@@ -26,8 +27,8 @@ const c = {
   bgCyan: '\x1b[46m',
 };
 
-// Service URLs
-const services = {
+// Service URLs (will be updated dynamically)
+let services = {
   nextjs: 'http://localhost:3000',
   nextjsApi: 'http://localhost:3000/api/v1',
   n8n: 'http://localhost:5678',
@@ -39,21 +40,81 @@ const services = {
 let nextjsDevProcess: ChildProcess | null = null;
 let prismaStudioProcess: ChildProcess | null = null;
 
+// Function to update service URLs when ports change
+function updateServiceUrls(nextjsPort: number) {
+  services.nextjs = `http://localhost:${nextjsPort}`;
+  services.nextjsApi = `http://localhost:${nextjsPort}/api/v1`;
+}
+
+// Function to display service URLs
+function showServiceUrls() {
+  console.log(`
+${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+${c.bright}${c.white} SERVICES RUNNING ${c.reset}
+${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+ ${c.yellow}▶ Next.js App${c.reset}        ${c.cyan}${services.nextjs}${c.reset}
+ ${c.blue}▶ Next.js API${c.reset}        ${c.cyan}${services.nextjsApi}${c.reset}
+ ${c.magenta}▶ n8n Workflows${c.reset}      ${c.cyan}${services.n8n}${c.reset} ${c.dim}(admin/admin)${c.reset}
+ ${c.cyan}▶ Email Testing${c.reset}      ${c.cyan}${services.email}${c.reset}
+ ${c.green}▶ Prisma Studio${c.reset}      ${c.cyan}${services.prismaStudio}${c.reset} ${c.dim}(database admin)${c.reset}
+ ${c.blue}▶ PostgreSQL${c.reset}         ${c.dim}postgresql://localhost:5432${c.reset}
+
+${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+${c.bright}${c.white} API ENDPOINTS ${c.reset}
+${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+ ${c.green}▶ Docs${c.reset}               ${c.cyan}${services.nextjsApi}/docs${c.reset}
+ ${c.green}▶ OpenAPI${c.reset}            ${c.cyan}${services.nextjsApi}/openapi.json${c.reset}
+ ${c.green}▶ Health Check${c.reset}       ${c.cyan}${services.nextjsApi}/health${c.reset}
+  
+${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
+
+${c.bright}${c.white} Quick Commands:${c.reset}
+   ${c.green}npm run db:migrate${c.reset}  - Run database migrations
+   ${c.green}npm run db:seed${c.reset}     - Seed test data  
+   ${c.green}npm run validate${c.reset}    - Validate configurations
+   ${c.green}npm run test${c.reset}        - Run tests
+
+${c.dim}Press Ctrl+C to stop all services${c.reset}
+`);
+
+  // Auto-launch browser tabs after showing URLs
+  setTimeout(() => {
+    console.log(`${c.bright}${c.cyan}🌐 Opening Next.js app...${c.reset}`);
+    openBrowser(services.nextjs);
+    console.log(
+      `${c.bright}${c.green}✨ App should now be open!${c.reset}\n`
+    );
+  }, 3000);
+}
+
 // Helpers
 function loadJson(filePath: string) {
   return JSON.parse(fs.readFileSync(filePath, 'utf-8'));
 }
 
 // Load environment variables from .env.local
-function loadEnvironment() {
-  const envPath = path.join(process.cwd(), 'web', '.env.local');
+function loadEnvironment(): Record<string, string> {
+  const envPath = path.join(process.cwd(), '.env.local');
+  const webEnvPath = path.join(process.cwd(), 'web', '.env.local');
+  
+  let envConfig: Record<string, string> = {};
+  
+  // Load root .env.local first
   if (fs.existsSync(envPath)) {
-    const envConfig = dotenv.parse(fs.readFileSync(envPath));
-    // Merge with existing environment variables
-    Object.assign(process.env, envConfig);
-    return envConfig;
+    envConfig = dotenv.parse(fs.readFileSync(envPath));
   }
-  return {};
+  
+  // Load web .env.local and merge (web takes precedence for web-specific vars)
+  if (fs.existsSync(webEnvPath)) {
+    const webConfig = dotenv.parse(fs.readFileSync(webEnvPath));
+    envConfig = { ...envConfig, ...webConfig };
+  }
+  
+  // Merge with existing environment variables
+  Object.assign(process.env, envConfig);
+  return envConfig;
 }
 
 // Cross-platform browser launcher
@@ -534,7 +595,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     console.log(`${c.dim}🔍 Checking database schema...${c.reset}`);
     execSync('npx prisma migrate status', {
       stdio: 'ignore',
-      cwd: webDir,
+      cwd: process.cwd(),
       env: prismaEnv,
     });
     console.log(`${c.green}✅ Database schema is up to date${c.reset}`);
@@ -543,7 +604,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     try {
       execSync('npx prisma migrate dev --name auto_migration', {
         stdio: 'inherit',
-        cwd: webDir,
+        cwd: process.cwd(),
         env: prismaEnv,
       });
       console.log(`${c.green}✅ Database migrations completed${c.reset}`);
@@ -554,7 +615,7 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
       );
       execSync('npx prisma db seed', {
         stdio: 'inherit',
-        cwd: webDir,
+        cwd: process.cwd(),
         env: prismaEnv,
       });
       console.log(`${c.green}✅ Database seeding completed${c.reset}`);
@@ -575,12 +636,42 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
   // Start Next.js development server
   console.log(`${c.yellow}Starting Next.js development server...${c.reset}\n`);
 
+  let nextjsReady = false;
+
   nextjsDevProcess = spawn('npm', ['run', 'dev'], {
-    stdio: 'inherit',
+    stdio: 'pipe',
     shell: true,
     detached: true,
     cwd: path.join(process.cwd(), 'web'),
   });
+
+  // Capture Next.js output to detect port changes
+  if (nextjsDevProcess.stdout) {
+    nextjsDevProcess.stdout.on('data', (data: Buffer) => {
+      const output = data.toString();
+      process.stdout.write(output); // Still show the output
+      
+      // Look for port information in Next.js output
+      const portMatch = output.match(/Local:\s+http:\/\/localhost:(\d+)/);
+      if (portMatch) {
+        const detectedPort = parseInt(portMatch[1]);
+        updateServiceUrls(detectedPort);
+      }
+      
+      // Check if Next.js is ready
+      if (output.includes('✓ Ready in') && !nextjsReady) {
+        nextjsReady = true;
+        // Show service URLs after Next.js is ready and we've detected the port
+        setTimeout(() => showServiceUrls(), 1000);
+      }
+    });
+  }
+
+  if (nextjsDevProcess.stderr) {
+    nextjsDevProcess.stderr.on('data', (data: Buffer) => {
+      process.stderr.write(data.toString());
+    });
+  }
 
   // Start Prisma Studio
   console.log(`${c.yellow}Starting Prisma Studio...${c.reset}\n`);
@@ -592,48 +683,13 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     detached: true,
   });
 
-  // Show service URLs after a delay
+  // If Next.js doesn't start properly, show default URLs as fallback
   setTimeout(() => {
-    console.log(`
-${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-${c.bright}${c.white} SERVICES RUNNING ${c.reset}
-${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-
- ${c.yellow}▶ Next.js App${c.reset}        ${c.cyan}http://localhost:3000${c.reset}
- ${c.blue}▶ Next.js API${c.reset}        ${c.cyan}http://localhost:3000/api/v1${c.reset}
- ${c.magenta}▶ n8n Workflows${c.reset}      ${c.cyan}http://localhost:5678${c.reset} ${c.dim}(admin/admin)${c.reset}
- ${c.cyan}▶ Email Testing${c.reset}      ${c.cyan}http://localhost:9000${c.reset}
- ${c.green}▶ Prisma Studio${c.reset}      ${c.cyan}http://localhost:5555${c.reset} ${c.dim}(database admin)${c.reset}
- ${c.blue}▶ PostgreSQL${c.reset}         ${c.dim}postgresql://localhost:5432${c.reset}
-
-${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-${c.bright}${c.white} API ENDPOINTS ${c.reset}
-${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-
- ${c.green}▶ Docs${c.reset}               ${c.cyan}http://localhost:3000/api/v1/docs${c.reset}
- ${c.green}▶ OpenAPI${c.reset}            ${c.cyan}http://localhost:3000/api/v1/openapi.json${c.reset}
- ${c.green}▶ Health Check${c.reset}       ${c.cyan}http://localhost:3000/api/v1/health${c.reset}
-  
-${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
-
-${c.bright}${c.white} Quick Commands:${c.reset}
-   ${c.green}npm run db:migrate${c.reset}  - Run database migrations
-   ${c.green}npm run db:seed${c.reset}     - Seed test data  
-   ${c.green}npm run validate${c.reset}    - Validate configurations
-   ${c.green}npm run test${c.reset}        - Run tests
-
-${c.dim}Press Ctrl+C to stop all services${c.reset}
-`);
-
-    // Auto-launch browser tabs after Next.js is fully ready
-    setTimeout(() => {
-      console.log(`${c.bright}${c.cyan}🌐 Opening Next.js app...${c.reset}`);
-      openBrowser(services.nextjs);
-      console.log(
-        `${c.bright}${c.green}✨ App should now be open!${c.reset}\n`
-      );
-    }, 8000);
-  }, 5000);
+    if (!nextjsReady) {
+      console.log(`${c.yellow}⚠️ Next.js seems to be taking longer than expected...${c.reset}`);
+      showServiceUrls(); // Show with default ports if detection fails
+    }
+  }, 10000);
 
   // Handle process exit
   if (nextjsDevProcess) {
@@ -728,6 +784,150 @@ process.on('SIGINT', async () => {
   process.exit(0);
 });
 
+// Agent command implementations
+async function listAgents() {
+  try {
+    const agentExecutor = new AgentExecutor();
+    const agents = await agentExecutor.listAgents();
+    
+    if (agents.length === 0) {
+      console.log(`${c.yellow}No agents found in agents/ directory${c.reset}`);
+      return;
+    }
+
+    console.log(`${c.bright}${c.green}Available Agents:${c.reset}\n`);
+    
+    for (const agentName of agents) {
+      try {
+        const config = await agentExecutor.loadAgent(agentName);
+        console.log(`${c.cyan}▶ ${agentName}${c.reset}`);
+        console.log(`  ${c.dim}${config.description}${c.reset}`);
+        if (config.schedule) {
+          console.log(`  ${c.dim}Schedule: ${config.schedule}${c.reset}`);
+        }
+        console.log('');
+      } catch (error) {
+        console.log(`${c.red}▶ ${agentName} ${c.dim}(configuration error)${c.reset}`);
+      }
+    }
+    
+    await agentExecutor.cleanup();
+  } catch (error) {
+    logger.error('Failed to list agents', undefined, error as Error);
+    process.exit(1);
+  }
+}
+
+async function runAgent(agentName: string, options: any = {}) {
+  try {
+    const agentExecutor = new AgentExecutor();
+    
+    console.log(`${c.bright}${c.cyan}🤖 Starting agent: ${agentName}${c.reset}\n`);
+    
+    const execution = await agentExecutor.runAgent(agentName, {
+      test_mode: options.testMode || false,
+      batch_size: options.batchSize || undefined,
+      ...options
+    });
+    
+    if (execution.status === 'completed') {
+      console.log(`${c.green}✅ Agent completed successfully${c.reset}`);
+      console.log(`${c.dim}Execution ID: ${execution.id}${c.reset}`);
+      console.log(`${c.dim}Duration: ${execution.completedAt!.getTime() - execution.startedAt.getTime()}ms${c.reset}\n`);
+      
+      if (execution.stepResults && Object.keys(execution.stepResults).length > 0) {
+        console.log(`${c.bright}Step Results:${c.reset}`);
+        for (const [stepName, result] of Object.entries(execution.stepResults)) {
+          if (typeof result === 'object' && result !== null) {
+            console.log(`  ${c.cyan}${stepName}:${c.reset} ${JSON.stringify(result, null, 2).substring(0, 100)}...`);
+          } else {
+            console.log(`  ${c.cyan}${stepName}:${c.reset} ${result}`);
+          }
+        }
+      }
+    } else {
+      console.log(`${c.red}❌ Agent failed${c.reset}`);
+      console.log(`${c.dim}Error: ${execution.error}${c.reset}`);
+      process.exit(1);
+    }
+    
+    await agentExecutor.cleanup();
+  } catch (error) {
+    logger.error(`Failed to run agent: ${agentName}`, undefined, error as Error);
+    process.exit(1);
+  }
+}
+
+async function deployAgent(agentName: string, options: any = {}) {
+  try {
+    console.log(`${c.bright}${c.yellow}📦 Deploying agent: ${agentName}${c.reset}\n`);
+    
+    const agentExecutor = new AgentExecutor();
+    
+    // Validate agent configuration
+    const config = await agentExecutor.loadAgent(agentName);
+    console.log(`${c.green}✅ Agent configuration valid${c.reset}`);
+    
+    // If agent has a schedule, it will be deployed for scheduled execution
+    if (config.schedule) {
+      console.log(`${c.cyan}📅 Agent scheduled: ${config.schedule}${c.reset}`);
+      
+      if (options.activateSchedule) {
+        await agentExecutor.scheduleAgents();
+        console.log(`${c.green}✅ Agent scheduled and activated${c.reset}`);
+        
+        // Keep the process running to maintain schedules
+        console.log(`${c.dim}Press Ctrl+C to stop scheduled agents${c.reset}\n`);
+        
+        process.on('SIGINT', async () => {
+          console.log(`\n${c.yellow}Stopping scheduled agents...${c.reset}`);
+          await agentExecutor.cleanup();
+          process.exit(0);
+        });
+        
+        // Keep process alive
+        setInterval(() => {}, 1000);
+      }
+    } else {
+      console.log(`${c.dim}Agent has no schedule - deploy completed${c.reset}`);
+    }
+    
+    if (!options.activateSchedule) {
+      await agentExecutor.cleanup();
+    }
+    
+  } catch (error) {
+    logger.error(`Failed to deploy agent: ${agentName}`, undefined, error as Error);
+    process.exit(1);
+  }
+}
+
+async function runOrchestrator(options: any = {}) {
+  try {
+    const agentExecutor = new AgentExecutor();
+    
+    console.log(`${c.bright}${c.magenta}🎯 Starting orchestrator${c.reset}`);
+    console.log(`${c.dim}Mode: ${options.mode || 'daily'}${c.reset}`);
+    if (options.testMode) {
+      console.log(`${c.yellow}⚠️ Test mode enabled${c.reset}`);
+    }
+    console.log('');
+    
+    await agentExecutor.runOrchestrator(options.mode || 'daily', {
+      test_mode: options.testMode || false,
+      batch_size: options.batchSize || undefined,
+      ...options
+    });
+    
+    console.log(`${c.green}🎉 Orchestration completed${c.reset}\n`);
+    
+    await agentExecutor.cleanup();
+  } catch (error) {
+    logger.error('Orchestration failed', undefined, error as Error);
+    process.exit(1);
+  }
+}
+
 // CLI setup with yargs
 yargs(hideBin(process.argv))
   .scriptName('hyperformant')
@@ -788,6 +988,95 @@ yargs(hideBin(process.argv))
     async () => {
       checkRequirements();
       await runDev();
+    }
+  )
+  .command(
+    'agent',
+    'Agent management commands',
+    yargs => {
+      return yargs
+        .command(
+          'list',
+          'List all available agents',
+          {},
+          async () => {
+            await listAgents();
+          }
+        )
+        .command(
+          'run <agent-name>',
+          'Run a specific agent',
+          y => {
+            y.positional('agent-name', {
+              type: 'string',
+              describe: 'Name of the agent to run',
+            });
+            y.option('test-mode', {
+              type: 'boolean',
+              default: false,
+              describe: 'Run agent in test mode',
+            });
+            y.option('batch-size', {
+              type: 'number',
+              describe: 'Override default batch size',
+            });
+          },
+          async argv => {
+            await runAgent(argv.agentName as string, {
+              testMode: argv.testMode,
+              batchSize: argv.batchSize,
+            });
+          }
+        )
+        .command(
+          'deploy <agent-name>',
+          'Deploy an agent (validate configuration and optionally activate schedule)',
+          y => {
+            y.positional('agent-name', {
+              type: 'string',
+              describe: 'Name of the agent to deploy',
+            });
+            y.option('activate-schedule', {
+              type: 'boolean',
+              default: false,
+              describe: 'Activate scheduled execution after deployment',
+            });
+          },
+          async argv => {
+            await deployAgent(argv.agentName as string, {
+              activateSchedule: argv.activateSchedule,
+            });
+          }
+        )
+        .command(
+          'orchestrate',
+          'Run the orchestrator to coordinate multiple agents',
+          y => {
+            y.option('mode', {
+              type: 'string',
+              default: 'daily',
+              describe: 'Orchestration mode (daily, manual, etc.)',
+            });
+            y.option('test-mode', {
+              type: 'boolean',
+              default: false,
+              describe: 'Run orchestrator in test mode',
+            });
+            y.option('batch-size', {
+              type: 'number',
+              describe: 'Override default batch size for agents',
+            });
+          },
+          async argv => {
+            await runOrchestrator({
+              mode: argv.mode,
+              testMode: argv.testMode,
+              batchSize: argv.batchSize,
+            });
+          }
+        )
+        .demandCommand(1, 'Please specify an agent command')
+        .help();
     }
   )
   .demandCommand(1)

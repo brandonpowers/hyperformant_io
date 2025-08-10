@@ -652,6 +652,7 @@ enum SignalCategory {
 }
 
 enum SignalType {
+  // Existing core signals
   ACQUISITION
   FUNDING_ROUND
   PARTNERSHIP
@@ -679,6 +680,23 @@ enum SignalType {
   IPO
   MERGER
   CONTROVERSY
+  
+  // Phase 1: New high-impact signals
+  TECH_STACK_CHANGE
+  WEBSITE_UPDATE
+  PATENT_APPLICATION
+  SOCIAL_MENTION
+  REDDIT_DISCUSSION
+  EXEC_TWEET
+  TRAFFIC_ANOMALY
+  INNOVATION_SIGNAL
+  EARNINGS_REPORT
+  MARKET_SHARE_CHANGE
+  CUSTOMER_FEEDBACK
+  PRODUCT_REVIEW
+  INTEGRATION_LAUNCH
+  API_CHANGE
+  SECURITY_UPDATE
 }
 
 enum SentimentLabel {
@@ -710,6 +728,12 @@ enum MetricKind {
   OPERATIONAL
   SENTIMENT
   INNOVATION
+  // Phase 1: Extended metric categories
+  SOCIAL_ENGAGEMENT
+  WEB_ANALYTICS
+  PATENT_ACTIVITY
+  NEWS_MENTIONS
+  APOLLO_METRICS
 }
 
 enum TimeWindow {
@@ -732,6 +756,13 @@ enum DataSourceType {
   SCRAPER
   MANUAL
   LLM
+  // Phase 1: High-impact sources
+  APOLLO_CRM
+  APOLLO_WEBHOOK
+  FINANCIAL_API
+  SOCIAL_API
+  WEB_ANALYTICS
+  PATENT_API
 }
 
 enum ImpactRole {

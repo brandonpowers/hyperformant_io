@@ -1,0 +1,437 @@
+{
+  "name": "Simple PDF Report Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "generate-pdf-report",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "pdf-webhook-trigger",
+      "name": "PDF Generation Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "webhookId": "generate-pdf-report"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "report-data",
+              "name": "report_data",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "generation-timestamp",
+              "name": "generation_timestamp",
+              "value": "={{ $now }}",
+              "type": "dateTime"
+            },
+            {
+              "id": "pdf-filename",
+              "name": "pdf_filename",
+              "value": "market-forces-{{ $json.company_data.domain || 'report' }}-{{ $now.format('yyyy-MM-dd') }}.pdf",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "process-report-data",
+      "name": "Process Report Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://localhost:3000/api/v1/reports/generate-pdf",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.INTERNAL_API_KEY || 'internal-token' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "report_id",
+              "value": "={{ $json.report_data.report_id }}"
+            },
+            {
+              "name": "company_data",
+              "value": "={{ $json.report_data.company_data }}"
+            },
+            {
+              "name": "market_analysis",
+              "value": "={{ $json.report_data.market_analysis }}"
+            },
+            {
+              "name": "report_type",
+              "value": "={{ $json.report_data.report_type || 'market_forces_preview' }}"
+            },
+            {
+              "name": "filename",
+              "value": "={{ $json.pdf_filename }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "generate-pdf",
+      "name": "Generate PDF via Next.js API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict"
+          },
+          "conditions": [
+            {
+              "id": "pdf-success",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equal"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "check-pdf-success",
+      "name": "Check PDF Generation Success",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [900, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.resend.com/emails",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.RESEND_API_KEY }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "from",
+              "value": "reports@hyperformant.io"
+            },
+            {
+              "name": "to",
+              "value": "={{ $('Process Report Data').first().json.report_data.customer_email || 'brandon@hyperformant.io' }}"
+            },
+            {
+              "name": "subject",
+              "value": "Your Market Forces Analysis Report - {{ $('Process Report Data').first().json.report_data.company_data.name }}"
+            },
+            {
+              "name": "html",
+              "value": "<h2>Market Forces Analysis Report</h2><p>Dear Customer,</p><p>Your comprehensive Market Forces Analysis report for <strong>{{ $('Process Report Data').first().json.report_data.company_data.name }}</strong> is now ready.</p><p>This report includes competitive intelligence, market positioning analysis, and strategic recommendations based on our proprietary data collection and AI analysis.</p><p>Best regards,<br>The Hyperformant Team</p>"
+            },
+            {
+              "name": "attachments",
+              "value": "[{\"filename\": \"{{ $('Process Report Data').first().json.pdf_filename }}\", \"content\": \"{{ $json.pdf_base64 }}\", \"type\": \"application/pdf\"}]"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "send-email",
+      "name": "Send Email with PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "error-message",
+              "name": "error_message",
+              "value": "PDF generation failed: {{ $json.error || 'Unknown error' }}",
+              "type": "string"
+            },
+            {
+              "id": "report-id",
+              "name": "report_id", 
+              "value": "={{ $('Process Report Data').first().json.report_data.report_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "handle-error",
+      "name": "Handle PDF Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 400]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/v1/reports/{{ $json.report_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.INTERNAL_API_KEY || 'internal-token' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "failed"
+            },
+            {
+              "name": "error_message",
+              "value": "={{ $json.error_message }}"
+            },
+            {
+              "name": "completed_at",
+              "value": "={{ $now }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-report-failed",
+      "name": "Update Report Status - Failed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 400]
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "http://localhost:3000/api/v1/reports/{{ $('Process Report Data').first().json.report_data.report_id }}",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpHeaderAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.INTERNAL_API_KEY || 'internal-token' }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "status",
+              "value": "completed"
+            },
+            {
+              "name": "file_url",
+              "value": "={{ $('Generate PDF via Next.js API').first().json.file_url }}"
+            },
+            {
+              "name": "completed_at",
+              "value": "={{ $now }}"
+            },
+            {
+              "name": "email_sent",
+              "value": "={{ $json.id ? true : false }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "update-report-success",
+      "name": "Update Report Status - Completed",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [1340, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": true, \"report_id\": $('Process Report Data').first().json.report_data.report_id, \"email_sent\": $('Send Email with PDF').first().json.id ? true : false, \"pdf_url\": $('Generate PDF via Next.js API').first().json.file_url } }}"
+      },
+      "id": "success-response",
+      "name": "Success Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 200]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"success\": false, \"error\": $json.error_message, \"report_id\": $json.report_id } }}",
+        "responseCode": 500
+      },
+      "id": "error-response",
+      "name": "Error Response", 
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1560, 400]
+    }
+  ],
+  "connections": {
+    "PDF Generation Webhook": {
+      "main": [
+        [
+          {
+            "node": "Process Report Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Process Report Data": {
+      "main": [
+        [
+          {
+            "node": "Generate PDF via Next.js API",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate PDF via Next.js API": {
+      "main": [
+        [
+          {
+            "node": "Check PDF Generation Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check PDF Generation Success": {
+      "main": [
+        [
+          {
+            "node": "Send Email with PDF",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Handle PDF Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Email with PDF": {
+      "main": [
+        [
+          {
+            "node": "Update Report Status - Completed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Handle PDF Error": {
+      "main": [
+        [
+          {
+            "node": "Update Report Status - Failed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Report Status - Completed": {
+      "main": [
+        [
+          {
+            "node": "Success Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Report Status - Failed": {
+      "main": [
+        [
+          {
+            "node": "Error Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": null,
+  "tags": [
+    {
+      "createdAt": "2025-01-27T06:00:00.000Z",
+      "updatedAt": "2025-01-27T06:00:00.000Z", 
+      "id": "pdf-generator",
+      "name": "PDF Generator"
+    }
+  ],
+  "triggerCount": 1,
+  "updatedAt": "2025-01-27T06:00:00.000Z",
+  "versionId": "1"
+}

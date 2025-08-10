@@ -19,9 +19,15 @@
     "noImplicitThis": true,
     "strictNullChecks": false,
     "downlevelIteration": true,
-    "baseUrl": "src",
+    "baseUrl": ".",
     "paths": {
-      "@/public/*": ["./src/assets/public/*"]
+      "@/*": ["./src/*"],
+      "@/public/*": ["./src/assets/public/*"],
+      "components/*": ["./src/components/*"],
+      "lib/*": ["./src/lib/*"],
+      "utils/*": ["./src/utils/*"],
+      "contexts/*": ["./src/contexts/*"],
+      "routes": ["./src/routes.tsx"]
     },
     "incremental": true,
     "plugins": [

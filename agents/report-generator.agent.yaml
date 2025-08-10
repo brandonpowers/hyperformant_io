@@ -1,0 +1,207 @@
+name: report-generator
+version: "1.0"
+description: "Generate Market Forces Analysis reports"
+schedule: null  # On-demand only (triggered by orchestrator or webhook)
+dependencies: ["sentiment-collector"]
+timeout: 900  # 15 minutes
+retry:
+  attempts: 2
+  delay: 120
+
+environment:
+  required:
+    - DATABASE_URL
+    - N8N_WEBHOOK_URL
+    - RESEND_API_KEY
+  optional:
+    - OPENAI_API_KEY
+
+config:
+  max_reports_per_run: 10
+  report_types: ["market_forces_preview", "market_forces_full"]
+  default_report_type: "market_forces_preview"
+  ai_model: "gpt-4o"
+
+steps:
+  - name: get-companies-for-reports
+    type: database-query
+    description: "Get companies ready for report generation"
+    query: |
+      SELECT DISTINCT c.id, c.name, c.domain, c.industry, c.employee_count, c.annual_revenue,
+             c.founded_year, c.city, c.state, c.country,
+             COUNT(csd.id) as sentiment_data_points,
+             AVG(csd.sentiment_score) as avg_sentiment_score
+      FROM companies c
+      LEFT JOIN consumer_sentiment_data csd ON c.id = csd.company_id 
+      WHERE c.last_sentiment_analysis_at IS NOT NULL
+        AND c.last_sentiment_analysis_at >= NOW() - INTERVAL '7 days'
+        AND c.id NOT IN (
+          SELECT company_id FROM reports 
+          WHERE created_at >= NOW() - INTERVAL '30 days'
+          AND status = 'completed'
+        )
+      GROUP BY c.id, c.name, c.domain, c.industry, c.employee_count, c.annual_revenue,
+               c.founded_year, c.city, c.state, c.country
+      HAVING COUNT(csd.id) >= 3  -- At least 3 sentiment data points
+      ORDER BY c.created_at DESC
+      LIMIT {{ config.max_reports_per_run }}
+    output: companies_for_reports
+
+  - name: create-report-records
+    type: database-operation
+    description: "Initialize report records"
+    operation: insert
+    table: reports
+    input: |
+      {{ steps.get-companies-for-reports.output.map(company => ({
+        company_id: company.id,
+        report_type: config.default_report_type,
+        status: 'generating',
+        created_at: new Date().toISOString(),
+        metadata: JSON.stringify({
+          generation_source: 'agent',
+          company_data: {
+            name: company.name,
+            domain: company.domain,
+            industry: company.industry,
+            sentiment_score: company.avg_sentiment_score,
+            data_points: company.sentiment_data_points
+          }
+        })
+      })) }}
+    output: created_reports
+
+  - name: gather-intelligence-data
+    type: database-query
+    description: "Gather comprehensive intelligence data for each company"
+    query: |
+      SELECT 
+        c.id as company_id,
+        c.name, c.domain, c.industry, c.employee_count, c.annual_revenue,
+        c.founded_year, c.city, c.state, c.country,
+        
+        -- Sentiment data
+        json_agg(DISTINCT jsonb_build_object(
+          'sentiment_score', csd.sentiment_score,
+          'themes', csd.themes,
+          'vulnerabilities', csd.vulnerabilities,
+          'pain_points', csd.pain_points,
+          'opportunities', csd.opportunities,
+          'collected_at', csd.collected_at
+        )) FILTER (WHERE csd.id IS NOT NULL) as sentiment_intelligence,
+        
+        -- Market data
+        json_agg(DISTINCT jsonb_build_object(
+          'metric_name', md.metric_name,
+          'metric_value', md.metric_value,
+          'date_recorded', md.date_recorded
+        )) FILTER (WHERE md.id IS NOT NULL) as market_metrics
+        
+      FROM companies c
+      LEFT JOIN consumer_sentiment_data csd ON c.id = csd.company_id
+      LEFT JOIN market_data md ON c.id = md.company_id
+      WHERE c.id IN ({{ steps.get-companies-for-reports.output.map(c => c.id).join(',') }})
+      GROUP BY c.id, c.name, c.domain, c.industry, c.employee_count, c.annual_revenue,
+               c.founded_year, c.city, c.state, c.country
+    output: intelligence_data
+    iterate: "{{ steps.get-companies-for-reports.output }}"
+
+  - name: generate-market-analysis
+    type: ai-analysis
+    condition: "{{ env.OPENAI_API_KEY }}"
+    description: "Generate AI-powered market forces analysis"
+    model: "{{ config.ai_model }}"
+    prompt: |
+      Generate a Market Forces Analysis for {{ company.name }} ({{ company.domain }}).
+      
+      Company Profile:
+      - Industry: {{ company.industry }}
+      - Size: {{ company.employee_count }} employees
+      - Revenue: ${{ company.annual_revenue }}
+      - Founded: {{ company.founded_year }}
+      - Location: {{ company.city }}, {{ company.state }}, {{ company.country }}
+      
+      Market Intelligence Data:
+      {{ JSON.stringify(intelligence_data.sentiment_intelligence, null, 2) }}
+      
+      Market Metrics:
+      {{ JSON.stringify(intelligence_data.market_metrics, null, 2) }}
+      
+      Generate a comprehensive analysis covering:
+      1. Competitive Landscape Assessment
+      2. Customer Sentiment & Market Position
+      3. Identified Vulnerabilities & Opportunities
+      4. Strategic Recommendations
+      5. Market Disruption Potential Score (1-10)
+      
+      Return as structured JSON with sections: executive_summary, competitive_landscape, 
+      customer_sentiment, vulnerabilities, opportunities, recommendations, disruption_score
+    input_data:
+      company: "{{ company }}"
+      intelligence_data: "{{ intelligence_data }}"
+    iterate: "{{ steps.gather-intelligence-data.output }}"
+    output: market_analysis
+
+  - name: trigger-pdf-generation
+    type: webhook-call
+    description: "Trigger N8N PDF generation workflow"
+    endpoint: "{{ env.N8N_WEBHOOK_URL }}/webhook/generate-pdf-report"
+    method: POST
+    headers:
+      Content-Type: "application/json"
+    body:
+      report_id: "{{ report.id }}"
+      company_data: "{{ company }}"
+      market_analysis: "{{ analysis }}"
+      report_type: "{{ config.default_report_type }}"
+      generation_timestamp: "{{ new Date().toISOString() }}"
+    input_data:
+      report: "{{ report }}"
+      company: "{{ company }}"  
+      analysis: "{{ analysis }}"
+    iterate_with:
+      reports: "{{ steps.create-report-records.output }}"
+      companies: "{{ steps.get-companies-for-reports.output }}"
+      analyses: "{{ steps.generate-market-analysis.output }}"
+    output: pdf_generation_requests
+
+  - name: wait-for-pdf-generation
+    type: wait
+    description: "Allow time for PDF generation"
+    duration: 120  # 2 minutes
+    
+  - name: update-report-status
+    type: database-operation
+    description: "Update report generation status"
+    operation: update
+    table: reports
+    set:
+      status: "completed"
+      completed_at: "NOW()"
+      file_url: "{{ pdf_result.file_url || null }}"
+    where:
+      id: "IN ({{ steps.create-report-records.output.map(r => r.id).join(',') }})"
+    output: status_updates
+
+  - name: log-generation-metrics
+    type: database-operation
+    description: "Log report generation metrics"
+    operation: insert
+    table: daily_business_metrics
+    input:
+      date: "{{ new Date().toISOString().split('T')[0] }}"
+      reports_generated: "{{ steps.create-report-records.output.length }}"
+      report_generation_duration_seconds: "{{ Math.floor((Date.now() - execution_start_time) / 1000) }}"
+      successful_generations: "{{ steps.pdf-generation-requests.output.filter(r => r.success).length }}"
+    output: metrics_logged
+
+notifications:
+  on_success:
+    - type: log  
+      level: info
+      message: "Generated {{ steps.create-report-records.output.length }} Market Forces reports"
+      
+  on_failure:
+    - type: log
+      level: error  
+      message: "Report generation failed: {{ error.message }}"
