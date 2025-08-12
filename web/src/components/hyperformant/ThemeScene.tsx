@@ -68,12 +68,13 @@ export default function ThemeScene(props: ThemeSceneProps) {
 
   return (
     <div className="h-[80vh] w-full rounded-2xl overflow-hidden border border-white/10">
-      <Canvas camera={{ position: [1.8, 1.2, 1.8], fov: 55 }}>
+      <Canvas camera={{ position: [2.5, 2, 2.5], fov: 50 }}>
         {/* Background & mood */}
-        <color attach="background" args={['#070a12']} />
-        <fog attach="fog" args={['#070a12', 2.2, 7]} />
-        <ambientLight intensity={0.55} />
-        <pointLight position={[3, 3, 3]} intensity={1.1} />
+        <color attach="background" args={['#0a0f1c']} />
+        <fog attach="fog" args={['#0a0f1c', 3, 12]} />
+        <ambientLight intensity={0.4} />
+        <pointLight position={[5, 5, 5]} intensity={1.5} color="#4a9eff" />
+        <pointLight position={[-3, 3, -3]} intensity={0.8} color="#ff6b4a" />
 
         {/* Optional axes */}
         {background.axes && <Axes />}
@@ -180,8 +181,15 @@ function Nodes({
       args={[undefined, undefined, nodes.length]}
       onPointerDown={onPointerDown}
     >
-      <sphereGeometry args={[1, 16, 16]} />
-      <meshBasicMaterial vertexColors toneMapped={false} />
+      <sphereGeometry args={[1, 32, 32]} />
+      <meshPhongMaterial 
+        vertexColors 
+        toneMapped={false}
+        emissive={0x223344}
+        emissiveIntensity={0.2}
+        shininess={100}
+        specular={0x4488ff}
+      />
     </instancedMesh>
   );
 }
@@ -388,23 +396,55 @@ function EdgeParticles({
 /* ===================== Halos & Labels & Axes ===================== */
 
 function Halos({ nodes }: { nodes: VisualNode[] }) {
-  // very subtle translucent spheres around larger nodes for cluster feel
+  // Create glowing halos around important nodes
+  const ref = useRef<THREE.Group>(null);
+  
+  useFrame(({ clock }) => {
+    if (ref.current) {
+      ref.current.rotation.y = clock.getElapsedTime() * 0.05;
+    }
+  });
+
   return (
-    <>
-      {nodes.slice(0, 60).map((n) => {
-        const scale = 0.45 + (n.size ?? 0) * 0.9;
+    <group ref={ref}>
+      {nodes.slice(0, 30).map((n, i) => {
+        const scale = 0.5 + (n.size ?? 0) * 1.2;
+        const pulseOffset = i * 0.3;
+        
         return (
-          <mesh
-            key={`halo-${n.id}`}
-            position={[n.position.x, n.position.y, n.position.z]}
-          >
-            <sphereGeometry args={[1, 20, 20]} />
-            <meshBasicMaterial color={n.color} transparent opacity={0.06} />
-            <group scale={[scale, scale, scale]} />
-          </mesh>
+          <group key={`halo-${n.id}`}>
+            <mesh
+              position={[n.position.x, n.position.y, n.position.z]}
+              scale={[scale, scale, scale]}
+            >
+              <sphereGeometry args={[1, 16, 16]} />
+              <meshBasicMaterial 
+                color={n.color} 
+                transparent 
+                opacity={0.08}
+                depthWrite={false}
+              />
+            </mesh>
+            {/* Secondary glow ring */}
+            {n.size > 0.5 && (
+              <mesh
+                position={[n.position.x, n.position.y, n.position.z]}
+                scale={[scale * 1.3, scale * 1.3, scale * 1.3]}
+              >
+                <ringGeometry args={[0.8, 1, 32]} />
+                <meshBasicMaterial 
+                  color={n.color} 
+                  transparent 
+                  opacity={0.15}
+                  side={THREE.DoubleSide}
+                  depthWrite={false}
+                />
+              </mesh>
+            )}
+          </group>
         );
       })}
-    </>
+    </group>
   );
 }
 
@@ -438,9 +478,40 @@ function Labels({ nodes, max = 200 }: { nodes: VisualNode[]; max?: number }) {
 }
 
 function Axes() {
-  const axis = new THREE.AxesHelper(1.5);
-  axis.material.depthTest = false;
-  axis.renderOrder = 2;
-  // Wrap helper
-  return <primitive object={axis} />;
+  return (
+    <group>
+      {/* X axis - red/orange gradient */}
+      <mesh position={[0.5, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
+        <cylinderGeometry args={[0.003, 0.003, 1, 8]} />
+        <meshBasicMaterial color={0xff4444} opacity={0.6} transparent />
+      </mesh>
+      <mesh position={[1, 0, 0]}>
+        <coneGeometry args={[0.015, 0.05, 8]} />
+        <meshBasicMaterial color={0xff6666} />
+      </mesh>
+      
+      {/* Y axis - green/lime gradient */}
+      <mesh position={[0, 0.5, 0]}>
+        <cylinderGeometry args={[0.003, 0.003, 1, 8]} />
+        <meshBasicMaterial color={0x44ff44} opacity={0.6} transparent />
+      </mesh>
+      <mesh position={[0, 1, 0]} rotation={[0, 0, Math.PI]}>
+        <coneGeometry args={[0.015, 0.05, 8]} />
+        <meshBasicMaterial color={0x66ff66} />
+      </mesh>
+      
+      {/* Z axis - blue/cyan gradient */}
+      <mesh position={[0, 0, 0.5]} rotation={[Math.PI / 2, 0, 0]}>
+        <cylinderGeometry args={[0.003, 0.003, 1, 8]} />
+        <meshBasicMaterial color={0x4444ff} opacity={0.6} transparent />
+      </mesh>
+      <mesh position={[0, 0, 1]} rotation={[Math.PI / 2, 0, 0]}>
+        <coneGeometry args={[0.015, 0.05, 8]} />
+        <meshBasicMaterial color={0x6666ff} />
+      </mesh>
+
+      {/* Grid planes for reference */}
+      <gridHelper args={[2, 20, 0x223344, 0x112233]} position={[0, -0.5, 0]} />
+    </group>
+  );
 }

@@ -44,7 +44,11 @@ const Dropdown = (props: {
           animation
             ? animation
             : 'origin-top-right transition-all duration-300 ease-in-out'
-        } ${openWrapper ? 'scale-100' : 'scale-0'}`}
+        } ${
+          openWrapper 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 -translate-y-2 pointer-events-none'
+        }`}
       >
         {children}
       </div>

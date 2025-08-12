@@ -47,8 +47,18 @@ const Dashboard = () => {
 
         const result = await frameResponse.json();
 
-        if (result.success && result.data) {
-          const frameData = result.data.data; // ApiResponse.success wraps data
+        // ApiResponse.success returns { data: result, meta: {...} }
+        if (result.data) {
+          // The visualization frame data is directly in result.data
+          const vizResponse = result.data;
+          const frameData = vizResponse.data; // This contains nodes, edges, background
+
+          // Debug logging to understand the data structure
+          console.log('Full API Response:', result);
+          console.log('Viz Response:', vizResponse);
+          console.log('Frame Data:', frameData);
+          console.log('Nodes:', frameData.nodes);
+          console.log('First node:', frameData.nodes?.[0]);
 
           setNodes(frameData.nodes || []);
           setEdges(frameData.edges || []);
@@ -154,39 +164,81 @@ const Dashboard = () => {
       </div>
 
       {/* Main Visualization Area */}
-      <div className="flex-1 rounded-[20px] bg-white shadow-sm dark:bg-gray-900">
-        <div className="h-full p-4">
+      <div className="flex-1 rounded-[20px] bg-gradient-to-br from-gray-900 via-gray-950 to-black shadow-xl border border-white/5">
+        <div className="h-full p-2">
           {loading ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center">
-                <div className="mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-blue-600 mx-auto"></div>
-                <p className="text-gray-600 dark:text-gray-400">
-                  Loading visualization data...
+                <div className="relative mb-6">
+                  <div className="h-16 w-16 animate-spin rounded-full border-t-2 border-r-2 border-blue-500 mx-auto"></div>
+                  <div className="absolute inset-0 h-16 w-16 animate-spin rounded-full border-b-2 border-l-2 border-purple-500 mx-auto" style={{ animationDirection: 'reverse', animationDuration: '1.5s' }}></div>
+                </div>
+                <p className="text-blue-300 font-medium animate-pulse">
+                  Initializing market intelligence...
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Analyzing {nodes.length || '...'} entities
                 </p>
               </div>
             </div>
           ) : error ? (
             <div className="flex h-full items-center justify-center">
-              <div className="text-center">
-                <p className="mb-4 text-red-600 dark:text-red-400">
-                  Failed to load visualization
+              <div className="text-center p-8 rounded-xl bg-red-900/20 border border-red-500/30">
+                <div className="text-red-400 mb-4">
+                  <svg className="w-12 h-12 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <p className="mb-4 text-red-300 font-medium">
+                  Visualization unavailable
+                </p>
+                <p className="text-gray-400 text-sm mb-4">
+                  {error}
                 </p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="rounded-lg bg-blue-600 px-4 py-2 text-sm text-white hover:bg-blue-700"
+                  className="rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 px-6 py-2 text-sm text-white hover:from-blue-700 hover:to-purple-700 transition-all"
                 >
-                  Retry
+                  Reload Dashboard
                 </button>
               </div>
             </div>
           ) : (
-            <div className="h-full rounded-xl bg-gray-50 dark:bg-gray-800">
+            <div className="h-full rounded-xl overflow-hidden relative">
+              {/* Visualization stats overlay */}
+              <div className="absolute top-4 left-4 z-10 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10">
+                <div className="flex items-center gap-4 text-xs">
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-blue-400"></div>
+                    <span className="text-gray-300">{nodes.length} entities</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full bg-purple-400"></div>
+                    <span className="text-gray-300">{edges.length} connections</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Reset view button */}
+              <button
+                onClick={() => setFocusId(undefined)}
+                className="absolute top-4 right-4 z-10 bg-black/60 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/10 text-xs text-gray-300 hover:bg-black/80 transition-all"
+              >
+                Reset View
+              </button>
+
               <ThemeScene
                 nodes={nodes}
                 edges={edges}
                 background={background}
                 focusId={focusId}
-                onNodeClick={(id) => setFocusId(id)}
+                onNodeClick={(id) => {
+                  setFocusId(id);
+                  const node = nodes.find(n => n.id === id);
+                  if (node) {
+                    console.log('Selected entity:', node.name, node);
+                  }
+                }}
                 onEdgeClick={(e) => console.log('edge click', e)}
               />
             </div>
