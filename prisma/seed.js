@@ -685,31 +685,31 @@ async function main() {
   const connections = [
     {
       targetId: competitorEntities[0].id, // Salesforce
-      type: 'COMPETITOR',
-      strength: 0.9,
-      sentimentScore: -0.3,
-    },
-    {
-      targetId: competitorEntities[1].id, // HubSpot
-      type: 'COMPETITOR',
-      strength: 0.8,
+      type: 'WEAK_COMPETITOR', // Large enterprise, different market segment
+      strength: 0.4,
       sentimentScore: -0.1,
     },
     {
-      targetId: competitorEntities[2].id, // Apollo.io
-      type: 'COMPETITOR',
-      strength: 0.7,
-      sentimentScore: 0.2,
-    },
-    {
-      targetId: competitorEntities[3].id, // Outreach
-      type: 'COMPETITOR',
+      targetId: competitorEntities[1].id, // HubSpot
+      type: 'WEAK_COMPETITOR', // Broader platform, some overlap
       strength: 0.6,
       sentimentScore: -0.2,
     },
     {
+      targetId: competitorEntities[2].id, // Apollo.io
+      type: 'WEAK_COMPETITOR', // Direct competitor in sales intelligence
+      strength: 0.8,
+      sentimentScore: -0.4,
+    },
+    {
+      targetId: competitorEntities[3].id, // Outreach
+      type: 'WEAK_COMPETITOR', // Sales engagement overlap
+      strength: 0.7,
+      sentimentScore: -0.3,
+    },
+    {
       targetId: competitorEntities[4].id, // Gong
-      type: 'COMPETITOR',
+      type: 'INDUSTRY_ADJACENCY', // Revenue intelligence, adjacent space
       strength: 0.5,
       sentimentScore: 0.1,
     },

@@ -170,6 +170,13 @@ ${c.bright}${c.cyan}Windows (Docker Desktop):${c.reset}
   2. Wait for Docker to fully start (icon turns from orange to white/green)
   3. Run this command again
 
+${c.bright}${c.cyan}WSL2 (Windows Subsystem for Linux):${c.reset}
+  !!! Install docker within your Linux shell in WSL2 !!!
+  !!! Docker for Windows + WSL2 performs poorly      !!!
+
+  ${c.dim}# Start Docker service${c.reset}
+  ${c.green}sudo service docker start${c.reset}
+
 ${c.bright}${c.cyan}Linux:${c.reset}
   ${c.dim}# Start Docker service${c.reset}
   ${c.green}sudo systemctl start docker${c.reset}
@@ -185,13 +192,6 @@ ${c.bright}${c.cyan}macOS (Docker Desktop):${c.reset}
   1. Open Docker Desktop from Applications or Spotlight
   2. Wait for Docker to fully start (icon in menu bar shows "Docker Desktop is running")
   3. Run this command again
-
-${c.bright}${c.cyan}WSL2 (Windows Subsystem for Linux):${c.reset}
-  !!! Install docker within your Linux shell in WSL2 !!!
-  !!! Docker for Windows + WSL2 performs poorly      !!!
-
-  ${c.dim}# Start Docker service${c.reset}
-  ${c.green}sudo service docker start${c.reset}
 
 ${c.yellow}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 `;
