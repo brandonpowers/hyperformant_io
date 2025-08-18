@@ -742,6 +742,54 @@ async function main() {
 
   console.log('✅ Created connections');
 
+  // Create additional connections between competitors to form a network
+  const additionalConnections = [
+    // Salesforce partnerships (index 0)
+    { source: competitorEntities[0].id, target: competitorEntities[1].id, type: 'STRATEGIC_PARTNERSHIP', strength: 0.7, sentiment: 0.6 },
+    { source: competitorEntities[0].id, target: competitorEntities[4].id, type: 'INTEGRATION', strength: 0.8, sentiment: 0.7 },
+    { source: competitorEntities[0].id, target: competitorEntities[2].id, type: 'CUSTOMER', strength: 0.5, sentiment: 0.4 },
+    
+    // HubSpot connections (index 1)  
+    { source: competitorEntities[1].id, target: competitorEntities[2].id, type: 'WEAK_COMPETITOR', strength: 0.6, sentiment: -0.3 },
+    { source: competitorEntities[1].id, target: competitorEntities[3].id, type: 'INTEGRATION', strength: 0.5, sentiment: 0.4 },
+    { source: competitorEntities[1].id, target: competitorEntities[4].id, type: 'STRATEGIC_PARTNERSHIP', strength: 0.7, sentiment: 0.5 },
+    
+    // Apollo.io connections (index 2)
+    { source: competitorEntities[2].id, target: competitorEntities[3].id, type: 'STRATEGIC_PARTNERSHIP', strength: 0.8, sentiment: 0.7 },
+    { source: competitorEntities[2].id, target: competitorEntities[4].id, type: 'WEAK_COMPETITOR', strength: 0.5, sentiment: -0.2 },
+    
+    // Outreach connections (index 3)
+    { source: competitorEntities[3].id, target: competitorEntities[4].id, type: 'INTEGRATION', strength: 0.9, sentiment: 0.8 },
+    
+    // More Gong connections (index 4)
+    { source: competitorEntities[4].id, target: competitorEntities[0].id, type: 'STRATEGIC_PARTNERSHIP', strength: 0.6, sentiment: 0.5 },
+    
+    // Hyperformant additional connections to all competitors
+    { source: hyperformant.id, target: competitorEntities[1].id, type: 'INDUSTRY_ADJACENCY', strength: 0.6, sentiment: 0.3 },
+    { source: hyperformant.id, target: competitorEntities[2].id, type: 'STRATEGIC_PARTNERSHIP', strength: 0.8, sentiment: 0.8 },
+    { source: hyperformant.id, target: competitorEntities[3].id, type: 'INTEGRATION', strength: 0.7, sentiment: 0.7 },
+  ];
+
+  for (const conn of additionalConnections) {
+    try {
+      await prisma.connection.create({
+        data: {
+          sourceEntityId: conn.source,
+          targetEntityId: conn.target,
+          type: conn.type,
+          strength: conn.strength,
+          sentimentScore: conn.sentiment,
+          since: new Date('2024-01-01'),
+        },
+      });
+    } catch (error) {
+      // Skip if connection already exists
+      console.log(`Skipping duplicate connection: ${conn.type}`);
+    }
+  }
+
+  console.log(`✅ Created ${additionalConnections.length} additional connections`);
+
   // Create sample report for Hyperformant
   const sampleReport = await prisma.report.create({
     data: {
@@ -796,7 +844,412 @@ async function main() {
 
   console.log('✅ Created sample Apollo Smart List');
 
-  console.log('🎉 Database seeded successfully with comprehensive demo data!');
+  // === DATA SOURCE REGISTRY SEEDING ===
+  console.log('🔌 Seeding comprehensive data source registry...');
+
+  // High-Value Free Sources
+  const redditSource = await prisma.dataSource.upsert({
+    where: { name: 'reddit_api' },
+    update: {},
+    create: {
+      name: 'reddit_api',
+      displayName: 'Reddit API',
+      type: 'API',
+      category: 'social',
+      endpoint: 'https://www.reddit.com/api/v1',
+      authType: 'oauth2',
+      rateLimitPerMin: 60,
+      rateLimitPerDay: 1000,
+      tier: 'free',
+      coverageTypes: ['sentiment', 'companies', 'products'],
+      dataPoints: ['post_title', 'post_content', 'score', 'comments', 'subreddit'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'realtime',
+      historicalData: true,
+      dataFreshness: 9,
+      dataCoverage: 8,
+      dataAccuracy: 7,
+      dataRelevance: 8,
+      reliability: 8,
+      insightDensity: 7,
+      insightRelevance: 8,
+      insightActionability: 6,
+      insightAccuracy: 7,
+      overallScore: 7.5,
+      insightCapabilities: ['sentiment', 'competitive', 'market'],
+      priority: 9,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://www.reddit.com/dev/api/',
+      testEndpoint: '/r/SaaS/new.json',
+      collectionSchedule: '0 */15 * * *', // Every 15 minutes
+    },
+  });
+
+  const hackernewsSource = await prisma.dataSource.upsert({
+    where: { name: 'hackernews_api' },
+    update: {},
+    create: {
+      name: 'hackernews_api',
+      displayName: 'Hacker News API',
+      type: 'API',
+      category: 'technical',
+      endpoint: 'https://hacker-news.firebaseio.com/v0',
+      authType: 'none',
+      tier: 'free',
+      coverageTypes: ['technical', 'companies', 'sentiment'],
+      dataPoints: ['title', 'url', 'score', 'descendants', 'time'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'realtime',
+      historicalData: true,
+      dataFreshness: 9,
+      dataCoverage: 7,
+      dataAccuracy: 8,
+      dataRelevance: 9,
+      reliability: 9,
+      insightDensity: 8,
+      insightRelevance: 9,
+      insightActionability: 7,
+      insightAccuracy: 8,
+      overallScore: 8.1,
+      insightCapabilities: ['technical', 'competitive', 'sentiment'],
+      priority: 8,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://github.com/HackerNews/API',
+      testEndpoint: '/topstories.json',
+      collectionSchedule: '0 */30 * * *', // Every 30 minutes
+    },
+  });
+
+  const githubSource = await prisma.dataSource.upsert({
+    where: { name: 'github_api' },
+    update: {},
+    create: {
+      name: 'github_api',
+      displayName: 'GitHub API',
+      type: 'API',
+      category: 'technical',
+      endpoint: 'https://api.github.com',
+      authType: 'bearer',
+      rateLimitPerMin: 60,
+      rateLimitPerDay: 5000,
+      tier: 'free',
+      coverageTypes: ['technical', 'companies'],
+      dataPoints: ['repositories', 'stars', 'forks', 'commits', 'contributors'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'realtime',
+      historicalData: true,
+      dataFreshness: 9,
+      dataCoverage: 9,
+      dataAccuracy: 9,
+      dataRelevance: 8,
+      reliability: 9,
+      insightDensity: 7,
+      insightRelevance: 8,
+      insightActionability: 8,
+      insightAccuracy: 9,
+      overallScore: 8.4,
+      insightCapabilities: ['technical', 'competitive'],
+      priority: 8,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://docs.github.com/en/rest',
+      testEndpoint: '/search/repositories?q=stars:>10000',
+      collectionSchedule: '0 2 * * *', // Daily at 2am
+    },
+  });
+
+  const producthuntSource = await prisma.dataSource.upsert({
+    where: { name: 'producthunt_api' },
+    update: {},
+    create: {
+      name: 'producthunt_api',
+      displayName: 'Product Hunt API',
+      type: 'API',
+      category: 'business',
+      endpoint: 'https://api.producthunt.com/v2/api/graphql',
+      authType: 'bearer',
+      rateLimitPerMin: 100,
+      rateLimitPerDay: 10000,
+      tier: 'free',
+      coverageTypes: ['products', 'companies', 'news'],
+      dataPoints: ['product_name', 'tagline', 'votes', 'comments', 'maker'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'daily',
+      historicalData: true,
+      dataFreshness: 8,
+      dataCoverage: 7,
+      dataAccuracy: 8,
+      dataRelevance: 8,
+      reliability: 8,
+      insightDensity: 6,
+      insightRelevance: 7,
+      insightActionability: 7,
+      insightAccuracy: 7,
+      overallScore: 7.3,
+      insightCapabilities: ['competitive', 'market'],
+      priority: 7,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://api.producthunt.com/v2/docs',
+      testEndpoint: '/v2/api/graphql',
+      collectionSchedule: '0 6 * * *', // Daily at 6am
+    },
+  });
+
+  // Premium Sources
+  const g2Source = await prisma.dataSource.upsert({
+    where: { name: 'g2_api' },
+    update: {},
+    create: {
+      name: 'g2_api',
+      displayName: 'G2 Reviews API',
+      type: 'API',
+      category: 'reviews',
+      endpoint: 'https://data.g2.com/api/v1',
+      authType: 'apikey',
+      rateLimitPerMin: 30,
+      rateLimitPerDay: 1000,
+      tier: 'paid',
+      monthlyCost: 299,
+      coverageTypes: ['reviews', 'sentiment', 'products'],
+      dataPoints: ['review_title', 'review_content', 'rating', 'reviewer_info', 'product_info'],
+      geographicScope: ['us', 'eu', 'global'],
+      languages: ['en'],
+      updateFrequency: 'daily',
+      historicalData: true,
+      dataFreshness: 8,
+      dataCoverage: 9,
+      dataAccuracy: 9,
+      dataRelevance: 9,
+      reliability: 9,
+      insightDensity: 9,
+      insightRelevance: 9,
+      insightActionability: 9,
+      insightAccuracy: 8,
+      overallScore: 8.7,
+      insightCapabilities: ['sentiment', 'competitive', 'market'],
+      priority: 9,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://documentation.g2.com/',
+      testEndpoint: '/products',
+      collectionSchedule: '0 4 * * *', // Daily at 4am
+      isActive: false, // Disabled until paid plan activated
+    },
+  });
+
+  const crunchbaseSource = await prisma.dataSource.upsert({
+    where: { name: 'crunchbase_api' },
+    update: {},
+    create: {
+      name: 'crunchbase_api',
+      displayName: 'Crunchbase API',
+      type: 'API',
+      category: 'financial',
+      endpoint: 'https://api.crunchbase.com/api/v4',
+      authType: 'apikey',
+      rateLimitPerMin: 50,
+      rateLimitPerDay: 1000,
+      tier: 'paid',
+      monthlyCost: 99,
+      coverageTypes: ['companies', 'funding', 'news'],
+      dataPoints: ['company_name', 'funding_rounds', 'investors', 'valuations', 'employees'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'daily',
+      historicalData: true,
+      dataFreshness: 8,
+      dataCoverage: 9,
+      dataAccuracy: 9,
+      dataRelevance: 9,
+      reliability: 8,
+      insightDensity: 8,
+      insightRelevance: 9,
+      insightActionability: 8,
+      insightAccuracy: 9,
+      overallScore: 8.5,
+      insightCapabilities: ['financial', 'competitive', 'market'],
+      priority: 9,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://data.crunchbase.com/docs',
+      testEndpoint: '/entities/organizations',
+      collectionSchedule: '0 3 * * *', // Daily at 3am
+      isActive: false, // Disabled until API key added
+    },
+  });
+
+  const apolloSource = await prisma.dataSource.upsert({
+    where: { name: 'apollo_api' },
+    update: {},
+    create: {
+      name: 'apollo_api',
+      displayName: 'Apollo.io API',
+      type: 'APOLLO_CRM',
+      category: 'business',
+      endpoint: 'https://api.apollo.io/v1',
+      authType: 'apikey',
+      rateLimitPerMin: 100,
+      rateLimitPerDay: 10000,
+      tier: 'paid',
+      monthlyCost: 149,
+      coverageTypes: ['companies', 'contacts', 'news'],
+      dataPoints: ['company_info', 'contact_info', 'technographics', 'intent_data', 'news'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'realtime',
+      historicalData: true,
+      dataFreshness: 9,
+      dataCoverage: 9,
+      dataAccuracy: 9,
+      dataRelevance: 9,
+      reliability: 9,
+      insightDensity: 8,
+      insightRelevance: 9,
+      insightActionability: 9,
+      insightAccuracy: 9,
+      overallScore: 8.9,
+      insightCapabilities: ['competitive', 'market', 'financial'],
+      priority: 10,
+      discoveryMethod: 'manual',
+      sourceUrl: 'https://docs.apollo.io/',
+      testEndpoint: '/organizations/search',
+      collectionSchedule: '0 */2 * * *', // Every 2 hours
+    },
+  });
+
+  // News Sources
+  const googleNewsSource = await prisma.dataSource.upsert({
+    where: { name: 'google_news_api' },
+    update: {},
+    create: {
+      name: 'google_news_api',
+      displayName: 'Google News API',
+      type: 'API',
+      category: 'news',
+      endpoint: 'https://newsapi.org/v2',
+      authType: 'apikey',
+      rateLimitPerDay: 500,
+      tier: 'free',
+      coverageTypes: ['news', 'sentiment'],
+      dataPoints: ['title', 'description', 'content', 'source', 'publishedAt'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'realtime',
+      historicalData: false,
+      dataFreshness: 9,
+      dataCoverage: 8,
+      dataAccuracy: 8,
+      dataRelevance: 7,
+      reliability: 8,
+      insightDensity: 6,
+      insightRelevance: 7,
+      insightActionability: 6,
+      insightAccuracy: 7,
+      overallScore: 7.1,
+      insightCapabilities: ['sentiment', 'market'],
+      priority: 6,
+      discoveryMethod: 'api_search',
+      sourceUrl: 'https://newsapi.org/docs',
+      testEndpoint: '/everything?q=software+companies&pageSize=1',
+      collectionSchedule: '0 */4 * * *', // Every 4 hours
+      isActive: false, // Disabled until API key added
+    },
+  });
+
+  // High-Value Enterprise Sources (disabled by default)
+  const pitchbookSource = await prisma.dataSource.upsert({
+    where: { name: 'pitchbook_api' },
+    update: {},
+    create: {
+      name: 'pitchbook_api',
+      displayName: 'PitchBook Data',
+      type: 'API',
+      category: 'financial',
+      endpoint: 'https://api.pitchbook.com/v1',
+      authType: 'apikey',
+      rateLimitPerMin: 10,
+      rateLimitPerDay: 1000,
+      tier: 'enterprise',
+      monthlyCost: 2500,
+      coverageTypes: ['companies', 'funding', 'ma', 'financial'],
+      dataPoints: ['company_profile', 'funding_history', 'ma_activity', 'valuations', 'comps'],
+      geographicScope: ['global'],
+      languages: ['en'],
+      updateFrequency: 'daily',
+      historicalData: true,
+      dataFreshness: 9,
+      dataCoverage: 10,
+      dataAccuracy: 10,
+      dataRelevance: 10,
+      reliability: 9,
+      insightDensity: 10,
+      insightRelevance: 10,
+      insightActionability: 10,
+      insightAccuracy: 9,
+      overallScore: 9.6,
+      insightCapabilities: ['financial', 'competitive', 'market'],
+      priority: 10,
+      discoveryMethod: 'manual',
+      sourceUrl: 'https://pitchbook.com/platform/api',
+      testEndpoint: '/companies',
+      collectionSchedule: '0 1 * * *', // Daily at 1am
+      isActive: false, // Disabled until enterprise plan
+    },
+  });
+
+  console.log('✅ Created comprehensive data source registry with 10 sources');
+
+  // === METRIC DEFINITIONS FOR DATA SOURCE QUALITY TRACKING ===
+  console.log('📊 Creating additional metric definitions for data source tracking...');
+
+  const dataFreshnessMetric = await prisma.metricDefinition.upsert({
+    where: { key: 'data_source_freshness' },
+    update: {},
+    create: {
+      key: 'data_source_freshness',
+      kind: 'OPERATIONAL',
+      unit: 'hours',
+      description: 'Hours since last successful data collection from this source',
+    },
+  });
+
+  const insightAccuracyMetric = await prisma.metricDefinition.upsert({
+    where: { key: 'insight_accuracy_rate' },
+    update: {},
+    create: {
+      key: 'insight_accuracy_rate',
+      kind: 'SENTIMENT',
+      unit: 'percentage',
+      description: 'Percentage of insights that proved accurate over time',
+    },
+  });
+
+  const apiResponseTimeMetric = await prisma.metricDefinition.upsert({
+    where: { key: 'api_response_time' },
+    update: {},
+    create: {
+      key: 'api_response_time',
+      kind: 'OPERATIONAL',
+      unit: 'milliseconds',
+      description: 'Average API response time for data collection',
+    },
+  });
+
+  const dataCostMetric = await prisma.metricDefinition.upsert({
+    where: { key: 'data_collection_cost' },
+    update: {},
+    create: {
+      key: 'data_collection_cost',
+      kind: 'FINANCIAL',
+      unit: 'usd',
+      description: 'Cost per data point collected from this source',
+    },
+  });
+
+  console.log('✅ Created data source quality tracking metrics');
+
+  console.log('🎉 Database seeded successfully with comprehensive market intelligence infrastructure!');
 }
 
 main()

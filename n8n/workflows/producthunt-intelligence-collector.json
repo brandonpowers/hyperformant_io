@@ -1,0 +1,317 @@
+{
+  "name": "ProductHunt Intelligence Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-producthunt",
+        "responseMode": "onReceived"
+      },
+      "id": "producthunt-webhook",
+      "name": "ProductHunt Collection Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract target companies and search parameters\nconst request = $json;\nconst companies = request.companies || [];\nconst searchMode = request.mode || 'competitive'; // competitive, trending, specific\n\n// Prepare ProductHunt GraphQL queries\nconst queries = companies.map(company => {\n  const companyName = company.name.toLowerCase().replace(/[^a-z0-9]/g, '');\n  const domain = company.domain ? company.domain.replace(/\\.(com|io|co|net)$/, '') : '';\n  \n  return {\n    company: company,\n    query: `\n      query ProductHuntSearch($query: String!, $first: Int!) {\n        posts(first: $first, postedAfter: \"${new Date(Date.now() - 30*24*60*60*1000).toISOString()}\") {\n          edges {\n            node {\n              id\n              name\n              tagline\n              description\n              url\n              website\n              votesCount\n              commentsCount\n              createdAt\n              featured\n              topics {\n                edges {\n                  node {\n                    name\n                    slug\n                  }\n                }\n              }\n              productLinks {\n                type\n                url\n              }\n              maker {\n                name\n                username\n              }\n              hunter {\n                name\n                username\n              }\n            }\n          }\n        }\n      }\n    `,\n    variables: {\n      query: `${companyName} OR ${domain}`,\n      first: 20\n    },\n    searchTerms: [companyName, domain, company.name.toLowerCase()]\n  };\n});\n\nreturn {\n  queries: queries,\n  timestamp: new Date().toISOString(),\n  mode: searchMode,\n  totalCompanies: companies.length\n};"
+      },
+      "id": "prepare-ph-queries",
+      "name": "Prepare ProductHunt Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://api.producthunt.com/v2/api/graphql",
+        "authentication": "headerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer {{ $env.PRODUCTHUNT_TOKEN }}"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "variables",
+              "value": "={{ JSON.stringify($json.variables) }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "fetch-ph-data",
+      "name": "Fetch ProductHunt Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a competitive intelligence analyst specializing in product launches and market positioning. Extract actionable insights from ProductHunt data, focusing on competitive threats, market opportunities, and innovation trends."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze ProductHunt data for competitive intelligence on {{ $node['Prepare ProductHunt Queries'].json.queries[$itemIndex].company.name }}:\n\n**Search Results:**\n{{ JSON.stringify($json.data || $json) }}\n\n**Target Company:**\n{{ JSON.stringify($node['Prepare ProductHunt Queries'].json.queries[$itemIndex].company) }}\n\nExtract insights about:\n1. **Direct Competitors**: Products that compete directly\n2. **Emerging Threats**: New products that could disrupt\n3. **Market Trends**: Technology/feature trends in the space\n4. **Innovation Gaps**: Areas where no one is innovating\n5. **Launch Strategies**: Successful launch patterns\n\nFor each insight, assess:\n- Impact on target company (0-10)\n- Confidence level (0-1)\n- Urgency (low, medium, high, critical)\n- Actionability\n\nReturn as JSON:\n{\n  \"productInsights\": [\n    {\n      \"insightType\": \"competitor|threat|opportunity|trend|gap\",\n      \"category\": \"competitive\",\n      \"title\": \"Brief insight title\",\n      \"summary\": \"Detailed analysis\",\n      \"impact\": 0-10,\n      \"confidence\": 0-1,\n      \"urgency\": \"low|medium|high|critical\",\n      \"productDetails\": {\n        \"name\": \"string\",\n        \"tagline\": \"string\",\n        \"votesCount\": 0,\n        \"url\": \"string\"\n      },\n      \"implications\": [],\n      \"actionability\": \"string\"\n    }\n  ],\n  \"competitiveLandscape\": {\n    \"directCompetitors\": 0,\n    \"emergingThreats\": 0,\n    \"innovationVelocity\": \"low|medium|high\",\n    \"marketSaturation\": \"low|medium|high\"\n  },\n  \"trendAnalysis\": {\n    \"hotTopics\": [],\n    \"emergingFeatures\": [],\n    \"launchPatterns\": []\n  }\n}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "extract-ph-insights",
+      "name": "Extract ProductHunt Insights",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [800, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process ProductHunt insights for storage\nconst phResponse = JSON.parse($node['Extract ProductHunt Insights'].json.response);\nconst companyData = $node['Prepare ProductHunt Queries'].json.queries[$itemIndex].company;\n\n// Calculate validity periods based on ProductHunt data freshness\nconst getValidityPeriod = (urgency, insightType) => {\n  const base = {\n    'critical': 7, // 1 week for critical competitive threats\n    'high': 14,    // 2 weeks for high impact\n    'medium': 30,  // 1 month for medium impact\n    'low': 90      // 3 months for trends\n  }[urgency] || 30;\n  \n  // Product launch insights expire faster\n  const multiplier = insightType === 'competitor' ? 0.5 : 1;\n  return base * multiplier * 24 * 60 * 60 * 1000; // Convert to milliseconds\n};\n\n// Prepare MarketInsight records\nconst marketInsights = (phResponse.productInsights || []).map(insight => ({\n  entityId: companyData.id,\n  insightType: insight.insightType,\n  category: 'competitive',\n  title: insight.title,\n  summary: insight.summary,\n  impact: insight.impact,\n  confidence: insight.confidence,\n  urgency: insight.urgency,\n  contributingSources: ['producthunt_api'],\n  sourceConsensus: insight.confidence,\n  dataPointCount: 1,\n  implications: insight.implications || [],\n  actionability: insight.actionability,\n  extractedAt: new Date().toISOString(),\n  validUntil: new Date(Date.now() + getValidityPeriod(insight.urgency, insight.insightType)).toISOString(),\n  occurredAt: insight.productDetails?.createdAt || new Date().toISOString()\n}));\n\n// Extract competitive metrics\nconst competitiveMetrics = {\n  companyId: companyData.id,\n  companyName: companyData.name,\n  source: 'producthunt',\n  metrics: {\n    directCompetitors: phResponse.competitiveLandscape?.directCompetitors || 0,\n    emergingThreats: phResponse.competitiveLandscape?.emergingThreats || 0,\n    innovationVelocity: phResponse.competitiveLandscape?.innovationVelocity || 'medium',\n    marketSaturation: phResponse.competitiveLandscape?.marketSaturation || 'medium'\n  },\n  trends: phResponse.trendAnalysis || {},\n  timestamp: new Date().toISOString()\n};\n\n// Identify high-priority insights\nconst criticalInsights = marketInsights.filter(i => \n  i.urgency === 'critical' || \n  (i.urgency === 'high' && i.impact >= 7)\n);\n\nreturn {\n  company: companyData,\n  marketInsights: marketInsights,\n  competitiveMetrics: competitiveMetrics,\n  criticalInsights: criticalInsights,\n  insightCount: marketInsights.length\n};"
+      },
+      "id": "process-ph-insights",
+      "name": "Process ProductHunt Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,title,summary,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,implications,actionability,extractedAt,validUntil,occurredAt",
+        "options": {
+          "onConflict": "update",
+          "conflictColumns": "entityId,title"
+        }
+      },
+      "id": "store-ph-insights",
+      "name": "Store ProductHunt Insights",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.criticalInsights.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "has-critical-insights",
+      "name": "Has Critical Insights?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a strategic advisor creating urgent competitive alerts. Create actionable recommendations for immediate response."
+            },
+            {
+              "role": "user",
+              "content": "=URGENT: Critical competitive intelligence detected for {{ $json.company.name }}:\n\n{{ JSON.stringify($json.criticalInsights) }}\n\nCreate immediate action plan:\n1. Threat assessment\n2. Response strategy\n3. Timeline for action\n4. Resources needed\n5. Success metrics\n\nFocus on defending market position and countering competitive threats."
+            }
+          ]
+        }
+      },
+      "id": "generate-alert",
+      "name": "Generate Critical Alert",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1400, 450],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "DataSource",
+        "updateKey": "name",
+        "updateValue": "producthunt_api",
+        "columns": "lastHealthCheck,healthStatus,insightRelevance",
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "UPDATE DataSource SET lastHealthCheck = NOW(), healthStatus = 'healthy', insightRelevance = LEAST(10, insightRelevance + 0.1) WHERE name = 'producthunt_api'"
+        }
+      },
+      "id": "update-ph-source-health",
+      "name": "Update ProductHunt Source Health",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "=## ProductHunt Intelligence Report\n\n**Company:** {{ $json.company.name }}\n**Collection Time:** {{ $json.competitiveMetrics.timestamp }}\n\n### Competitive Landscape\n- **Direct Competitors:** {{ $json.competitiveMetrics.metrics.directCompetitors }}\n- **Emerging Threats:** {{ $json.competitiveMetrics.metrics.emergingThreats }}\n- **Innovation Velocity:** {{ $json.competitiveMetrics.metrics.innovationVelocity }}\n- **Market Saturation:** {{ $json.competitiveMetrics.metrics.marketSaturation }}\n\n### Key Insights ({{ $json.insightCount }} total)\n{{ JSON.stringify($json.marketInsights.slice(0, 5).map(i => ({ title: i.title, impact: i.impact, urgency: i.urgency })), null, 2) }}\n\n### Critical Insights Requiring Action\n{{ $json.criticalInsights.length > 0 ? JSON.stringify($json.criticalInsights.map(i => ({ title: i.title, impact: i.impact })), null, 2) : 'None detected' }}\n\n### Trend Analysis\n{{ JSON.stringify($json.competitiveMetrics.trends, null, 2) }}",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "generate-ph-report",
+      "name": "Generate ProductHunt Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [1600, 300]
+    }
+  ],
+  "connections": {
+    "producthunt-webhook": {
+      "main": [
+        [
+          {
+            "node": "prepare-ph-queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-ph-queries": {
+      "main": [
+        [
+          {
+            "node": "fetch-ph-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-ph-data": {
+      "main": [
+        [
+          {
+            "node": "extract-ph-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-ph-insights": {
+      "main": [
+        [
+          {
+            "node": "process-ph-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-ph-insights": {
+      "main": [
+        [
+          {
+            "node": "store-ph-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-critical-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update-ph-source-health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-critical-insights": {
+      "main": [
+        [
+          {
+            "node": "generate-alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "update-ph-source-health": {
+      "main": [
+        [
+          {
+            "node": "generate-ph-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

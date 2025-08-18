@@ -154,26 +154,28 @@ export async function getVizConnections(
   // Build connection filters
   const connectionFilters = buildConnectionFilters(filters, userEntities);
 
-  // Fetch connections from materialized view
-  const rawConnections = await prisma.$queryRaw<any[]>`
-    SELECT 
-      cr.source_entity_id,
-      cr.target_entity_id,
-      cr.connection_type,
-      cr.avg_strength,
-      cr.avg_sentiment,
-      cr.deal_value,
-      cr.integration_depth,
-      cr.last_updated,
-      cr.interaction_count
-    FROM mv_connection_rollup cr
-    WHERE cr.source_entity_id = ANY(${userEntities}::uuid[])
-      AND cr.target_entity_id = ANY(${userEntities}::uuid[])
-      AND (${filters.connectionTypes?.length || 0} = 0 OR cr.connection_type = ANY(${filters.connectionTypes || []}))
-      AND (${filters.minStrength || 0} <= cr.avg_strength)
-    ORDER BY cr.avg_strength DESC, cr.last_updated DESC
-    LIMIT 500
-  `;
+  // Fetch connections directly from Connection table (bypass materialized view for now)
+  const rawConnections = await prisma.connection.findMany({
+    where: {
+      sourceEntityId: { in: userEntities },
+      targetEntityId: { in: userEntities },
+      ...(filters.connectionTypes?.length ? { type: { in: filters.connectionTypes } } : {}),
+      ...(filters.minStrength ? { strength: { gte: filters.minStrength } } : {}),
+    },
+    select: {
+      sourceEntityId: true,
+      targetEntityId: true,
+      type: true,
+      strength: true,
+      sentimentScore: true,
+      metadata: true,
+    },
+    orderBy: [
+      { strength: 'desc' },
+      { updatedAt: 'desc' },
+    ],
+    take: 500,
+  });
 
   // Convert BigInts to numbers
   const connections = convertBigIntsToNumbers(rawConnections);
@@ -183,7 +185,7 @@ export async function getVizConnections(
     transformToConnection(c, theme),
   );
 
-  const staleness = await getViewStaleness('mv_connection_rollup');
+  const staleness = 0; // No materialized view, always fresh
 
   return {
     schemaVersion: '1.0',
@@ -385,16 +387,16 @@ function transformToConnection(
 ): Connection {
   // BigInts already converted to numbers by convertBigIntsToNumbers
   return {
-    source: connectionData.source_entity_id,
-    target: connectionData.target_entity_id,
-    type: connectionData.connection_type,
-    sentiment: connectionData.avg_sentiment || 0,
-    strength: connectionData.avg_strength || 0.5,
-    dealValue: connectionData.deal_value || undefined,
-    integrationDepth: connectionData.integration_depth || undefined,
+    source: connectionData.sourceEntityId,
+    target: connectionData.targetEntityId,
+    type: connectionData.type,
+    sentiment: connectionData.sentimentScore || 0,
+    strength: connectionData.strength || 0.5,
+    dealValue: connectionData.metadata?.dealValue || undefined,
+    integrationDepth: connectionData.metadata?.integrationDepth || undefined,
     // Add other theme-relevant properties
-    overlapScore: (connectionData.avg_strength || 0.5) * 0.8, // Derived metric
-    depth: (connectionData.interaction_count || 0) / 10, // Normalized interaction count
+    overlapScore: (connectionData.strength || 0.5) * 0.8, // Derived metric
+    depth: connectionData.metadata?.depth || 0.5, // Default depth
   };
 }
 

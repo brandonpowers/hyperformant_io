@@ -32,10 +32,12 @@ services:
       - N8N_PROTOCOL=http
       - WEBHOOK_URL=http://localhost:5678/
       - N8N_ENCRYPTION_KEY=hyperformant-n8n-encryption-key
+      - N8N_PUBLIC_API_DISABLED=false
+      - N8N_PUBLIC_API_ENDPOINT=http://localhost:5678/api
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=hyperformant
+      - DB_POSTGRESDB_DATABASE=n8n_db
       - DB_POSTGRESDB_USER=postgres
       - DB_POSTGRESDB_PASSWORD=hyperformant-dev
       - DB_POSTGRESDB_SCHEMA=n8n
@@ -43,12 +45,80 @@ services:
       - EXECUTIONS_DATA_SAVE_ON_SUCCESS=all
       - EXECUTIONS_DATA_SAVE_ON_PROGRESS=true
       - EXECUTIONS_DATA_SAVE_MANUAL_EXECUTIONS=true
+      # Hyperformant business database access
+      - HYPERFORMANT_DB_HOST=postgres
+      - HYPERFORMANT_DB_PORT=5432
+      - HYPERFORMANT_DB_NAME=hyperformant
+      - HYPERFORMANT_DB_USER=postgres
+      - HYPERFORMANT_DB_PASSWORD=hyperformant-dev
     volumes:
       - n8n-data:/home/node/.n8n
       - ./n8n/workflows:/home/node/workflows
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Infisical Secret Management
+  infisical:
+    image: infisical/infisical:latest
+    container_name: hyperformant-infisical
+    ports:
+      - '8080:8080'
+    environment:
+      # Database Configuration
+      DB_CONNECTION_URI: postgresql://postgres:hyperformant-dev@postgres:5432/infisical_db
+      REDIS_URL: redis://redis:6379
+      
+      # Infisical Configuration (32-character keys for AES-256)
+      ENCRYPTION_KEY: hyperformantdevkey32characters12
+      AUTH_SECRET: hyperformantdevauth32characters1
+      JWT_SIGNUP_SECRET: hyperformantjwtsignup32character
+      JWT_REFRESH_SECRET: hyperformantjwtrefresh32charact
+      JWT_AUTH_SECRET: hyperformantjwtauth32characters1
+      JWT_MFA_SECRET: hyperformantjwtmfa32characters12
+      JWT_PROVIDER_AUTH_SECRET: hyperformantjwtprovider32charact
+      
+      # Site Configuration
+      SITE_URL: http://localhost:8080
+      NEXT_PUBLIC_INFISICAL_PLATFORM_VERSION: latest
+      
+      # Features
+      SMTP_HOST: inbucket
+      SMTP_PORT: 2500
+      SMTP_SECURE: false
+      SMTP_FROM_ADDRESS: noreply@hyperformant.io
+      SMTP_FROM_NAME: Hyperformant
+      
+      # Development Settings
+      NODE_ENV: development
+      POSTHOG_PROJECT_API_KEY: ''
+      INFISICAL_PLATFORM_VERSION: latest
+    volumes:
+      - infisical-data:/app/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ['CMD-SHELL', 'wget --no-verbose --tries=1 --spider http://localhost:8080/api/status || exit 1']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Redis for Infisical
+  redis:
+    image: redis:7-alpine
+    container_name: hyperformant-redis
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # Email Testing (Development Only)
   inbucket:
@@ -62,3 +132,5 @@ services:
 volumes:
   postgres-data:
   n8n-data:
+  infisical-data:
+  redis-data:

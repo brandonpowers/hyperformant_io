@@ -8,7 +8,7 @@ import fs from 'fs';
 import path from 'path';
 
 // N8N API configuration
-const N8N_BASE_URL = process.env.N8N_EDITOR_URL || 'http://localhost:5678';
+const N8N_BASE_URL = process.env.N8N_HOST_URL || 'http://localhost:5678';
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
 
 interface WorkflowData {
@@ -215,7 +215,8 @@ async function deployAllWorkflows() {
     if (failed > 0) {
       console.log('❌ Failed deployments:');
       results.filter(r => !r.success).forEach(r => {
-        console.log(`   - ${path.basename(r.file)}: ${r.error.message}`);
+        const errorMessage = r.error instanceof Error ? r.error.message : String(r.error);
+        console.log(`   - ${path.basename(r.file)}: ${errorMessage}`);
       });
       console.log('');
     }

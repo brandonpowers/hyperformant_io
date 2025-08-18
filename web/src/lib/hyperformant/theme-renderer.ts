@@ -336,12 +336,28 @@ function lerpColor(a: number, b: number, t: number) {
   return (r << 16) | (g << 8) | bl;
 }
 function hashColor(s: string) {
+  // Create more vibrant colors using HSL approach
   let h = 0;
   for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0;
-  const r = (h & 0xff0000) >> 16,
-    g = (h & 0x00ff00) >> 8,
-    b = h & 0x0000ff;
-  return ((r & 0xff) << 16) | ((g & 0xff) << 8) | (b & 0xff);
+  
+  // Map to vibrant predefined colors based on hash
+  const vibrantColors = [
+    0xff6b6b, // Vibrant red
+    0x4ecdc4, // Teal
+    0x45b7d1, // Sky blue
+    0xf9ca24, // Golden yellow
+    0x6c5ce7, // Purple
+    0xa29bfe, // Lavender
+    0xfd79a8, // Pink
+    0xfdcb6e, // Orange
+    0x6ce3e5, // Cyan
+    0x55efc4, // Mint
+    0xff7979, // Coral
+    0x74b9ff, // Light blue
+  ];
+  
+  const index = Math.abs(h) % vibrantColors.length;
+  return vibrantColors[index];
 }
 
 /** ------- Example wiring (use your real data + r3f scene) ------- */

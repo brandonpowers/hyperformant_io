@@ -16,24 +16,7 @@ import { dbHealthCheck } from '../lib/api/database';
  * Main API router that combines all domain routers
  * This is the single entry point for all API routes
  */
-export const apiApp = new OpenAPIHono({
-  info: {
-    title: 'Hyperformant API',
-    version: '1.0.0',
-    description: 'AI-powered B2B automation and consulting pipeline system',
-  },
-  openapi: '3.1.0',
-  servers: [
-    {
-      url:
-        process.env.NODE_ENV === 'production'
-          ? 'https://api.hyperformant.io/v1'
-          : 'http://localhost:3000/api/v1',
-      description:
-        process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
-    },
-  ],
-});
+export const apiApp = new OpenAPIHono();
 
 // Global middleware
 const loggingMiddleware = createLoggingMiddleware({
@@ -45,20 +28,16 @@ apiApp.use('*', loggingMiddleware);
 // Global error handler
 apiApp.onError(errorHandler);
 
-// Mount domain routers
+// Test adding routers one by one to find the problematic one
 apiApp.route('/', companiesApp);
 apiApp.route('/', authApp);
 apiApp.route('/', usersApp);
-
-// Mount competitive intelligence routers
 apiApp.route('/', entitiesApp);
 apiApp.route('/', signalsApp);
 apiApp.route('/', connectionsApp);
 apiApp.route('/', metricsApp);
 apiApp.route('/', intelligenceApp);
-
-// Mount visualization router
-apiApp.route('/', visualizationApp);
+apiApp.route('/', visualizationApp); // Testing with history route disabled
 
 // System endpoints
 apiApp.get('/health', async (c) => {
@@ -103,24 +82,44 @@ apiApp.get('/info', (c) => {
   });
 });
 
-// OpenAPI specification endpoints
-apiApp.doc('/openapi.json', {
-  openapi: '3.1.0',
-  info: {
-    title: 'Hyperformant API',
-    version: '1.0.0',
-    description: 'AI-powered B2B automation and consulting pipeline system',
-  },
-  servers: [
-    {
-      url:
-        process.env.NODE_ENV === 'production'
-          ? 'https://api.hyperformant.io/v1'
-          : 'http://localhost:3000/api/v1',
-      description:
-        process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
-    },
-  ],
+// OpenAPI specification endpoint using getOpenAPI31Document method
+apiApp.get('/openapi.json', (c) => {
+  try {
+    console.log('📋 Generating OpenAPI specification using getOpenAPI31Document...');
+    
+    const openApiDocument = apiApp.getOpenAPI31Document({
+      openapi: '3.1.0',
+      info: {
+        title: 'Hyperformant API',
+        version: '1.0.0',
+        description: 'AI-powered B2B automation and consulting pipeline system',
+      },
+      servers: [
+        {
+          url:
+            process.env.NODE_ENV === 'production'
+              ? 'https://api.hyperformant.io/v1'
+              : 'http://localhost:3000/api/v1',
+          description:
+            process.env.NODE_ENV === 'production' ? 'Production' : 'Development',
+        },
+      ],
+    });
+    
+    console.log('✅ OpenAPI document generated successfully');
+    console.log('📊 Paths found:', Object.keys(openApiDocument.paths || {}));
+    console.log('🔧 Components:', Object.keys(openApiDocument.components || {}));
+    
+    return c.json(openApiDocument);
+  } catch (error) {
+    console.error('❌ Error generating OpenAPI document:', error);
+    console.error('Stack trace:', error.stack);
+    return c.json({ 
+      error: 'Failed to generate OpenAPI specification', 
+      details: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    }, 500);
+  }
 });
 
 // Add Scalar documentation endpoint

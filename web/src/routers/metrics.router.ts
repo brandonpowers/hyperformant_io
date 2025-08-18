@@ -1,6 +1,6 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
 import { PrismaClient } from '@prisma/client';
-import { z } from 'zod';
+import { z } from '@hono/zod-openapi';
 import {
   MetricDefinitionSchema,
   CreateMetricDefinitionSchema,

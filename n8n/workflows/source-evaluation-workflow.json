@@ -1,0 +1,298 @@
+{
+  "name": "Source Evaluation Workflow",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "weekly-evaluation-trigger",
+      "name": "Weekly Quality Assessment",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/evaluate-sources",
+        "responseMode": "onReceived"
+      },
+      "id": "manual-evaluation-webhook",
+      "name": "Manual Evaluation Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 500]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "DataSource",
+        "returnAll": true,
+        "where": {
+          "conditions": [
+            {
+              "field": "isActive",
+              "value": true
+            }
+          ]
+        },
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "SELECT ds.*, se.evaluatedAt as lastEvaluated, se.recommendation as lastRecommendation FROM \"DataSource\" ds LEFT JOIN \"SourceEvaluation\" se ON ds.id = se.\"dataSourceId\" WHERE ds.\"isActive\" = true AND (se.\"evaluatedAt\" IS NULL OR se.\"evaluatedAt\" < NOW() - INTERVAL '7 days') ORDER BY ds.\"overallScore\" DESC"
+        }
+      },
+      "id": "fetch-sources-for-evaluation",
+      "name": "Fetch Sources for Evaluation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 400],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare comprehensive test scenarios for each data source\nconst sources = $json;\nconst testScenarios = [];\n\nfor (const source of sources) {\n  const scenario = {\n    source: source,\n    testQueries: generateTestQueries(source),\n    expectedMetrics: {\n      responseTime: source.avgResponseTime || 1000,\n      successRate: 0.95,\n      dataQuality: 0.8\n    },\n    evaluationCriteria: {\n      dataFreshness: { weight: 0.25, target: 8 },\n      dataCoverage: { weight: 0.2, target: 7 },\n      dataAccuracy: { weight: 0.25, target: 8 },\n      dataRelevance: { weight: 0.2, target: 8 },\n      reliability: { weight: 0.1, target: 9 }\n    }\n  };\n  \n  testScenarios.push(scenario);\n}\n\nfunction generateTestQueries(source) {\n  const baseQueries = {\n    'reddit_api': ['/r/SaaS/new.json?limit=5', '/r/startups/hot.json?limit=3'],\n    'hackernews_api': ['/topstories.json', '/item/1.json'],\n    'github_api': ['/search/repositories?q=stars:>1000&sort=updated&per_page=5'],\n    'producthunt_api': ['posts(first: 3) { edges { node { name votes } } }'],\n    'g2_api': ['/products?page[size]=5'],\n    'crunchbase_api': ['/entities/organizations?limit=5'],\n    'apollo_api': ['/organizations/search?limit=5'],\n    'google_news_api': ['/everything?q=software&pageSize=3']\n  };\n  \n  return baseQueries[source.name] || [source.testEndpoint || '/health'];\n}\n\nreturn testScenarios.map(scenario => ({ json: scenario }));"
+      },
+      "id": "prepare-test-scenarios",
+      "name": "Prepare Test Scenarios",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Execute comprehensive testing for each data source\nconst scenario = $json;\nconst source = scenario.source;\nconst testResults = {\n  sourceId: source.id,\n  sourceName: source.name,\n  testStartTime: new Date().toISOString(),\n  testResults: [],\n  overallSuccess: true,\n  metrics: {}\n};\n\n// Simulate API testing (in production, make actual API calls)\nfor (const query of scenario.testQueries) {\n  const testResult = {\n    query: query,\n    timestamp: new Date().toISOString(),\n    success: Math.random() > 0.1, // 90% success rate simulation\n    responseTime: Math.floor(Math.random() * 2000) + 200, // 200-2200ms\n    dataPoints: Math.floor(Math.random() * 50) + 10, // 10-60 data points\n    dataQuality: Math.random() * 0.4 + 0.6 // 0.6-1.0 quality score\n  };\n  \n  if (!testResult.success) {\n    testResults.overallSuccess = false;\n  }\n  \n  testResults.testResults.push(testResult);\n}\n\n// Calculate performance metrics\nconst successfulTests = testResults.testResults.filter(t => t.success);\nconst successRate = successfulTests.length / testResults.testResults.length;\nconst avgResponseTime = testResults.testResults.reduce((sum, t) => sum + t.responseTime, 0) / testResults.testResults.length;\nconst avgDataQuality = successfulTests.reduce((sum, t) => sum + t.dataQuality, 0) / successfulTests.length;\nconst totalDataPoints = testResults.testResults.reduce((sum, t) => sum + t.dataPoints, 0);\n\ntestResults.metrics = {\n  successRate: successRate,\n  avgResponseTime: avgResponseTime,\n  avgDataQuality: avgDataQuality || 0,\n  totalDataPoints: totalDataPoints,\n  errorRate: (1 - successRate) * 100\n};\n\ntestResults.testEndTime = new Date().toISOString();\n\nreturn testResults;"
+      },
+      "id": "execute-source-testing",
+      "name": "Execute Source Testing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [800, 400]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a data source quality analyst. Evaluate test results and provide quality scores with actionable recommendations."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze these data source test results and provide quality evaluation:\\n\\n{{ JSON.stringify($json) }}\\n\\nEvaluate based on:\\n1. Success Rate (target: >95%)\\n2. Response Time (target: <1000ms)\\n3. Data Quality (target: >0.8)\\n4. Data Coverage (based on data points)\\n5. Reliability (consistency of performance)\\n\\nProvide scores (0-10) for:\\n- accuracyScore: Data accuracy based on test results\\n- freshnessScore: How current/real-time the data appears\\n- coverageScore: Breadth of data coverage\\n- relevanceScore: Relevance for B2B market intelligence\\n- overallScore: Weighted average\\n\\nAlso provide:\\n- recommendation: approve, needs_improvement, reject\\n- qualityIssues: Array of identified issues\\n- actionableSteps: Specific improvement recommendations\\n- nextEvaluationDate: When to re-evaluate\\n\\nReturn as JSON."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.2,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "ai-quality-evaluation",
+      "name": "AI Quality Evaluation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1000, 400],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI evaluation and prepare database records\nconst testResults = $node['Execute Source Testing'].json;\nconst aiEvaluation = JSON.parse($json.response);\n\nconst sourceEvaluation = {\n  dataSourceId: testResults.sourceId,\n  sampleSize: testResults.testResults.length,\n  accuracyScore: aiEvaluation.accuracyScore,\n  freshnessScore: aiEvaluation.freshnessScore,\n  coverageScore: aiEvaluation.coverageScore,\n  relevanceScore: aiEvaluation.relevanceScore,\n  testQueries: testResults.testResults.map(t => t.query),\n  successCount: testResults.testResults.filter(t => t.success).length,\n  failureCount: testResults.testResults.filter(t => !t.success).length,\n  missingFields: aiEvaluation.missingFields || [],\n  qualityIssues: aiEvaluation.qualityIssues || [],\n  recommendation: aiEvaluation.recommendation,\n  evaluatorNotes: `Automated evaluation - Success Rate: ${(testResults.metrics.successRate * 100).toFixed(1)}%, Avg Response Time: ${testResults.metrics.avgResponseTime.toFixed(0)}ms`,\n  avgLatency: Math.round(testResults.metrics.avgResponseTime),\n  errorRate: testResults.metrics.errorRate,\n  evaluatedBy: 'ai_evaluation_workflow'\n};\n\n// Prepare DataSource updates based on evaluation\nconst dataSourceUpdates = {\n  id: testResults.sourceId,\n  dataAccuracy: aiEvaluation.accuracyScore,\n  dataFreshness: aiEvaluation.freshnessScore,\n  dataCoverage: aiEvaluation.coverageScore,\n  dataRelevance: aiEvaluation.relevanceScore,\n  overallScore: aiEvaluation.overallScore,\n  reliability: Math.max(1, 10 - (testResults.metrics.errorRate * 0.1)),\n  healthStatus: testResults.metrics.successRate > 0.9 ? 'healthy' : \n                testResults.metrics.successRate > 0.7 ? 'degraded' : 'failing',\n  lastHealthCheck: new Date().toISOString(),\n  avgResponseTime: Math.round(testResults.metrics.avgResponseTime),\n  successRate: testResults.metrics.successRate,\n  isActive: aiEvaluation.recommendation !== 'reject',\n  lastTested: new Date().toISOString()\n};\n\nreturn {\n  sourceEvaluation: sourceEvaluation,\n  dataSourceUpdates: dataSourceUpdates,\n  actionableSteps: aiEvaluation.actionableSteps || [],\n  nextEvaluationDate: aiEvaluation.nextEvaluationDate\n};"
+      },
+      "id": "process-evaluation-results",
+      "name": "Process Evaluation Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SourceEvaluation",
+        "columns": "dataSourceId,sampleSize,accuracyScore,freshnessScore,coverageScore,relevanceScore,testQueries,successCount,failureCount,missingFields,qualityIssues,recommendation,evaluatorNotes,avgLatency,errorRate,evaluatedBy"
+      },
+      "id": "store-evaluation",
+      "name": "Store Evaluation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 350],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "DataSource",
+        "updateKey": "id",
+        "columns": "dataAccuracy,dataFreshness,dataCoverage,dataRelevance,overallScore,reliability,healthStatus,lastHealthCheck,avgResponseTime,successRate,isActive,lastTested"
+      },
+      "id": "update-source-metrics",
+      "name": "Update Source Metrics",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 450],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate comprehensive evaluation summary\nconst allResults = $input.all();\n\nconst summary = {\n  evaluationRun: new Date().toISOString(),\n  sourcesEvaluated: allResults.length,\n  sourcesApproved: allResults.filter(r => r.json.sourceEvaluation.recommendation === 'approve').length,\n  sourcesNeedImprovement: allResults.filter(r => r.json.sourceEvaluation.recommendation === 'needs_improvement').length,\n  sourcesRejected: allResults.filter(r => r.json.sourceEvaluation.recommendation === 'reject').length,\n  avgSuccessRate: allResults.reduce((sum, r) => sum + (r.json.dataSourceUpdates.successRate || 0), 0) / allResults.length,\n  avgResponseTime: allResults.reduce((sum, r) => sum + (r.json.dataSourceUpdates.avgResponseTime || 0), 0) / allResults.length,\n  healthySources: allResults.filter(r => r.json.dataSourceUpdates.healthStatus === 'healthy').length,\n  degradedSources: allResults.filter(r => r.json.dataSourceUpdates.healthStatus === 'degraded').length,\n  failingSources: allResults.filter(r => r.json.dataSourceUpdates.healthStatus === 'failing').length,\n  topPerformers: allResults\n    .sort((a, b) => (b.json.dataSourceUpdates.overallScore || 0) - (a.json.dataSourceUpdates.overallScore || 0))\n    .slice(0, 3)\n    .map(r => ({\n      name: r.json.sourceEvaluation.dataSourceId,\n      score: r.json.dataSourceUpdates.overallScore,\n      status: r.json.dataSourceUpdates.healthStatus\n    })),\n  criticalIssues: allResults\n    .filter(r => r.json.sourceEvaluation.qualityIssues.length > 0)\n    .map(r => ({\n      source: r.json.sourceEvaluation.dataSourceId,\n      issues: r.json.sourceEvaluation.qualityIssues\n    }))\n};\n\nreturn summary;"
+      },
+      "id": "generate-evaluation-summary",
+      "name": "Generate Evaluation Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1600, 400]
+    },
+    {
+      "parameters": {
+        "content": "=## Data Source Quality Evaluation Report\\n\\n**Evaluation Date:** {{ $json.evaluationRun }}\\n\\n### Summary\\n- **Sources Evaluated:** {{ $json.sourcesEvaluated }}\\n- **Approved:** {{ $json.sourcesApproved }}\\n- **Need Improvement:** {{ $json.sourcesNeedImprovement }}\\n- **Rejected:** {{ $json.sourcesRejected }}\\n\\n### Performance Metrics\\n- **Average Success Rate:** {{ ($json.avgSuccessRate * 100).toFixed(1) }}%\\n- **Average Response Time:** {{ $json.avgResponseTime.toFixed(0) }}ms\\n\\n### Health Status\\n- **Healthy:** {{ $json.healthySources }}\\n- **Degraded:** {{ $json.degradedSources }}\\n- **Failing:** {{ $json.failingSources }}\\n\\n### Top Performers\\n{{ JSON.stringify($json.topPerformers, null, 2) }}\\n\\n### Critical Issues\\n{{ JSON.stringify($json.criticalIssues, null, 2) }}",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "format-evaluation-report",
+      "name": "Format Evaluation Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [1800, 400]
+    }
+  ],
+  "connections": {
+    "weekly-evaluation-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-sources-for-evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual-evaluation-webhook": {
+      "main": [
+        [
+          {
+            "node": "fetch-sources-for-evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-sources-for-evaluation": {
+      "main": [
+        [
+          {
+            "node": "prepare-test-scenarios",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-test-scenarios": {
+      "main": [
+        [
+          {
+            "node": "execute-source-testing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "execute-source-testing": {
+      "main": [
+        [
+          {
+            "node": "ai-quality-evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ai-quality-evaluation": {
+      "main": [
+        [
+          {
+            "node": "process-evaluation-results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-evaluation-results": {
+      "main": [
+        [
+          {
+            "node": "store-evaluation",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update-source-metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "store-evaluation": {
+      "main": [
+        [
+          {
+            "node": "generate-evaluation-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-evaluation-summary": {
+      "main": [
+        [
+          {
+            "node": "format-evaluation-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

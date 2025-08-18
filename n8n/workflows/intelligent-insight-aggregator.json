@@ -1,0 +1,463 @@
+{
+  "name": "Intelligent Insight Aggregator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */2 * * *"
+            }
+          ]
+        }
+      },
+      "id": "scheduled-insight-collection",
+      "name": "Every 2 Hours Insight Collection",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-insights",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "id": "manual-insight-trigger",
+      "name": "Manual Insight Collection",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 500]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "DataSource",
+        "returnAll": false,
+        "limit": 20,
+        "where": {
+          "conditions": [
+            {
+              "field": "isActive",
+              "value": true
+            },
+            {
+              "field": "overallScore",
+              "operation": "gte",
+              "value": 6
+            }
+          ]
+        },
+        "sort": {
+          "sortRules": [
+            {
+              "field": "insightRelevance",
+              "order": "DESC"
+            }
+          ]
+        }
+      },
+      "id": "fetch-active-sources",
+      "name": "Fetch High-Quality Active Sources",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 400],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "Entity",
+        "returnAll": false,
+        "limit": 10,
+        "where": {
+          "conditions": [
+            {
+              "field": "type",
+              "value": "COMPANY"
+            }
+          ]
+        },
+        "sort": {
+          "sortRules": [
+            {
+              "field": "updatedAt",
+              "order": "ASC"
+            }
+          ]
+        }
+      },
+      "id": "fetch-target-entities",
+      "name": "Fetch Target Entities",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare collection strategy based on source capabilities\nconst sources = $node['Fetch High-Quality Active Sources'].json;\nconst entities = $node['Fetch Target Entities'].json;\n\n// Group sources by capability\nconst sourcesByCapability = {\n  sentiment: [],\n  funding: [],\n  competitive: [],\n  technical: [],\n  market: []\n};\n\nsources.forEach(source => {\n  const capabilities = source.insightCapabilities || [];\n  capabilities.forEach(cap => {\n    if (sourcesByCapability[cap]) {\n      sourcesByCapability[cap].push(source);\n    }\n  });\n});\n\n// Create collection tasks\nconst collectionTasks = [];\n\nentities.forEach(entity => {\n  // For each entity, determine which sources to use\n  const tasks = {\n    entityId: entity.id,\n    entityName: entity.name,\n    entityDomain: entity.domain,\n    collections: []\n  };\n  \n  // Prioritize sources based on entity industry\n  Object.keys(sourcesByCapability).forEach(capability => {\n    const capableSources = sourcesByCapability[capability];\n    if (capableSources.length > 0) {\n      // Use top 2 sources per capability\n      const topSources = capableSources\n        .sort((a, b) => b.insightRelevance - a.insightRelevance)\n        .slice(0, 2);\n      \n      topSources.forEach(source => {\n        tasks.collections.push({\n          sourceId: source.id,\n          sourceName: source.name,\n          sourceEndpoint: source.endpoint,\n          capability: capability,\n          priority: source.priority || 5,\n          searchQuery: entity.domain || entity.name\n        });\n      });\n    }\n  });\n  \n  if (tasks.collections.length > 0) {\n    collectionTasks.push(tasks);\n  }\n});\n\nreturn collectionTasks.map(task => ({ json: task }));"
+      },
+      "id": "prepare-collection-strategy",
+      "name": "Prepare Collection Strategy",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "batchSize": 5,
+        "options": {}
+      },
+      "id": "split-into-batches",
+      "name": "Split Into Batches",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Simulate data collection from various sources\n// In production, this would make actual API calls\nconst task = $json;\nconst collections = task.collections;\nconst rawDataPoints = [];\n\n// Collect from each source\nfor (const collection of collections) {\n  const mockData = {\n    sourceId: collection.sourceId,\n    sourceName: collection.sourceName,\n    capability: collection.capability,\n    entityId: task.entityId,\n    entityName: task.entityName,\n    timestamp: new Date().toISOString(),\n    rawData: {\n      // This would be actual API response\n      dataPoints: Math.floor(Math.random() * 50) + 10,\n      content: `Mock data for ${task.entityName} from ${collection.sourceName}`\n    }\n  };\n  rawDataPoints.push(mockData);\n}\n\nreturn {\n  entityId: task.entityId,\n  entityName: task.entityName,\n  collectionTimestamp: new Date().toISOString(),\n  rawDataPoints: rawDataPoints\n};"
+      },
+      "id": "collect-from-sources",
+      "name": "Collect From Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are an expert at extracting actionable business insights from raw data. Focus on insights that are specific, measurable, and actionable. Do not store or repeat raw content - only extract intelligence."
+            },
+            {
+              "role": "user",
+              "content": "=Extract insights from this data for {{ $json.entityName }}:\n\n{{ JSON.stringify($json.rawDataPoints) }}\n\nFor each data source, extract:\n1. Key insights (opportunities, threats, trends, signals)\n2. Impact score (0-10)\n3. Confidence level (0-1)\n4. Urgency (low, medium, high, critical)\n5. Actionable recommendations\n\nGroup similar insights across sources and note source consensus.\n\nReturn as JSON array of insights:\n[\n  {\n    \"insightType\": \"opportunity|threat|trend|signal|vulnerability\",\n    \"category\": \"competitive|financial|technical|market|operational\",\n    \"title\": \"Brief insight title\",\n    \"summary\": \"Detailed insight summary\",\n    \"impact\": 0-10,\n    \"confidence\": 0-1,\n    \"urgency\": \"low|medium|high|critical\",\n    \"contributingSources\": [\"source1\", \"source2\"],\n    \"sourceConsensus\": 0-1,\n    \"implications\": [\"implication1\", \"implication2\"],\n    \"actionability\": \"specific recommended action\",\n    \"validityPeriod\": \"24h|7d|30d|90d\"\n  }\n]"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "extract-insights-ai",
+      "name": "Extract Insights with AI",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1250, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process AI-extracted insights\nconst aiResponse = JSON.parse($node['Extract Insights with AI'].json.response);\nconst entityData = $node['Collect From Sources'].json;\nconst insights = aiResponse.insights || aiResponse;\n\n// Calculate validity period\nconst getValidUntil = (period) => {\n  const now = new Date();\n  switch(period) {\n    case '24h': return new Date(now.getTime() + 24*60*60*1000);\n    case '7d': return new Date(now.getTime() + 7*24*60*60*1000);\n    case '30d': return new Date(now.getTime() + 30*24*60*60*1000);\n    case '90d': return new Date(now.getTime() + 90*24*60*60*1000);\n    default: return new Date(now.getTime() + 7*24*60*60*1000);\n  }\n};\n\n// Prepare insights for database storage\nconst marketInsights = insights.map(insight => ({\n  entityId: entityData.entityId,\n  insightType: insight.insightType,\n  category: insight.category,\n  title: insight.title,\n  summary: insight.summary,\n  impact: insight.impact,\n  confidence: insight.confidence,\n  urgency: insight.urgency,\n  contributingSources: insight.contributingSources,\n  sourceConsensus: insight.sourceConsensus,\n  dataPointCount: entityData.rawDataPoints.length,\n  implications: insight.implications,\n  actionability: insight.actionability,\n  extractedAt: new Date().toISOString(),\n  validUntil: getValidUntil(insight.validityPeriod).toISOString(),\n  occurredAt: null\n}));\n\n// Also prepare sentiment data updates if applicable\nconst sentimentInsights = insights\n  .filter(i => i.category === 'market' || i.insightType === 'signal')\n  .map(insight => ({\n    companyId: entityData.entityId,\n    source: insight.contributingSources[0] || 'aggregated',\n    dataSourceId: entityData.rawDataPoints[0]?.sourceId,\n    sentiment: insight.impact > 6 ? 'positive' : insight.impact < 4 ? 'negative' : 'neutral',\n    score: (insight.impact / 10) * (insight.confidence || 0.5),\n    content: insight.summary,\n    confidence: insight.confidence\n  }));\n\nreturn {\n  entityId: entityData.entityId,\n  entityName: entityData.entityName,\n  marketInsights: marketInsights,\n  sentimentInsights: sentimentInsights,\n  insightCount: marketInsights.length,\n  highPriorityCount: marketInsights.filter(i => i.urgency === 'high' || i.urgency === 'critical').length\n};"
+      },
+      "id": "process-insights",
+      "name": "Process Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,title,summary,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,implications,actionability,extractedAt,validUntil",
+        "returnFields": "id,entityId,insightType,impact"
+      },
+      "id": "store-market-insights",
+      "name": "Store Market Insights",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1650, 250],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.sentimentInsights.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "has-sentiment-insights",
+      "name": "Has Sentiment Insights?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1650, 350]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SentimentData",
+        "columns": "companyId,source,dataSourceId,sentiment,score,content,confidence",
+        "returnFields": "id"
+      },
+      "id": "store-sentiment-data",
+      "name": "Store Sentiment Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1850, 350],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Update DataSource quality metrics based on insight extraction\nconst processedData = $input.all();\nconst sourceUpdates = new Map();\n\n// Aggregate performance metrics per source\nprocessedData.forEach(item => {\n  const insights = item.json.marketInsights || [];\n  const rawData = item.json.rawDataPoints || [];\n  \n  rawData.forEach(dataPoint => {\n    const sourceId = dataPoint.sourceId;\n    if (!sourceUpdates.has(sourceId)) {\n      sourceUpdates.set(sourceId, {\n        sourceId: sourceId,\n        totalDataPoints: 0,\n        totalInsights: 0,\n        highImpactInsights: 0,\n        actionableInsights: 0\n      });\n    }\n    \n    const update = sourceUpdates.get(sourceId);\n    update.totalDataPoints += dataPoint.rawData?.dataPoints || 1;\n  });\n  \n  insights.forEach(insight => {\n    insight.contributingSources?.forEach(sourceName => {\n      // Find source ID by name\n      const source = rawData.find(d => d.sourceName === sourceName);\n      if (source) {\n        const update = sourceUpdates.get(source.sourceId);\n        if (update) {\n          update.totalInsights++;\n          if (insight.impact >= 7) update.highImpactInsights++;\n          if (insight.actionability) update.actionableInsights++;\n        }\n      }\n    });\n  });\n});\n\n// Calculate new quality scores\nconst updates = Array.from(sourceUpdates.values()).map(metrics => {\n  const insightDensity = metrics.totalDataPoints > 0 ? \n    (metrics.totalInsights / metrics.totalDataPoints) * 10 : 5;\n  const insightRelevance = metrics.totalInsights > 0 ?\n    (metrics.highImpactInsights / metrics.totalInsights) * 10 : 5;\n  const insightActionability = metrics.totalInsights > 0 ?\n    (metrics.actionableInsights / metrics.totalInsights) * 10 : 5;\n  \n  return {\n    sourceId: metrics.sourceId,\n    insightDensity: Math.min(10, insightDensity),\n    insightRelevance: Math.min(10, insightRelevance),\n    insightActionability: Math.min(10, insightActionability),\n    lastHealthCheck: new Date().toISOString(),\n    healthStatus: 'healthy'\n  };\n});\n\nreturn updates.map(update => ({ json: update }));"
+      },
+      "id": "calculate-source-scores",
+      "name": "Calculate Source Scores",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1850, 450]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "DataSource",
+        "updateKey": "id",
+        "columns": "insightDensity,insightRelevance,insightActionability,lastHealthCheck,healthStatus"
+      },
+      "id": "update-source-quality",
+      "name": "Update Source Quality",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [2050, 450],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check for cross-source correlations and high-confidence insights\nconst allInsights = $input.all().map(i => i.json.marketInsights).flat();\n\n// Group insights by type and category\nconst groupedInsights = {};\nallInsights.forEach(insight => {\n  const key = `${insight.insightType}_${insight.category}`;\n  if (!groupedInsights[key]) {\n    groupedInsights[key] = [];\n  }\n  groupedInsights[key].push(insight);\n});\n\n// Find correlated insights (multiple sources reporting similar things)\nconst correlations = [];\nObject.entries(groupedInsights).forEach(([key, insights]) => {\n  if (insights.length > 1) {\n    // Check for similar insights\n    const highConsensus = insights.filter(i => i.sourceConsensus > 0.7);\n    if (highConsensus.length > 0) {\n      correlations.push({\n        type: key,\n        insightCount: insights.length,\n        avgConfidence: insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length,\n        avgImpact: insights.reduce((sum, i) => sum + i.impact, 0) / insights.length,\n        entities: [...new Set(insights.map(i => i.entityId))]\n      });\n    }\n  }\n});\n\n// Identify insights requiring immediate attention\nconst criticalInsights = allInsights.filter(i => \n  i.urgency === 'critical' || \n  (i.urgency === 'high' && i.impact >= 8)\n);\n\nreturn {\n  totalInsights: allInsights.length,\n  correlatedPatterns: correlations,\n  criticalInsights: criticalInsights,\n  averageConfidence: allInsights.reduce((sum, i) => sum + i.confidence, 0) / allInsights.length,\n  insightsByCategory: Object.keys(groupedInsights).map(key => ({\n    category: key,\n    count: groupedInsights[key].length\n  }))\n};"
+      },
+      "id": "cross-source-correlation",
+      "name": "Cross-Source Correlation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2050, 300]
+    },
+    {
+      "parameters": {
+        "content": "=## Insight Collection Report\n\n**Collection Timestamp:** {{ new Date().toISOString() }}\n\n### Summary\n- **Total Insights Extracted:** {{ $json.totalInsights }}\n- **Average Confidence:** {{ ($json.averageConfidence * 100).toFixed(1) }}%\n- **Critical Insights:** {{ $json.criticalInsights.length }}\n\n### Correlated Patterns\n{{ JSON.stringify($json.correlatedPatterns, null, 2) }}\n\n### Critical Insights Requiring Action\n{{ JSON.stringify($json.criticalInsights.map(i => ({ \n  entity: i.entityId,\n  type: i.insightType,\n  title: i.title,\n  urgency: i.urgency,\n  impact: i.impact\n})), null, 2) }}\n\n### Insights by Category\n{{ JSON.stringify($json.insightsByCategory, null, 2) }}",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "generate-summary-report",
+      "name": "Generate Summary Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    }
+  ],
+  "connections": {
+    "scheduled-insight-collection": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-entities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-active-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual-insight-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-entities",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-active-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-target-entities": {
+      "main": [
+        [
+          {
+            "node": "prepare-collection-strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-active-sources": {
+      "main": [
+        [
+          {
+            "node": "prepare-collection-strategy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-collection-strategy": {
+      "main": [
+        [
+          {
+            "node": "split-into-batches",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split-into-batches": {
+      "main": [
+        [
+          {
+            "node": "collect-from-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect-from-sources": {
+      "main": [
+        [
+          {
+            "node": "extract-insights-ai",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-insights-ai": {
+      "main": [
+        [
+          {
+            "node": "process-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-insights": {
+      "main": [
+        [
+          {
+            "node": "store-market-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-sentiment-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "calculate-source-scores",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-sentiment-insights": {
+      "main": [
+        [
+          {
+            "node": "store-sentiment-data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "calculate-source-scores": {
+      "main": [
+        [
+          {
+            "node": "update-source-quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "store-market-insights": {
+      "main": [
+        [
+          {
+            "node": "cross-source-correlation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "cross-source-correlation": {
+      "main": [
+        [
+          {
+            "node": "generate-summary-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -227,18 +227,68 @@ model Report {
   @@map("reports")
 }
 
-// Market Intelligence Data
+// Market Intelligence Data - Stores insights, not raw content
 model SentimentData {
-  id        String   @id @default(uuid())
-  companyId String
-  source    String   // reddit, twitter, g2, hackernews
-  sentiment String   // positive, negative, neutral
-  score     Float
-  content   String
-  url       String?
-  createdAt DateTime @default(now())
+  id           String      @id @default(uuid())
+  companyId    String
+  source       String      // reddit, twitter, g2, hackernews
+  dataSourceId String?     @db.Uuid // Reference to DataSource registry
+  dataSource   DataSource? @relation(fields: [dataSourceId], references: [id])
+  sentiment    String      // positive, negative, neutral
+  score        Float       // Sentiment score
+  content      String      // AI-extracted insight summary, not raw content
+  url          String?     // Reference URL if needed
+  confidence   Float?      // AI confidence in this insight
+  createdAt    DateTime    @default(now())
 
+  @@index([companyId, source])
+  @@index([dataSourceId])
   @@map("sentiment_data")
+}
+
+// Market Insights - Aggregated intelligence from multiple sources
+model MarketInsight {
+  id              String   @id @default(uuid()) @db.Uuid
+  entityId        String   @db.Uuid
+  entity          Entity   @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  
+  // Insight classification
+  insightType     String   // opportunity, threat, trend, signal, vulnerability
+  category        String   // competitive, financial, technical, market, operational
+  
+  // Impact and confidence metrics
+  impact          Float    // 0-10 impact score
+  confidence      Float    // 0-1 confidence level
+  urgency         String   // low, medium, high, critical
+  
+  // Source attribution
+  contributingSources String[] // Array of DataSource names that contributed
+  sourceConsensus     Float?   // How much sources agree (0-1)
+  dataPointCount      Int      @default(1) // Number of data points supporting this
+  
+  // The insight itself (processed intelligence, not raw data)
+  title           String   // Brief insight title
+  summary         String   @db.Text // AI-generated insight summary
+  actionability   String?  // recommended action
+  implications    String[] // Business implications
+  
+  // Temporal aspects
+  extractedAt     DateTime @default(now())
+  validUntil      DateTime // When this insight expires
+  occurredAt      DateTime? // When the event/trend started
+  
+  // Quality tracking
+  wasActionable   Boolean? // Was this insight useful (feedback)
+  ledToAction     String?  // What action was taken based on this
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([entityId, insightType])
+  @@index([category, urgency])
+  @@index([validUntil])
+  @@index([extractedAt])
+  @@map("market_insights")
 }
 
 // Daily Business Metrics
@@ -382,6 +432,7 @@ model Entity {
   impacts          SignalImpact[]
   outgoing         Connection[]   @relation("Connection_source")
   incoming         Connection[]   @relation("Connection_target")
+  marketInsights   MarketInsight[]
 
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -575,19 +626,95 @@ model ContextValue {
   @@index([region, asOf])
 }
 
-// Operational / Provenance
+// Data Sources - Combined model for all source types (manual, discovered, API, etc.)
 model DataSource {
-  id         String          @id @default(uuid()) @db.Uuid
-  name       String
-  type       DataSourceType
-  credRef    String?
-  trustScore Float?          // 0..1
-  metadata   Json?
-
-  createdAt  DateTime        @default(now())
-  updatedAt  DateTime        @updatedAt
-
-  runs       IngestionRun[]
+  id                String          @id @default(uuid()) @db.Uuid
+  name              String          @unique
+  displayName       String?         // Human-friendly name
+  type              DataSourceType
+  category          String          // business, technical, social, financial, reviews
+  
+  // Connection Configuration
+  endpoint          String?         // Base API endpoint or scraper URL
+  authType          String?         // oauth2, bearer, apikey, basic, none
+  credRef           String?         // Reference to credentials in env/secrets
+  headers           Json?           // Custom headers needed
+  queryParams       Json?           // Default query parameters
+  
+  // Rate Limiting & Costs
+  rateLimitPerMin   Int?            // API rate limit per minute
+  rateLimitPerDay   Int?            // Daily rate limit
+  costPerRequest    Float           @default(0) // Cost in USD per API call
+  monthlyCost       Float           @default(0) // Fixed monthly cost if subscription
+  tier              String          @default("free") // free, paid, enterprise
+  
+  // Data Coverage & Capabilities
+  coverageTypes     String[]        // companies, products, reviews, funding, news, sentiment, jobs
+  dataPoints        String[]        // Specific data fields available
+  geographicScope   String[]        // us, uk, eu, asia, global
+  languages         String[]        // en, es, fr, de, etc.
+  updateFrequency   String?         // realtime, hourly, daily, weekly, monthly
+  historicalData    Boolean         @default(false) // Can fetch historical data
+  
+  // Insight Quality Metrics (0-10 scale, updated by monitoring)
+  dataFreshness     Float           @default(5) // How recent is the data
+  dataCoverage      Float           @default(5) // Breadth of companies/topics covered
+  dataAccuracy      Float           @default(5) // Accuracy based on validation
+  dataRelevance     Float           @default(5) // Alignment with target segments
+  reliability       Float           @default(5) // Uptime and consistency
+  
+  // Insight-specific quality metrics
+  insightDensity    Float           @default(5) // Insights per data point (efficiency)
+  insightRelevance  Float           @default(5) // How relevant are the insights
+  insightActionability Float        @default(5) // How actionable are the insights
+  insightAccuracy   Float           @default(5) // Historical accuracy of predictions
+  falsePositiveRate Float?          // Rate of incorrect insights
+  truePositiveRate  Float?          // Rate of correct insights
+  
+  overallScore      Float           @default(5) // Weighted average score
+  insightCapabilities String[]      // Types: sentiment, funding, competitive, technical, market
+  
+  // Operational Status
+  isActive          Boolean         @default(true)
+  isAutoDiscovered  Boolean         @default(false) // Found by discovery agent
+  healthStatus      String          @default("unknown") // healthy, degraded, failing, unknown
+  lastHealthCheck   DateTime?
+  consecutiveFailures Int           @default(0)
+  successRate       Float?          // Percentage of successful runs
+  avgResponseTime   Int?            // Average response time in ms
+  
+  // Discovery & Testing
+  discoveredAt      DateTime        @default(now())
+  discoveryMethod   String?         // api_search, documentation, ai_suggestion, manual
+  sourceUrl         String?         // Documentation or website URL
+  testEndpoint      String?         // Endpoint to test availability
+  lastTested        DateTime?
+  testResults       Json?           // Latest test results
+  
+  // Scheduling & Priority
+  collectionSchedule String?        // Cron expression for scheduled collection
+  priority          Int             @default(5) // 1-10, higher is more important
+  adaptiveScheduling Boolean        @default(false) // Adjust schedule based on data volatility
+  
+  // Additional Configuration
+  transformScript   String?         @db.Text // JavaScript/Python to transform data
+  validationRules   Json?           // Rules to validate incoming data
+  enrichmentConfig  Json?           // Config for enriching data with other sources
+  metadata          Json?           // Any additional source-specific config
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  runs              IngestionRun[]
+  evaluations       SourceEvaluation[]
+  sentimentData     SentimentData[]
+  credential        DataSourceCredential?
+  
+  @@index([type, category])
+  @@index([tier, isActive])
+  @@index([overallScore])
+  @@index([healthStatus, isActive])
+  @@index([priority, isActive])
 }
 
 model IngestionRun {
@@ -604,6 +731,204 @@ model IngestionRun {
   dataSource   DataSource @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
 
   @@index([dataSourceId, startedAt])
+}
+
+// Source Evaluation - Track quality assessments of data sources
+model SourceEvaluation {
+  id              String      @id @default(uuid()) @db.Uuid
+  dataSourceId    String      @db.Uuid
+  dataSource      DataSource  @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  
+  // Evaluation Metrics
+  sampleSize      Int         // Number of data points evaluated
+  accuracyScore   Float?      // 0-10: Data accuracy compared to known truth
+  freshnessScore  Float?      // 0-10: How current is the data
+  coverageScore   Float?      // 0-10: Breadth of coverage
+  relevanceScore  Float?      // 0-10: Relevance to our use case
+  
+  // Test Results
+  testQueries     String[]    // Test queries/companies used
+  successCount    Int         // Successful test queries
+  failureCount    Int         // Failed test queries
+  
+  // Data Quality Issues
+  missingFields   String[]    // Important fields that are missing
+  qualityIssues   String[]    // Identified data quality problems
+  
+  // Recommendation
+  recommendation  String      // approve, reject, needs_review
+  evaluatorNotes  String?     @db.Text
+  
+  // Performance Metrics
+  avgLatency      Int?        // Average response time in ms
+  errorRate       Float?      // Percentage of errors
+  
+  evaluatedAt     DateTime    @default(now())
+  evaluatedBy     String?     // agent, manual, automated
+  
+  @@index([dataSourceId, evaluatedAt])
+  @@index([recommendation])
+}
+
+// Secure credential storage for data sources
+model DataSourceCredential {
+  id            String      @id @default(uuid()) @db.Uuid
+  dataSourceId  String      @unique @db.Uuid
+  dataSource    DataSource  @relation(fields: [dataSourceId], references: [id], onDelete: Cascade)
+  
+  // Credential metadata
+  authType      String      // oauth2, bearer, apikey, basic, custom
+  isActive      Boolean     @default(true)
+  
+  // Encrypted credential data
+  encryptedData String      @db.Text // JSON with encrypted keys/tokens
+  
+  // Management
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  expiresAt     DateTime?   // For tokens that expire
+  lastUsed      DateTime?
+  usageCount    Int         @default(0)
+  
+  @@index([dataSourceId])
+  @@index([isActive, expiresAt])
+  @@map("data_source_credentials")
+}
+
+// AI Provider Management System
+
+// AI Provider registry
+model AIProvider {
+  id          String    @id @default(uuid()) @db.Uuid
+  name        String    @unique // openai, anthropic, google, cohere, etc.
+  displayName String    // "OpenAI", "Anthropic Claude", etc.
+  
+  // Provider configuration
+  baseUrl     String    // API base URL
+  authType    String    // bearer, apikey, oauth2
+  
+  // Capabilities
+  capabilities String[] // text, chat, embeddings, vision, code, reasoning
+  
+  // Status and health
+  isActive    Boolean   @default(true)
+  healthStatus String   @default("unknown") // healthy, degraded, failing
+  lastHealthCheck DateTime?
+  
+  // Metadata
+  website     String?
+  documentation String?
+  pricingUrl  String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  models      AIModel[]
+  credential  AIProviderCredential?
+  
+  @@index([name, isActive])
+  @@index([healthStatus])
+  @@map("ai_providers")
+}
+
+// AI Model registry  
+model AIModel {
+  id          String     @id @default(uuid()) @db.Uuid
+  providerId  String     @db.Uuid
+  provider    AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  // Model identification
+  modelId     String     // gpt-4o, claude-3-sonnet, etc.
+  name        String     // Human readable name
+  version     String?    // Model version if applicable
+  
+  // Model capabilities
+  type        String     // chat, completion, embedding, vision
+  capabilities String[]  // reasoning, coding, analysis, creative
+  
+  // Technical specs
+  contextWindow Int?     // Token context window
+  maxOutput    Int?      // Max output tokens
+  supportsStreaming Boolean @default(false)
+  supportsVision Boolean @default(false)
+  supportsFunctions Boolean @default(false)
+  
+  // Cost and performance
+  costPer1kInput  Float? // Cost per 1k input tokens
+  costPer1kOutput Float? // Cost per 1k output tokens
+  avgLatencyMs    Int?   // Average response time
+  
+  // Quality metrics (updated by usage)
+  qualityScore    Float  @default(5) // 0-10 based on performance
+  reliability     Float  @default(5) // 0-10 based on uptime
+  
+  // Configuration
+  defaultParams   Json?  // Default parameters for this model
+  recommendedFor  String[] // use cases: analysis, creative, coding, etc.
+  
+  // Status
+  isActive        Boolean @default(true)
+  isDeprecated    Boolean @default(false)
+  deprecationDate DateTime?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  usageStats      AIModelUsage[]
+  
+  @@unique([providerId, modelId])
+  @@index([providerId, isActive])
+  @@index([type, isActive])
+  @@index([qualityScore])
+  @@map("ai_models")
+}
+
+// AI Provider credentials (encrypted)
+model AIProviderCredential {
+  id           String     @id @default(uuid()) @db.Uuid
+  providerId   String     @unique @db.Uuid
+  provider     AIProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  
+  // Encrypted credential data
+  encryptedData String    @db.Text // JSON with API keys, tokens
+  
+  // Management
+  isActive      Boolean   @default(true)
+  expiresAt     DateTime?
+  lastUsed      DateTime?
+  usageCount    Int       @default(0)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([providerId])
+  @@index([isActive, expiresAt])
+  @@map("ai_provider_credentials")
+}
+
+// Track AI model usage and performance
+model AIModelUsage {
+  id              String   @id @default(uuid()) @db.Uuid
+  modelId         String   @db.Uuid
+  model           AIModel  @relation(fields: [modelId], references: [id], onDelete: Cascade)
+  
+  // Usage metrics
+  date            DateTime @default(now())
+  requestCount    Int      @default(0)
+  successCount    Int      @default(0)
+  errorCount      Int      @default(0)
+  
+  // Performance metrics
+  totalTokensUsed Int      @default(0)
+  avgLatencyMs    Int?
+  avgQualityScore Float?
+  
+  // Cost tracking
+  totalCost       Float    @default(0)
+  
+  @@unique([modelId, date])
+  @@index([modelId, date])
+  @@map("ai_model_usage")
 }
 
 // Enums

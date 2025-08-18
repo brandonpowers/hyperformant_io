@@ -1,0 +1,366 @@
+{
+  "name": "Google News Intelligence Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-news",
+        "responseMode": "onReceived"
+      },
+      "id": "news-webhook",
+      "name": "News Collection Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare news search queries for target companies\nconst request = $json;\nconst companies = request.companies || [];\nconst timeframe = request.timeframe || '7d'; // 1d, 7d, 30d\nconst categories = request.categories || ['funding', 'product', 'partnership', 'leadership'];\n\n// Calculate date range\nconst getDateRange = (timeframe) => {\n  const now = new Date();\n  const days = {\n    '1d': 1,\n    '7d': 7,\n    '30d': 30\n  }[timeframe] || 7;\n  \n  const fromDate = new Date(now.getTime() - days * 24 * 60 * 60 * 1000);\n  return {\n    from: fromDate.toISOString().split('T')[0],\n    to: now.toISOString().split('T')[0]\n  };\n};\n\nconst dateRange = getDateRange(timeframe);\n\n// Create search queries for each company\nconst searchQueries = companies.map(company => {\n  const baseTerms = [\n    `\"${company.name}\"`,\n    company.domain ? `\"${company.domain}\"` : null\n  ].filter(Boolean);\n  \n  const categoryQueries = categories.map(category => {\n    const categoryTerms = {\n      funding: ['funding', 'investment', 'raised', 'series', 'round', 'venture capital'],\n      product: ['launched', 'released', 'announced', 'features', 'product', 'update'],\n      partnership: ['partnership', 'collaboration', 'integration', 'acquired', 'merger'],\n      leadership: ['CEO', 'founder', 'executive', 'hired', 'appointed', 'leadership']\n    }[category] || [];\n    \n    return {\n      category: category,\n      query: `(${baseTerms.join(' OR ')}) AND (${categoryTerms.join(' OR ')})`,\n      priority: category === 'funding' ? 'high' : 'medium'\n    };\n  });\n  \n  return {\n    company: company,\n    queries: categoryQueries,\n    dateRange: dateRange\n  };\n});\n\nreturn {\n  searchQueries: searchQueries,\n  dateRange: dateRange,\n  timeframe: timeframe,\n  totalQueries: searchQueries.length * categories.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "prepare-news-queries",
+      "name": "Prepare News Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "url": "https://newsapi.org/v2/everything",
+        "authentication": "headerAuth",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "q",
+              "value": "={{ $json.query }}"
+            },
+            {
+              "name": "from",
+              "value": "={{ $node['Prepare News Queries'].json.dateRange.from }}"
+            },
+            {
+              "name": "to",
+              "value": "={{ $node['Prepare News Queries'].json.dateRange.to }}"
+            },
+            {
+              "name": "sortBy",
+              "value": "publishedAt"
+            },
+            {
+              "name": "pageSize",
+              "value": "20"
+            },
+            {
+              "name": "language",
+              "value": "en"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-API-Key",
+              "value": "{{ $env.NEWS_API_KEY }}"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "fetch-news-data",
+      "name": "Fetch News Data",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 300],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "model": "claude-3-haiku-20240307",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a business intelligence analyst specializing in news analysis for competitive intelligence. Extract strategic insights from news articles, focusing on business implications, market signals, and competitive dynamics."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze these news articles for business intelligence on {{ $node['Prepare News Queries'].json.searchQueries[$itemIndex].company.name }}:\n\n**News Articles:**\n{{ JSON.stringify($json.articles || []) }}\n\n**Search Category:** {{ $json.category }}\n\n**Target Company:**\n{{ JSON.stringify($node['Prepare News Queries'].json.searchQueries[$itemIndex].company) }}\n\nExtract insights about:\n1. **Business Developments**: Funding, partnerships, product launches\n2. **Market Signals**: Industry trends, competitive moves\n3. **Strategic Implications**: Impact on market position\n4. **Sentiment Indicators**: Media perception, market reaction\n5. **Future Predictions**: Likely next moves, market impact\n\nFor each insight:\n- Type: opportunity, threat, trend, signal, development\n- Category: financial, strategic, competitive, market, operational\n- Impact on company (0-10)\n- Confidence (0-1)\n- Urgency (low, medium, high, critical)\n- Time sensitivity\n\nReturn as JSON:\n{\n  \"newsInsights\": [\n    {\n      \"insightType\": \"opportunity|threat|trend|signal|development\",\n      \"category\": \"financial|strategic|competitive|market|operational\",\n      \"title\": \"Brief insight title\",\n      \"summary\": \"Detailed analysis\",\n      \"impact\": 0-10,\n      \"confidence\": 0-1,\n      \"urgency\": \"low|medium|high|critical\",\n      \"sourceArticles\": [\n        {\n          \"title\": \"string\",\n          \"url\": \"string\",\n          \"publishedAt\": \"string\",\n          \"source\": \"string\"\n        }\n      ],\n      \"implications\": [],\n      \"actionability\": \"string\",\n      \"timeSensitive\": true/false\n    }\n  ],\n  \"mediaAnalysis\": {\n    \"overallSentiment\": \"positive|neutral|negative\",\n    \"sentimentScore\": -1 to 1,\n    \"coverageVolume\": \"low|medium|high\",\n    \"mediaReach\": \"local|national|international\",\n    \"keyThemes\": []\n  },\n  \"competitiveIntelligence\": {\n    \"marketPosition\": \"strengthening|stable|weakening\",\n    \"competitorMentions\": [],\n    \"industryTrends\": [],\n    \"strategicMoves\": []\n  }\n}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "maxTokens": 1500
+        }
+      },
+      "id": "extract-news-insights",
+      "name": "Extract News Insights",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [800, 300],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process news insights for storage\nconst newsResponse = JSON.parse($node['Extract News Insights'].json.response);\nconst companyData = $node['Prepare News Queries'].json.searchQueries[$itemIndex].company;\nconst category = $json.category;\n\n// Calculate validity based on news type and urgency\nconst getValidityPeriod = (urgency, timeSensitive) => {\n  const baseHours = {\n    'critical': 24,  // 1 day\n    'high': 72,      // 3 days\n    'medium': 168,   // 1 week\n    'low': 720       // 1 month\n  }[urgency] || 168;\n  \n  // Time-sensitive news expires faster\n  const multiplier = timeSensitive ? 0.5 : 1;\n  return baseHours * multiplier * 60 * 60 * 1000; // Convert to milliseconds\n};\n\n// Prepare MarketInsight records\nconst marketInsights = (newsResponse.newsInsights || []).map(insight => ({\n  entityId: companyData.id,\n  insightType: insight.insightType,\n  category: insight.category,\n  title: insight.title,\n  summary: insight.summary,\n  impact: insight.impact,\n  confidence: insight.confidence,\n  urgency: insight.urgency,\n  contributingSources: ['google_news_api'],\n  sourceConsensus: insight.confidence,\n  dataPointCount: insight.sourceArticles?.length || 1,\n  implications: insight.implications || [],\n  actionability: insight.actionability,\n  extractedAt: new Date().toISOString(),\n  validUntil: new Date(Date.now() + getValidityPeriod(insight.urgency, insight.timeSensitive)).toISOString(),\n  occurredAt: insight.sourceArticles?.[0]?.publishedAt || new Date().toISOString()\n}));\n\n// Create news sentiment record\nconst newsSentiment = {\n  companyId: companyData.id,\n  source: 'google_news',\n  dataSourceId: null, // Will be populated by registry lookup\n  sentiment: newsResponse.mediaAnalysis?.overallSentiment || 'neutral',\n  score: newsResponse.mediaAnalysis?.sentimentScore || 0,\n  content: `Media coverage analysis: ${newsResponse.mediaAnalysis?.overallSentiment}, Volume: ${newsResponse.mediaAnalysis?.coverageVolume}`,\n  confidence: newsResponse.mediaAnalysis?.sentimentScore ? Math.abs(newsResponse.mediaAnalysis.sentimentScore) : 0.5\n};\n\n// Extract strategic intelligence\nconst strategicIntel = {\n  companyId: companyData.id,\n  companyName: companyData.name,\n  source: 'news_analysis',\n  category: category,\n  intelligence: {\n    marketPosition: newsResponse.competitiveIntelligence?.marketPosition || 'stable',\n    competitorMentions: newsResponse.competitiveIntelligence?.competitorMentions || [],\n    industryTrends: newsResponse.competitiveIntelligence?.industryTrends || [],\n    strategicMoves: newsResponse.competitiveIntelligence?.strategicMoves || [],\n    mediaReach: newsResponse.mediaAnalysis?.mediaReach || 'unknown',\n    keyThemes: newsResponse.mediaAnalysis?.keyThemes || []\n  },\n  timestamp: new Date().toISOString()\n};\n\n// Identify time-sensitive insights\nconst urgentInsights = marketInsights.filter(i => \n  i.urgency === 'critical' || \n  (i.urgency === 'high' && i.category === 'financial')\n);\n\nreturn {\n  company: companyData,\n  category: category,\n  marketInsights: marketInsights,\n  newsSentiment: newsSentiment,\n  strategicIntel: strategicIntel,\n  urgentInsights: urgentInsights,\n  insightCount: marketInsights.length,\n  articleCount: newsResponse.newsInsights?.[0]?.sourceArticles?.length || 0\n};"
+      },
+      "id": "process-news-insights",
+      "name": "Process News Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,title,summary,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,implications,actionability,extractedAt,validUntil,occurredAt",
+        "options": {
+          "onConflict": "update",
+          "conflictColumns": "entityId,title"
+        }
+      },
+      "id": "store-news-insights",
+      "name": "Store News Insights",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 250],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SentimentData",
+        "columns": "companyId,source,sentiment,score,content,confidence"
+      },
+      "id": "store-news-sentiment",
+      "name": "Store News Sentiment",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 350],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.urgentInsights.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "has-urgent-news",
+      "name": "Has Urgent News?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 450]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a strategic communications advisor. Create urgent business alerts based on time-sensitive news developments."
+            },
+            {
+              "role": "user",
+              "content": "=URGENT NEWS ALERT for {{ $json.company.name }}:\n\n**Category:** {{ $json.category }}\n\n**Urgent Insights:**\n{{ JSON.stringify($json.urgentInsights) }}\n\n**Strategic Intelligence:**\n{{ JSON.stringify($json.strategicIntel) }}\n\nCreate immediate response plan:\n1. Situation assessment\n2. Stakeholder communications\n3. Market response strategy\n4. Timeline for action\n5. Risk mitigation\n\nFocus on protecting reputation and market position."
+            }
+          ]
+        }
+      },
+      "id": "generate-news-alert",
+      "name": "Generate News Alert",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1400, 450],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "DataSource",
+        "updateKey": "name",
+        "updateValue": "google_news_api",
+        "columns": "lastHealthCheck,healthStatus,insightDensity",
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "UPDATE DataSource SET lastHealthCheck = NOW(), healthStatus = 'healthy', insightDensity = LEAST(10, insightDensity + 0.2) WHERE name = 'google_news_api'"
+        }
+      },
+      "id": "update-news-source-health",
+      "name": "Update News Source Health",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate news collection results across all companies\nconst allResults = $input.all();\nconst summary = {\n  totalCompanies: allResults.length,\n  totalInsights: allResults.reduce((sum, r) => sum + r.json.insightCount, 0),\n  totalArticles: allResults.reduce((sum, r) => sum + r.json.articleCount, 0),\n  urgentAlerts: allResults.filter(r => r.json.urgentInsights.length > 0).length,\n  byCategory: {},\n  topInsights: [],\n  timestamp: new Date().toISOString()\n};\n\n// Group by category\nallResults.forEach(result => {\n  const category = result.json.category;\n  if (!summary.byCategory[category]) {\n    summary.byCategory[category] = {\n      companies: 0,\n      insights: 0,\n      articles: 0\n    };\n  }\n  summary.byCategory[category].companies += 1;\n  summary.byCategory[category].insights += result.json.insightCount;\n  summary.byCategory[category].articles += result.json.articleCount;\n});\n\n// Extract top insights\nsummary.topInsights = allResults\n  .flatMap(r => r.json.marketInsights.map(i => ({\n    company: r.json.company.name,\n    title: i.title,\n    impact: i.impact,\n    urgency: i.urgency,\n    category: i.category\n  })))\n  .sort((a, b) => b.impact - a.impact)\n  .slice(0, 10);\n\nreturn summary;"
+      },
+      "id": "aggregate-results",
+      "name": "Aggregate Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1600, 300]
+    },
+    {
+      "parameters": {
+        "content": "=## Google News Intelligence Report\n\n**Collection Time:** {{ $json.timestamp }}\n\n### Summary\n- **Companies Analyzed:** {{ $json.totalCompanies }}\n- **Total Insights:** {{ $json.totalInsights }}\n- **Articles Processed:** {{ $json.totalArticles }}\n- **Urgent Alerts:** {{ $json.urgentAlerts }}\n\n### By Category\n{{ JSON.stringify($json.byCategory, null, 2) }}\n\n### Top Impact Insights\n{{ JSON.stringify($json.topInsights.slice(0, 5), null, 2) }}\n\n### Collection Performance\n- **Insights per Company:** {{ ($json.totalInsights / $json.totalCompanies).toFixed(1) }}\n- **Articles per Company:** {{ ($json.totalArticles / $json.totalCompanies).toFixed(1) }}\n- **Alert Rate:** {{ (($json.urgentAlerts / $json.totalCompanies) * 100).toFixed(1) }}%",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "generate-news-report",
+      "name": "Generate News Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [1800, 300]
+    }
+  ],
+  "connections": {
+    "news-webhook": {
+      "main": [
+        [
+          {
+            "node": "prepare-news-queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-news-queries": {
+      "main": [
+        [
+          {
+            "node": "fetch-news-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-news-data": {
+      "main": [
+        [
+          {
+            "node": "extract-news-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-news-insights": {
+      "main": [
+        [
+          {
+            "node": "process-news-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-news-insights": {
+      "main": [
+        [
+          {
+            "node": "store-news-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "store-news-sentiment",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-urgent-news",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update-news-source-health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-urgent-news": {
+      "main": [
+        [
+          {
+            "node": "generate-news-alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "update-news-source-health": {
+      "main": [
+        [
+          {
+            "node": "aggregate-results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate-results": {
+      "main": [
+        [
+          {
+            "node": "generate-news-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

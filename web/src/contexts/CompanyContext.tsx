@@ -40,7 +40,9 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
 
   const fetchCompanies = async () => {
     try {
-      const response = await fetch('/api/v1/companies');
+      const response = await fetch('/api/v1/companies', {
+        credentials: 'include', // Include cookies for authentication
+      });
 
       if (response.ok) {
         const data = await response.json();
@@ -69,6 +71,15 @@ export function CompanyProvider({ children }: { children: ReactNode }) {
           localStorage.setItem('selectedCompanyId', companies[0].id);
         } else {
           localStorage.removeItem('selectedCompanyId');
+        }
+      } else {
+        console.error('Failed to fetch companies:', response.status, response.statusText);
+        // Try to get error details
+        try {
+          const errorData = await response.json();
+          console.error('Error details:', errorData);
+        } catch (e) {
+          // Response might not be JSON
         }
       }
     } catch (error) {

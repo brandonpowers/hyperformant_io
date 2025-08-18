@@ -58,11 +58,11 @@ export const THEMES: ThemeConfig[] = [
       labels: { strategy: 'topN', n: 20 },
     },
     connections: {
-      include: ['industryAdjacency', 'supplyChain', 'weakCompetitor'],
+      include: ['INDUSTRY_ADJACENCY', 'WEAK_COMPETITOR', 'STRATEGIC_PARTNERSHIP', 'INTEGRATION', 'CUSTOMER'],
       thickness: { key: 'connection.strength', scale: 'linear' },
       color: { by: 'type' },
       pattern: {},
-      animation: { particles: false, pulsesOnActive: false },
+      animation: { particles: true, pulsesOnActive: false },
     },
     background: { clustersBy: 'industry', halos: true, axes: true },
   },
@@ -84,9 +84,9 @@ export const THEMES: ThemeConfig[] = [
       labels: { strategy: 'focus' },
     },
     connections: {
-      include: ['competitor', 'partnership'],
+      include: ['WEAK_COMPETITOR', 'STRATEGIC_PARTNERSHIP', 'INTEGRATION'],
       thickness: {
-        key: 'connection.overlapScore|connection.depth',
+        key: 'connection.overlapScore|connection.depth|connection.strength',
         scale: 'linear',
       },
       color: { by: 'type' }, // orange/red for competitor, cyan/teal for partnership (renderer palette)

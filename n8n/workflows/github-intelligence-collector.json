@@ -1,0 +1,302 @@
+{
+  "name": "GitHub Intelligence Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-github",
+        "responseMode": "onReceived"
+      },
+      "id": "github-webhook",
+      "name": "GitHub Collection Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare GitHub API queries for technical intelligence\nconst request = $json;\nconst companies = request.companies || [];\nconst analysisTypes = request.types || ['organization', 'repositories', 'activity', 'dependencies'];\n\n// Generate search strategies for each company\nconst searchStrategies = companies.map(company => {\n  const companyName = company.name.toLowerCase().replace(/[^a-z0-9]/g, '');\n  const domain = company.domain ? company.domain.replace(/\\.(com|io|co|net)$/, '') : '';\n  \n  const strategies = {\n    // Try to find official organization\n    organization: {\n      type: 'organization',\n      queries: [domain, companyName, company.name.toLowerCase()],\n      priority: 'high'\n    },\n    \n    // Search for repositories\n    repositories: {\n      type: 'repositories',\n      queries: [\n        `org:${domain}`,\n        `org:${companyName}`,\n        `\"${company.name}\" in:name,description`,\n        `\"${domain}\" in:name,description`\n      ].filter(q => !q.includes('org:') || domain),\n      priority: 'high'\n    },\n    \n    // Look for recent activity\n    activity: {\n      type: 'commits',\n      timeframe: '30d',\n      queries: [\n        `committer:${domain}`,\n        `author-email:@${company.domain}`\n      ].filter(q => company.domain),\n      priority: 'medium'\n    },\n    \n    // Dependencies and tech stack\n    dependencies: {\n      type: 'code',\n      queries: [\n        `\"${company.name}\" filename:package.json`,\n        `\"${company.name}\" filename:requirements.txt`,\n        `\"${company.name}\" filename:Gemfile`\n      ],\n      priority: 'low'\n    }\n  };\n  \n  // Filter strategies based on requested analysis types\n  const selectedStrategies = {};\n  analysisTypes.forEach(type => {\n    if (strategies[type]) {\n      selectedStrategies[type] = strategies[type];\n    }\n  });\n  \n  return {\n    company: company,\n    strategies: selectedStrategies,\n    searchTerms: [companyName, domain, company.name].filter(Boolean)\n  };\n});\n\nreturn {\n  searchStrategies: searchStrategies,\n  analysisTypes: analysisTypes,\n  totalCompanies: companies.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "prepare-github-queries",
+      "name": "Prepare GitHub Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [400, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Execute GitHub API searches based on strategy\nconst strategy = $json;\nconst results = {\n  company: strategy.company,\n  searchResults: {},\n  githubData: {},\n  totalRequests: 0\n};\n\n// Simulate GitHub API calls for each strategy\n// In production, these would be actual API calls to GitHub\nfor (const [strategyType, strategyConfig] of Object.entries(strategy.strategies)) {\n  results.searchResults[strategyType] = [];\n  results.totalRequests += strategyConfig.queries.length;\n  \n  for (const query of strategyConfig.queries) {\n    // Mock GitHub API response based on strategy type\n    let mockData = {};\n    \n    switch (strategyType) {\n      case 'organization':\n        mockData = {\n          type: 'organization',\n          query: query,\n          found: Math.random() > 0.7, // 30% chance of finding org\n          data: {\n            login: query,\n            name: strategy.company.name,\n            public_repos: Math.floor(Math.random() * 50) + 5,\n            followers: Math.floor(Math.random() * 1000) + 10,\n            created_at: '2020-01-01T00:00:00Z',\n            blog: strategy.company.domain,\n            location: 'Unknown',\n            company: strategy.company.name\n          }\n        };\n        break;\n        \n      case 'repositories':\n        mockData = {\n          type: 'repositories',\n          query: query,\n          total_count: Math.floor(Math.random() * 20) + 1,\n          items: Array.from({length: Math.min(5, Math.floor(Math.random() * 10) + 1)}, (_, i) => ({\n            name: `${strategy.company.name.toLowerCase()}-${['api', 'web', 'mobile', 'sdk', 'cli'][i % 5]}`,\n            full_name: `${query}/${strategy.company.name.toLowerCase()}-${['api', 'web', 'mobile', 'sdk', 'cli'][i % 5]}`,\n            stars: Math.floor(Math.random() * 1000),\n            forks: Math.floor(Math.random() * 100),\n            language: ['JavaScript', 'Python', 'TypeScript', 'Go', 'Rust'][Math.floor(Math.random() * 5)],\n            updated_at: new Date(Date.now() - Math.random() * 90 * 24 * 60 * 60 * 1000).toISOString(),\n            description: `${strategy.company.name} ${['API', 'Web App', 'Mobile App', 'SDK', 'CLI Tool'][i % 5]}`\n          }))\n        };\n        break;\n        \n      case 'activity':\n        mockData = {\n          type: 'commits',\n          query: query,\n          timeframe: strategyConfig.timeframe,\n          total_count: Math.floor(Math.random() * 200) + 10,\n          recent_activity: {\n            commits_last_30d: Math.floor(Math.random() * 200) + 10,\n            active_contributors: Math.floor(Math.random() * 20) + 2,\n            languages_used: ['JavaScript', 'TypeScript', 'Python']\n          }\n        };\n        break;\n        \n      case 'dependencies':\n        mockData = {\n          type: 'dependencies',\n          query: query,\n          found_files: Math.floor(Math.random() * 5),\n          tech_stack: {\n            frontend: ['React', 'Vue.js', 'Angular'][Math.floor(Math.random() * 3)],\n            backend: ['Node.js', 'Python', 'Go'][Math.floor(Math.random() * 3)],\n            database: ['PostgreSQL', 'MongoDB', 'Redis'][Math.floor(Math.random() * 3)]\n          }\n        };\n        break;\n    }\n    \n    results.searchResults[strategyType].push(mockData);\n  }\n}\n\n// Aggregate findings\nresults.githubData = {\n  organizationFound: results.searchResults.organization?.some(r => r.found) || false,\n  totalRepositories: results.searchResults.repositories?.reduce((sum, r) => sum + (r.total_count || 0), 0) || 0,\n  recentActivity: results.searchResults.activity?.[0]?.recent_activity || null,\n  techStack: results.searchResults.dependencies?.[0]?.tech_stack || null,\n  lastUpdated: new Date().toISOString()\n};\n\nreturn results;"
+      },
+      "id": "collect-github-data",
+      "name": "Collect GitHub Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a technical intelligence analyst specializing in GitHub data analysis for competitive intelligence. Extract strategic insights about technology adoption, development velocity, open source strategy, and technical capabilities."
+            },
+            {
+              "role": "user",
+              "content": "=Analyze GitHub data for technical intelligence on {{ $json.company.name }}:\n\n**GitHub Search Results:**\n{{ JSON.stringify($json.searchResults) }}\n\n**Aggregated GitHub Data:**\n{{ JSON.stringify($json.githubData) }}\n\n**Company Information:**\n{{ JSON.stringify($json.company) }}\n\nExtract insights about:\n1. **Technical Capabilities**: Technology stack, development practices\n2. **Development Velocity**: Activity levels, team size indicators\n3. **Open Source Strategy**: Public repositories, community engagement\n4. **Competitive Technical Position**: Compared to industry standards\n5. **Innovation Indicators**: New technologies, experimental projects\n6. **Technical Risks**: Dependencies, maintenance issues\n\nFor each insight:\n- Type: capability, velocity, strategy, position, innovation, risk\n- Category: technical\n- Impact on competitive position (0-10)\n- Confidence (0-1)\n- Technical sophistication level\n\nReturn as JSON:\n{\n  \"techInsights\": [\n    {\n      \"insightType\": \"capability|velocity|strategy|position|innovation|risk\",\n      \"category\": \"technical\",\n      \"title\": \"Brief technical insight\",\n      \"summary\": \"Detailed technical analysis\",\n      \"impact\": 0-10,\n      \"confidence\": 0-1,\n      \"urgency\": \"low|medium|high|critical\",\n      \"technicalDetails\": {\n        \"technologies\": [],\n        \"metrics\": {},\n        \"evidence\": []\n      },\n      \"implications\": [],\n      \"actionability\": \"string\"\n    }\n  ],\n  \"technicalProfile\": {\n    \"sophisticationLevel\": \"basic|intermediate|advanced|cutting-edge\",\n    \"developmentVelocity\": \"slow|moderate|fast|very-fast\",\n    \"openSourceEngagement\": \"minimal|moderate|high|extensive\",\n    \"technologyStack\": {\n      \"frontend\": [],\n      \"backend\": [],\n      \"infrastructure\": [],\n      \"emerging\": []\n    },\n    \"teamIndicators\": {\n      \"estimatedEngineers\": 0,\n      \"activityLevel\": \"low|medium|high\",\n      \"experienceLevel\": \"junior|mixed|senior\"\n    }\n  },\n  \"competitiveTechPosition\": {\n    \"strengths\": [],\n    \"weaknesses\": [],\n    \"opportunities\": [],\n    \"threats\": []\n  }\n}"
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "extract-tech-insights",
+      "name": "Extract Technical Insights",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [800, 300],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process GitHub technical insights for storage\nconst techResponse = JSON.parse($node['Extract Technical Insights'].json.response);\nconst companyData = $json.company;\nconst githubData = $json.githubData;\n\n// Calculate validity based on technical insight type\nconst getValidityPeriod = (insightType) => {\n  const periods = {\n    'capability': 90,    // 3 months - tech stack changes slowly\n    'velocity': 30,      // 1 month - development pace can change\n    'strategy': 180,     // 6 months - strategic changes are slower\n    'position': 60,      // 2 months - competitive position evolves\n    'innovation': 45,    // 1.5 months - innovation moves fast\n    'risk': 14           // 2 weeks - technical risks need quick attention\n  };\n  return (periods[insightType] || 60) * 24 * 60 * 60 * 1000; // Convert to milliseconds\n};\n\n// Prepare MarketInsight records\nconst marketInsights = (techResponse.techInsights || []).map(insight => ({\n  entityId: companyData.id,\n  insightType: insight.insightType,\n  category: 'technical',\n  title: insight.title,\n  summary: insight.summary,\n  impact: insight.impact,\n  confidence: insight.confidence,\n  urgency: insight.urgency,\n  contributingSources: ['github_api'],\n  sourceConsensus: insight.confidence,\n  dataPointCount: Object.keys(insight.technicalDetails?.evidence || {}).length || 1,\n  implications: insight.implications || [],\n  actionability: insight.actionability,\n  extractedAt: new Date().toISOString(),\n  validUntil: new Date(Date.now() + getValidityPeriod(insight.insightType)).toISOString(),\n  occurredAt: githubData.lastUpdated\n}));\n\n// Create technical profile\nconst technicalProfile = {\n  companyId: companyData.id,\n  companyName: companyData.name,\n  source: 'github_analysis',\n  profile: {\n    sophisticationLevel: techResponse.technicalProfile?.sophisticationLevel || 'intermediate',\n    developmentVelocity: techResponse.technicalProfile?.developmentVelocity || 'moderate',\n    openSourceEngagement: techResponse.technicalProfile?.openSourceEngagement || 'moderate',\n    technologyStack: techResponse.technicalProfile?.technologyStack || {},\n    teamIndicators: techResponse.technicalProfile?.teamIndicators || {},\n    repositoryCount: githubData.totalRepositories || 0,\n    organizationPresence: githubData.organizationFound || false\n  },\n  competitivePosition: techResponse.competitiveTechPosition || {},\n  githubMetrics: {\n    totalRepositories: githubData.totalRepositories,\n    recentCommits: githubData.recentActivity?.commits_last_30d || 0,\n    activeContributors: githubData.recentActivity?.active_contributors || 0,\n    organizationFound: githubData.organizationFound\n  },\n  timestamp: new Date().toISOString()\n};\n\n// Identify technical risks\nconst technicalRisks = marketInsights.filter(i => \n  i.insightType === 'risk' || \n  (i.category === 'technical' && i.urgency === 'high')\n);\n\n// Calculate technical sophistication score\nconst sophisticationScore = {\n  'basic': 2,\n  'intermediate': 5,\n  'advanced': 8,\n  'cutting-edge': 10\n}[techResponse.technicalProfile?.sophisticationLevel] || 5;\n\nreturn {\n  company: companyData,\n  marketInsights: marketInsights,\n  technicalProfile: technicalProfile,\n  technicalRisks: technicalRisks,\n  sophisticationScore: sophisticationScore,\n  insightCount: marketInsights.length,\n  githubMetrics: technicalProfile.githubMetrics\n};"
+      },
+      "id": "process-tech-insights",
+      "name": "Process Technical Insights",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,title,summary,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,implications,actionability,extractedAt,validUntil,occurredAt",
+        "options": {
+          "onConflict": "update",
+          "conflictColumns": "entityId,title"
+        }
+      },
+      "id": "store-tech-insights",
+      "name": "Store Technical Insights",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 250],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.technicalRisks.length }}",
+              "operation": "larger",
+              "value2": 0
+            }
+          ]
+        }
+      },
+      "id": "has-tech-risks",
+      "name": "Has Technical Risks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 400]
+    },
+    {
+      "parameters": {
+        "model": "claude-3-haiku-20240307",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a technical risk analyst. Create actionable technical risk assessments and mitigation strategies."
+            },
+            {
+              "role": "user",
+              "content": "=TECHNICAL RISK ALERT for {{ $json.company.name }}:\n\n**Technical Risks:**\n{{ JSON.stringify($json.technicalRisks) }}\n\n**Technical Profile:**\n{{ JSON.stringify($json.technicalProfile) }}\n\nCreate technical risk assessment:\n1. Risk severity analysis\n2. Business impact evaluation\n3. Technical mitigation strategies\n4. Competitive implications\n5. Monitoring recommendations\n\nFocus on actionable technical intelligence."
+            }
+          ]
+        }
+      },
+      "id": "generate-tech-risk-alert",
+      "name": "Generate Technical Risk Alert",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
+      "typeVersion": 1,
+      "position": [1400, 400],
+      "credentials": {
+        "anthropicApi": {
+          "id": "anthropic-api",
+          "name": "Anthropic API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "table": "DataSource",
+        "updateKey": "name",
+        "updateValue": "github_api",
+        "columns": "lastHealthCheck,healthStatus,insightDensity,insightRelevance",
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "UPDATE DataSource SET lastHealthCheck = NOW(), healthStatus = 'healthy', insightDensity = LEAST(10, insightDensity + 0.15), insightRelevance = LEAST(10, insightRelevance + 0.1) WHERE name = 'github_api'"
+        }
+      },
+      "id": "update-github-source-health",
+      "name": "Update GitHub Source Health",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Aggregate GitHub analysis results\nconst allResults = $input.all();\nconst techSummary = {\n  totalCompanies: allResults.length,\n  totalInsights: allResults.reduce((sum, r) => sum + r.json.insightCount, 0),\n  technicalRisks: allResults.filter(r => r.json.technicalRisks.length > 0).length,\n  averageSophistication: allResults.reduce((sum, r) => sum + r.json.sophisticationScore, 0) / allResults.length,\n  \n  // Technical sophistication distribution\n  sophisticationLevels: {},\n  \n  // GitHub presence metrics\n  githubPresence: {\n    withOrganizations: allResults.filter(r => r.json.githubMetrics.organizationFound).length,\n    withRepositories: allResults.filter(r => r.json.githubMetrics.totalRepositories > 0).length,\n    activeProjects: allResults.filter(r => r.json.githubMetrics.recentCommits > 10).length\n  },\n  \n  // Top technical insights\n  topInsights: [],\n  \n  timestamp: new Date().toISOString()\n};\n\n// Calculate sophistication distribution\nallResults.forEach(result => {\n  const level = result.json.technicalProfile.profile.sophisticationLevel;\n  techSummary.sophisticationLevels[level] = (techSummary.sophisticationLevels[level] || 0) + 1;\n});\n\n// Extract top technical insights\ntechSummary.topInsights = allResults\n  .flatMap(r => r.json.marketInsights.map(i => ({\n    company: r.json.company.name,\n    title: i.title,\n    impact: i.impact,\n    type: i.insightType,\n    sophistication: r.json.sophisticationScore\n  })))\n  .sort((a, b) => b.impact - a.impact)\n  .slice(0, 10);\n\n// Technical intelligence summary\ntechSummary.intelligence = {\n  highSophisticationCompanies: allResults.filter(r => r.json.sophisticationScore >= 8).length,\n  activeOpenSourceParticipants: allResults.filter(r => \n    r.json.technicalProfile.profile.openSourceEngagement === 'high' || \n    r.json.technicalProfile.profile.openSourceEngagement === 'extensive'\n  ).length,\n  rapidDevelopmentTeams: allResults.filter(r => \n    r.json.technicalProfile.profile.developmentVelocity === 'fast' ||\n    r.json.technicalProfile.profile.developmentVelocity === 'very-fast'\n  ).length\n};\n\nreturn techSummary;"
+      },
+      "id": "aggregate-tech-results",
+      "name": "Aggregate Technical Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1600, 300]
+    },
+    {
+      "parameters": {
+        "content": "=## GitHub Technical Intelligence Report\n\n**Analysis Time:** {{ $json.timestamp }}\n\n### Summary\n- **Companies Analyzed:** {{ $json.totalCompanies }}\n- **Technical Insights:** {{ $json.totalInsights }}\n- **Companies with Technical Risks:** {{ $json.technicalRisks }}\n- **Average Sophistication Score:** {{ $json.averageSophistication.toFixed(1) }}/10\n\n### GitHub Presence\n- **Organizations Found:** {{ $json.githubPresence.withOrganizations }}/{{ $json.totalCompanies }}\n- **With Public Repositories:** {{ $json.githubPresence.withRepositories }}/{{ $json.totalCompanies }}\n- **Active Projects (10+ commits/month):** {{ $json.githubPresence.activeProjects }}/{{ $json.totalCompanies }}\n\n### Technical Sophistication Distribution\n{{ JSON.stringify($json.sophisticationLevels, null, 2) }}\n\n### Technical Intelligence\n- **High Sophistication (8+ score):** {{ $json.intelligence.highSophisticationCompanies }}\n- **Active Open Source Participants:** {{ $json.intelligence.activeOpenSourceParticipants }}\n- **Rapid Development Teams:** {{ $json.intelligence.rapidDevelopmentTeams }}\n\n### Top Technical Insights\n{{ JSON.stringify($json.topInsights.slice(0, 5), null, 2) }}\n\n### Analysis Performance\n- **Insights per Company:** {{ ($json.totalInsights / $json.totalCompanies).toFixed(1) }}\n- **Risk Detection Rate:** {{ (($json.technicalRisks / $json.totalCompanies) * 100).toFixed(1) }}%",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "generate-tech-report",
+      "name": "Generate Technical Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [1800, 300]
+    }
+  ],
+  "connections": {
+    "github-webhook": {
+      "main": [
+        [
+          {
+            "node": "prepare-github-queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-github-queries": {
+      "main": [
+        [
+          {
+            "node": "collect-github-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect-github-data": {
+      "main": [
+        [
+          {
+            "node": "extract-tech-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "extract-tech-insights": {
+      "main": [
+        [
+          {
+            "node": "process-tech-insights",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-tech-insights": {
+      "main": [
+        [
+          {
+            "node": "store-tech-insights",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-tech-risks",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "update-github-source-health",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-tech-risks": {
+      "main": [
+        [
+          {
+            "node": "generate-tech-risk-alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "update-github-source-health": {
+      "main": [
+        [
+          {
+            "node": "aggregate-tech-results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "aggregate-tech-results": {
+      "main": [
+        [
+          {
+            "node": "generate-tech-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

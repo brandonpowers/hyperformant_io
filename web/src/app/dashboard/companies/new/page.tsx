@@ -23,11 +23,12 @@ export default function NewCompanyPage() {
     setError('');
 
     try {
-      const response = await fetch('/api/companies', {
+      const response = await fetch('/api/v1/companies', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Include cookies for authentication
         body: JSON.stringify({
           ...formData,
           employees: formData.employees ? parseInt(formData.employees) : null,

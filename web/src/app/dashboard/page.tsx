@@ -139,7 +139,7 @@ const Dashboard = () => {
             value={timeRange}
             onChange={(e) => handleTimeRangeChange(parseInt(e.target.value))}
             disabled={loading}
-            className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+            className="min-w-[120px] rounded-lg border border-gray-200 bg-white px-3 py-2 pr-8 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
           >
             <option value={7}>7 Days</option>
             <option value={30}>30 Days</option>

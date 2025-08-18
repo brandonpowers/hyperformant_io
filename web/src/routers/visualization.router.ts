@@ -1,5 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { z } from 'zod';
+import { z } from '@hono/zod-openapi';
 import type { Context } from 'hono';
 import { createSafeAuthMiddleware } from '../lib/api/context-safety';
 import { ApiError } from '../lib/api/errors';
@@ -83,9 +83,9 @@ const EntityProfileSchema = z
       geography: z.string().optional(),
       isUserCompany: z.boolean().optional(),
     }),
-    metric: z.record(z.number()),
-    index: z.record(z.number()),
-    signal: z.record(z.number()),
+    metric: z.object({}).passthrough().describe('Key-value pairs of metric names to numeric values'),
+    index: z.object({}).passthrough().describe('Key-value pairs of index names to numeric values'),
+    signal: z.object({}).passthrough().describe('Key-value pairs of signal names to numeric values'),
   })
   .openapi('EntityProfile');
 
@@ -123,11 +123,48 @@ const ConnectionsResponseSchema = VizResponseSchema.extend({
 
 const FrameResponseSchema = VizResponseSchema.extend({
   data: z.object({
-    nodes: z.array(z.any()).describe('VisualNode array from theme renderer'),
-    edges: z.array(z.any()).describe('VisualEdge array from theme renderer'),
-    background: z.any().describe('VisualBackground from theme renderer'),
+    nodes: z.array(z.object({}).passthrough()).describe('VisualNode array from theme renderer'),
+    edges: z.array(z.object({}).passthrough()).describe('VisualEdge array from theme renderer'),
+    background: z.object({}).passthrough().describe('VisualBackground from theme renderer'),
   }),
 }).openapi('VizFrameResponse');
+
+// Admin/Refresh schemas
+const RefreshQuerySchema = z.object({
+  force: z
+    .boolean()
+    .optional()
+    .describe('Force full refresh even if views are fresh'),
+}).openapi('RefreshQuery');
+
+const RefreshSummarySchema = z.object({
+  totalViews: z.number(),
+  successful: z.number(),
+  failed: z.number(),
+  totalDuration: z.number(),
+  timestamp: z.string().datetime(),
+}).openapi('RefreshSummary');
+
+const RefreshResponseSchema = z.object({
+  success: z.boolean(),
+  summary: RefreshSummarySchema,
+}).openapi('RefreshResponse');
+
+const RefreshHistoryQuerySchema = z.object({
+  limit: z.coerce.number().min(1).max(100).default(20).optional(),
+}).openapi('RefreshHistoryQuery');
+
+const RefreshHistoryItemSchema = z.object({
+  timestamp: z.string().datetime(),
+  duration: z.number(),
+  successful: z.number(),
+  total: z.number(),
+  successRate: z.number(),
+}).openapi('RefreshHistoryItem');
+
+const RefreshHistoryResponseSchema = z.object({
+  history: z.array(RefreshHistoryItemSchema),
+}).openapi('RefreshHistoryResponse');
 
 /**
  * ROUTES
@@ -398,30 +435,14 @@ visualizationApp.openapi(
     tags: ['Visualization', 'Admin'],
     security: [{ Bearer: [] }],
     request: {
-      query: z.object({
-        force: z
-          .boolean()
-          .optional()
-          .describe('Force full refresh even if views are fresh'),
-      }),
+      query: RefreshQuerySchema,
     },
     responses: {
       200: {
         description: 'Refresh completed',
         content: {
           'application/json': {
-            schema: z
-              .object({
-                success: z.boolean(),
-                summary: z.object({
-                  totalViews: z.number(),
-                  successful: z.number(),
-                  failed: z.number(),
-                  totalDuration: z.number(),
-                  timestamp: z.string().datetime(),
-                }),
-              })
-              .openapi('RefreshResponse'),
+            schema: RefreshResponseSchema,
           },
         },
       },
@@ -490,28 +511,14 @@ visualizationApp.openapi(
     tags: ['Visualization', 'Admin'],
     security: [{ Bearer: [] }],
     request: {
-      query: z.object({
-        limit: z.coerce.number().min(1).max(100).default(20).optional(),
-      }),
+      query: RefreshHistoryQuerySchema,
     },
     responses: {
       200: {
         description: 'Refresh history',
         content: {
           'application/json': {
-            schema: z
-              .object({
-                history: z.array(
-                  z.object({
-                    timestamp: z.string().datetime(),
-                    duration: z.number(),
-                    successful: z.number(),
-                    total: z.number(),
-                    successRate: z.number(),
-                  }),
-                ),
-              })
-              .openapi('RefreshHistoryResponse'),
+            schema: RefreshHistoryResponseSchema,
           },
         },
       },

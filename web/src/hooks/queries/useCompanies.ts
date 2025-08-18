@@ -26,11 +26,15 @@ export const companyKeys = {
 
 // Fetch companies
 async function fetchCompanies(): Promise<Company[]> {
-  const response = await fetch('/api/companies');
+  const response = await fetch('/api/v1/companies', {
+    credentials: 'include', // Include cookies for authentication
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch companies');
   }
-  return response.json();
+  const data = await response.json();
+  // API returns { data: [...], meta: {...} } format
+  return data.data || data;
 }
 
 export function useCompanies() {
@@ -43,11 +47,15 @@ export function useCompanies() {
 
 // Fetch single company
 async function fetchCompany(id: string): Promise<Company> {
-  const response = await fetch(`/api/companies/${id}`);
+  const response = await fetch(`/api/v1/companies/${id}`, {
+    credentials: 'include', // Include cookies for authentication
+  });
   if (!response.ok) {
     throw new Error('Failed to fetch company');
   }
-  return response.json();
+  const data = await response.json();
+  // API returns { data: {...}, meta: {...} } format
+  return data.data || data;
 }
 
 export function useCompany(id: string) {
@@ -62,11 +70,12 @@ export function useCompany(id: string) {
 async function createCompany(
   data: Omit<Company, 'id' | 'createdAt' | 'updatedAt' | 'userId'>,
 ): Promise<Company> {
-  const response = await fetch('/api/companies', {
+  const response = await fetch('/api/v1/companies', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // Include cookies for authentication
     body: JSON.stringify(data),
   });
   if (!response.ok) {

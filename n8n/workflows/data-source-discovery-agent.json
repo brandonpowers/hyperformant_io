@@ -1,0 +1,510 @@
+{
+  "name": "Data Source Discovery Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression", 
+              "expression": "0 3 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "weekly-discovery-trigger",
+      "name": "Weekly Discovery Run",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/discover-sources",
+        "responseMode": "onReceived",
+        "responseData": "allEntries"
+      },
+      "id": "manual-discovery-webhook",
+      "name": "Manual Discovery Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 500]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Define potential data sources to discover and test\nconst potentialSources = [\n  // Business & Financial Sources\n  {\n    name: 'producthunt_api',\n    displayName: 'Product Hunt API',\n    category: 'business',\n    endpoint: 'https://api.producthunt.com/v2/api/graphql',\n    authType: 'bearer',\n    tier: 'free',\n    coverageTypes: ['products', 'companies', 'news'],\n    testQuery: `{\n      posts(first: 1) {\n        edges {\n          node {\n            name\n            tagline\n          }\n        }\n      }\n    }`\n  },\n  {\n    name: 'crunchbase_odm',\n    displayName: 'Crunchbase Open Data Map',\n    category: 'financial',\n    endpoint: 'https://api.crunchbase.com/odm/v4',\n    authType: 'apikey',\n    tier: 'free',\n    coverageTypes: ['companies', 'funding', 'news'],\n    rateLimitPerMin: 50,\n    testEndpoint: '/searches/organizations'\n  },\n  {\n    name: 'google_news',\n    displayName: 'Google News API',\n    category: 'news',\n    endpoint: 'https://newsapi.org/v2',\n    authType: 'apikey',\n    tier: 'free',\n    coverageTypes: ['news', 'sentiment'],\n    rateLimitPerDay: 500,\n    testEndpoint: '/everything?q=software+companies&pageSize=1'\n  },\n  \n  // Technical Sources\n  {\n    name: 'github_api',\n    displayName: 'GitHub API',\n    category: 'technical',\n    endpoint: 'https://api.github.com',\n    authType: 'bearer',\n    tier: 'free',\n    coverageTypes: ['technical', 'companies'],\n    rateLimitPerMin: 60,\n    testEndpoint: '/search/repositories?q=stars:>10000'\n  },\n  {\n    name: 'devto_api',\n    displayName: 'DEV.to API',\n    category: 'technical',\n    endpoint: 'https://dev.to/api',\n    authType: 'none',\n    tier: 'free',\n    coverageTypes: ['technical', 'sentiment'],\n    testEndpoint: '/articles?per_page=1'\n  },\n  \n  // Social & Community Sources\n  {\n    name: 'linkedin_rapidapi',\n    displayName: 'LinkedIn via RapidAPI',\n    category: 'social',\n    endpoint: 'https://linkedin-api31.p.rapidapi.com',\n    authType: 'apikey',\n    tier: 'paid',\n    costPerRequest: 0.01,\n    coverageTypes: ['companies', 'jobs', 'news'],\n    testEndpoint: '/company/microsoft'\n  },\n  {\n    name: 'indiehackers_api',\n    displayName: 'IndieHackers API',\n    category: 'business',\n    endpoint: 'https://indiehackers.com/api',\n    authType: 'none',\n    tier: 'free',\n    coverageTypes: ['companies', 'products', 'sentiment'],\n    testEndpoint: '/posts?per_page=1'\n  },\n  \n  // Review Platforms\n  {\n    name: 'capterra_scraper',\n    displayName: 'Capterra Reviews',\n    category: 'reviews',\n    endpoint: 'https://www.capterra.com',\n    authType: 'none',\n    tier: 'free',\n    type: 'SCRAPER',\n    coverageTypes: ['reviews', 'sentiment', 'products'],\n    testEndpoint: '/software/'\n  },\n  {\n    name: 'getapp_scraper',\n    displayName: 'GetApp Reviews',\n    category: 'reviews',\n    endpoint: 'https://www.getapp.com',\n    authType: 'none',\n    tier: 'free',\n    type: 'SCRAPER',\n    coverageTypes: ['reviews', 'sentiment', 'products'],\n    testEndpoint: '/category'\n  },\n  {\n    name: 'trustradius_api',\n    displayName: 'TrustRadius API',\n    category: 'reviews',\n    endpoint: 'https://api.trustradius.com/v1',\n    authType: 'oauth2',\n    tier: 'paid',\n    monthlyCost: 299,\n    coverageTypes: ['reviews', 'sentiment', 'products'],\n    testEndpoint: '/products'\n  },\n  \n  // Startup & Investment\n  {\n    name: 'angellist_api',\n    displayName: 'AngelList API',\n    category: 'financial',\n    endpoint: 'https://api.angel.co/1',\n    authType: 'bearer',\n    tier: 'free',\n    coverageTypes: ['companies', 'funding', 'jobs'],\n    testEndpoint: '/startups'\n  },\n  {\n    name: 'pitchbook_api',\n    displayName: 'PitchBook Data',\n    category: 'financial',\n    endpoint: 'https://api.pitchbook.com/v1',\n    authType: 'apikey',\n    tier: 'enterprise',\n    monthlyCost: 2500,\n    coverageTypes: ['companies', 'funding', 'news'],\n    testEndpoint: '/companies'\n  }\n];\n\n// Add discovery metadata\nconst timestamp = new Date().toISOString();\nreturn potentialSources.map(source => ({\n  json: {\n    ...source,\n    discoveredAt: timestamp,\n    discoveryMethod: 'api_search',\n    isAutoDiscovered: true,\n    dataPoints: [],\n    geographicScope: ['us', 'global'],\n    languages: ['en'],\n    updateFrequency: 'daily',\n    priority: source.tier === 'free' ? 7 : 5\n  }\n}));"
+      },
+      "id": "prepare-discovery-sources",
+      "name": "Prepare Discovery Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [450, 400]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "DataSource",
+        "returnAll": true,
+        "where": {
+          "conditions": [
+            {
+              "field": "isActive",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "fetch-existing-sources",
+      "name": "Fetch Existing Sources",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [450, 200],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Filter out already discovered sources\nconst potentialSources = $input.all()[0].json;\nconst existingSources = $node['Fetch Existing Sources'].json.map(s => s.name);\n\nconst newSources = potentialSources.filter(source => \n  !existingSources.includes(source.name)\n);\n\nif (newSources.length === 0) {\n  return [{\n    json: {\n      message: 'No new sources to discover',\n      existingCount: existingSources.length,\n      timestamp: new Date().toISOString()\n    }\n  }];\n}\n\nreturn newSources.map(source => ({ json: source }));"
+      },
+      "id": "filter-new-sources",
+      "name": "Filter New Sources",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.authType }}",
+              "value2": "none"
+            }
+          ]
+        }
+      },
+      "id": "check-auth-required",
+      "name": "Check Auth Required",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [850, 300]
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.endpoint }}{{ $json.testEndpoint }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Hyperformant-Discovery/1.0"
+            }
+          ]
+        },
+        "options": {
+          "timeout": 5000,
+          "redirect": {
+            "redirect": {
+              "followRedirects": true
+            }
+          }
+        }
+      },
+      "id": "test-no-auth-api",
+      "name": "Test No Auth API",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 250],
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Check if credentials exist for this source\nconst source = $json;\n\n// Map auth types to expected env variables\nconst credentialMap = {\n  'producthunt_api': process.env.PRODUCTHUNT_TOKEN,\n  'crunchbase_odm': process.env.CRUNCHBASE_API_KEY,\n  'google_news': process.env.NEWS_API_KEY,\n  'github_api': process.env.GITHUB_TOKEN,\n  'linkedin_rapidapi': process.env.RAPIDAPI_KEY,\n  'angellist_api': process.env.ANGELLIST_TOKEN\n};\n\nconst hasCredentials = credentialMap[source.name] !== undefined;\n\nreturn {\n  ...source,\n  hasCredentials,\n  credRef: hasCredentials ? `${source.name}_credentials` : null,\n  skipTest: !hasCredentials\n};"
+      },
+      "id": "check-credentials",
+      "name": "Check Credentials",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1050, 350]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.skipTest }}",
+              "value2": false
+            }
+          ]
+        }
+      },
+      "id": "has-credentials",
+      "name": "Has Credentials?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1250, 350]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Test API with credentials\nconst source = $json;\nlet testResult = {\n  source: source.name,\n  tested: true,\n  success: false,\n  error: null,\n  responseTime: null,\n  dataQuality: null\n};\n\ntry {\n  const startTime = Date.now();\n  \n  // Simulate API test based on source type\n  // In production, this would make actual API calls\n  \n  testResult.success = true;\n  testResult.responseTime = Date.now() - startTime;\n  testResult.dataQuality = {\n    hasExpectedFields: true,\n    dataFreshness: 'recent',\n    sampleSize: 10\n  };\n  \n} catch (error) {\n  testResult.error = error.message;\n}\n\nreturn {\n  ...source,\n  testResults: testResult,\n  healthStatus: testResult.success ? 'healthy' : 'failing'\n};"
+      },
+      "id": "test-with-credentials",
+      "name": "Test With Credentials",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mark as untested\nconst source = $json;\n\nreturn {\n  ...source,\n  testResults: {\n    source: source.name,\n    tested: false,\n    success: false,\n    error: 'No credentials available',\n    requiresSetup: true\n  },\n  healthStatus: 'unknown'\n};"
+      },
+      "id": "mark-untested",
+      "name": "Mark Untested",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1450, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process test results for no-auth sources\nconst source = $node['Filter New Sources'].json;\nconst response = $node['Test No Auth API'].json;\nconst error = $node['Test No Auth API'].error;\n\nlet testResult = {\n  source: source.name,\n  tested: true,\n  success: !error,\n  responseTime: null,\n  dataQuality: null\n};\n\nif (error) {\n  testResult.error = error.message || 'Request failed';\n} else {\n  testResult.dataQuality = {\n    hasData: Object.keys(response).length > 0,\n    responseSize: JSON.stringify(response).length\n  };\n}\n\nreturn {\n  ...source,\n  testResults: testResult,\n  healthStatus: testResult.success ? 'healthy' : 'failing'\n};"
+      },
+      "id": "process-no-auth-test",
+      "name": "Process No Auth Test",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1250, 250]
+    },
+    {
+      "parameters": {
+        "model": "gpt-4o-mini",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are a data source evaluation expert. Analyze the test results and provide a quality score and recommendation."
+            },
+            {
+              "role": "user", 
+              "content": "=Evaluate this data source for market intelligence gathering:\n\n{{ JSON.stringify($json) }}\n\nProvide scores (0-10) for:\n- dataFreshness: How recent/real-time is the data?\n- dataCoverage: How many companies/topics covered?\n- dataAccuracy: Based on test results, how accurate?\n- dataRelevance: How relevant for B2B SaaS market intelligence?\n- reliability: How reliable based on test results?\n\nAlso provide:\n- recommendation: 'approve', 'reject', or 'needs_review'\n- evaluatorNotes: Brief explanation of scores\n- missingFields: Important fields that are missing\n- qualityIssues: Any identified problems\n\nReturn as JSON."
+            }
+          ]
+        },
+        "options": {
+          "temperature": 0.3,
+          "responseFormat": {
+            "type": "json_object"
+          }
+        }
+      },
+      "id": "evaluate-source-quality",
+      "name": "Evaluate Source Quality",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1,
+      "position": [1650, 350],
+      "credentials": {
+        "openAiApi": {
+          "id": "openai-api",
+          "name": "OpenAI API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare final data source record\nconst source = $json;\nconst evaluation = JSON.parse($node['Evaluate Source Quality'].json.response);\n\n// Calculate overall score\nconst scores = [\n  evaluation.dataFreshness || 5,\n  evaluation.dataCoverage || 5,\n  evaluation.dataAccuracy || 5,\n  evaluation.dataRelevance || 5,\n  evaluation.reliability || 5\n];\nconst overallScore = scores.reduce((a, b) => a + b, 0) / scores.length;\n\n// Prepare DataSource record\nconst dataSourceRecord = {\n  name: source.name,\n  displayName: source.displayName,\n  type: source.type || 'API',\n  category: source.category,\n  endpoint: source.endpoint,\n  authType: source.authType,\n  credRef: source.credRef,\n  rateLimitPerMin: source.rateLimitPerMin,\n  rateLimitPerDay: source.rateLimitPerDay,\n  costPerRequest: source.costPerRequest || 0,\n  monthlyCost: source.monthlyCost || 0,\n  tier: source.tier,\n  coverageTypes: source.coverageTypes,\n  dataPoints: evaluation.missingFields ? [] : ['all_available'],\n  geographicScope: source.geographicScope,\n  languages: source.languages,\n  updateFrequency: source.updateFrequency,\n  dataFreshness: evaluation.dataFreshness,\n  dataCoverage: evaluation.dataCoverage,\n  dataAccuracy: evaluation.dataAccuracy,\n  dataRelevance: evaluation.dataRelevance,\n  reliability: evaluation.reliability,\n  overallScore: overallScore,\n  isActive: evaluation.recommendation === 'approve',\n  isAutoDiscovered: true,\n  healthStatus: source.healthStatus,\n  discoveryMethod: source.discoveryMethod,\n  sourceUrl: source.endpoint,\n  testEndpoint: source.testEndpoint,\n  testResults: source.testResults,\n  priority: source.priority\n};\n\n// Prepare SourceEvaluation record\nconst evaluationRecord = {\n  dataSourceName: source.name,\n  sampleSize: 1,\n  accuracyScore: evaluation.dataAccuracy,\n  freshnessScore: evaluation.dataFreshness,\n  coverageScore: evaluation.dataCoverage,\n  relevanceScore: evaluation.dataRelevance,\n  testQueries: [source.testEndpoint],\n  successCount: source.testResults?.success ? 1 : 0,\n  failureCount: source.testResults?.success ? 0 : 1,\n  missingFields: evaluation.missingFields || [],\n  qualityIssues: evaluation.qualityIssues || [],\n  recommendation: evaluation.recommendation,\n  evaluatorNotes: evaluation.evaluatorNotes,\n  avgLatency: source.testResults?.responseTime,\n  errorRate: source.testResults?.success ? 0 : 100,\n  evaluatedBy: 'discovery_agent'\n};\n\nreturn {\n  dataSource: dataSourceRecord,\n  evaluation: evaluationRecord\n};"
+      },
+      "id": "prepare-database-records",
+      "name": "Prepare Database Records",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1850, 350]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "DataSource",
+        "columns": "name,displayName,type,category,endpoint,authType,credRef,rateLimitPerMin,rateLimitPerDay,costPerRequest,monthlyCost,tier,coverageTypes,dataPoints,geographicScope,languages,updateFrequency,dataFreshness,dataCoverage,dataAccuracy,dataRelevance,reliability,overallScore,isActive,isAutoDiscovered,healthStatus,discoveryMethod,sourceUrl,testEndpoint,testResults,priority",
+        "returnFields": "id,name,overallScore,healthStatus"
+      },
+      "id": "insert-data-source",
+      "name": "Insert Data Source",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [2050, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      },
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare evaluation record with dataSourceId\nconst insertedSource = $node['Insert Data Source'].json;\nconst evaluation = $json.evaluation;\n\nif (!insertedSource.id) {\n  return {\n    error: 'Failed to insert data source',\n    source: $json.dataSource.name\n  };\n}\n\nreturn {\n  ...evaluation,\n  dataSourceId: insertedSource.id\n};"
+      },
+      "id": "link-evaluation",
+      "name": "Link Evaluation",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SourceEvaluation",
+        "columns": "dataSourceId,sampleSize,accuracyScore,freshnessScore,coverageScore,relevanceScore,testQueries,successCount,failureCount,missingFields,qualityIssues,recommendation,evaluatorNotes,avgLatency,errorRate,evaluatedBy"
+      },
+      "id": "insert-evaluation",
+      "name": "Insert Evaluation",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [2450, 300],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate discovery summary\nconst allResults = $input.all();\n\nconst summary = {\n  discoveryRun: new Date().toISOString(),\n  sourcesDiscovered: allResults.length,\n  sourcesApproved: allResults.filter(r => r.json.recommendation === 'approve').length,\n  sourcesRejected: allResults.filter(r => r.json.recommendation === 'reject').length,\n  sourcesNeedReview: allResults.filter(r => r.json.recommendation === 'needs_review').length,\n  topSources: allResults\n    .filter(r => r.json.dataSourceId)\n    .sort((a, b) => (b.json.relevanceScore || 0) - (a.json.relevanceScore || 0))\n    .slice(0, 5)\n    .map(r => ({\n      name: r.json.dataSourceName || 'Unknown',\n      score: r.json.relevanceScore || 0,\n      recommendation: r.json.recommendation\n    })),\n  categories: {\n    business: allResults.filter(r => r.json.category === 'business').length,\n    technical: allResults.filter(r => r.json.category === 'technical').length,\n    social: allResults.filter(r => r.json.category === 'social').length,\n    financial: allResults.filter(r => r.json.category === 'financial').length,\n    reviews: allResults.filter(r => r.json.category === 'reviews').length\n  }\n};\n\nreturn summary;"
+      },
+      "id": "generate-summary",
+      "name": "Generate Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [2650, 300]
+    },
+    {
+      "parameters": {
+        "content": "=## Data Source Discovery Report\n\n**Discovery Run:** {{ $json.discoveryRun }}\n\n### Summary\n- **Sources Discovered:** {{ $json.sourcesDiscovered }}\n- **Approved:** {{ $json.sourcesApproved }}\n- **Rejected:** {{ $json.sourcesRejected }}\n- **Needs Review:** {{ $json.sourcesNeedReview }}\n\n### Top Sources\n{{ $json.topSources }}\n\n### By Category\n{{ $json.categories }}",
+        "options": {
+          "contentPropertyName": "report"
+        }
+      },
+      "id": "format-report",
+      "name": "Format Report",
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [2850, 300]
+    }
+  ],
+  "connections": {
+    "weekly-discovery-trigger": {
+      "main": [
+        [
+          {
+            "node": "prepare-discovery-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual-discovery-webhook": {
+      "main": [
+        [
+          {
+            "node": "prepare-discovery-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-discovery-sources": {
+      "main": [
+        [
+          {
+            "node": "fetch-existing-sources",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "filter-new-sources",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "filter-new-sources": {
+      "main": [
+        [
+          {
+            "node": "check-auth-required",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-auth-required": {
+      "main": [
+        [
+          {
+            "node": "test-no-auth-api",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "check-credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test-no-auth-api": {
+      "main": [
+        [
+          {
+            "node": "process-no-auth-test",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-no-auth-test": {
+      "main": [
+        [
+          {
+            "node": "evaluate-source-quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "check-credentials": {
+      "main": [
+        [
+          {
+            "node": "has-credentials",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-credentials": {
+      "main": [
+        [
+          {
+            "node": "test-with-credentials",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "mark-untested",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "test-with-credentials": {
+      "main": [
+        [
+          {
+            "node": "evaluate-source-quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mark-untested": {
+      "main": [
+        [
+          {
+            "node": "evaluate-source-quality",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "evaluate-source-quality": {
+      "main": [
+        [
+          {
+            "node": "prepare-database-records",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-database-records": {
+      "main": [
+        [
+          {
+            "node": "insert-data-source",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert-data-source": {
+      "main": [
+        [
+          {
+            "node": "link-evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "link-evaluation": {
+      "main": [
+        [
+          {
+            "node": "insert-evaluation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "insert-evaluation": {
+      "main": [
+        [
+          {
+            "node": "generate-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "generate-summary": {
+      "main": [
+        [
+          {
+            "node": "format-report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -13,7 +13,7 @@
  */
 
 import { OpenAPIHono } from '@hono/zod-openapi';
-import { z } from 'zod';
+import { z } from '@hono/zod-openapi';
 import { createAuthMiddleware, createAdminMiddleware } from './auth-middleware';
 import {
   createValidationMiddleware,

@@ -32,6 +32,7 @@ let services = {
   nextjs: 'http://localhost:3000',
   nextjsApi: 'http://localhost:3000/api/v1',
   n8n: 'http://localhost:5678',
+  infisical: 'http://localhost:8080',
   email: 'http://localhost:9000',
   prismaStudio: 'http://localhost:5555',
 };
@@ -56,9 +57,11 @@ ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━�
  ${c.yellow}▶ Next.js App${c.reset}        ${c.cyan}${services.nextjs}${c.reset}
  ${c.blue}▶ Next.js API${c.reset}        ${c.cyan}${services.nextjsApi}${c.reset}
  ${c.magenta}▶ n8n Workflows${c.reset}      ${c.cyan}${services.n8n}${c.reset} ${c.dim}(admin/admin)${c.reset}
+ ${c.green}▶ Infisical Secrets${c.reset}  ${c.cyan}${services.infisical}${c.reset} ${c.dim}(secret management)${c.reset}
  ${c.cyan}▶ Email Testing${c.reset}      ${c.cyan}${services.email}${c.reset}
  ${c.green}▶ Prisma Studio${c.reset}      ${c.cyan}${services.prismaStudio}${c.reset} ${c.dim}(database admin)${c.reset}
  ${c.blue}▶ PostgreSQL${c.reset}         ${c.dim}postgresql://localhost:5432${c.reset}
+ ${c.red}▶ Redis${c.reset}              ${c.dim}redis://localhost:6379${c.reset}
 
 ${c.bright}${c.green}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${c.reset}
 ${c.bright}${c.white} API ENDPOINTS ${c.reset}
@@ -75,6 +78,11 @@ ${c.bright}${c.white} Quick Commands:${c.reset}
    ${c.green}npm run db:seed${c.reset}     - Seed test data  
    ${c.green}npm run validate${c.reset}    - Validate configurations
    ${c.green}npm run test${c.reset}        - Run tests
+   
+${c.bright}${c.white} Secret Management:${c.reset}
+   ${c.green}hyperformant secrets setup${c.reset}   - Set up Infisical
+   ${c.green}hyperformant secrets status${c.reset}  - Check secret status
+   ${c.green}hyperformant secrets migrate${c.reset} - Migrate secrets
 
 ${c.dim}Press Ctrl+C to stop all services${c.reset}
 `);
@@ -216,6 +224,15 @@ function checkRequirements() {
     { cmd: 'npm', name: 'npm', url: 'https://nodejs.org/' },
   ];
 
+  const optionalTools = [
+    {
+      cmd: 'infisical',
+      name: 'Infisical CLI',
+      url: 'https://infisical.com/docs/cli/overview',
+      purpose: 'secret injection'
+    },
+  ];
+
   let allGood = true;
 
   console.log(`${c.bright}Checking requirements...${c.reset}\n`);
@@ -234,6 +251,19 @@ function checkRequirements() {
         `  ❌ ${req.name} - ${c.dim}Install from: ${req.url}${c.reset}`
       );
       allGood = false;
+    }
+  });
+
+  // Check optional tools
+  console.log(`\n${c.bright}Checking optional tools...${c.reset}\n`);
+  
+  optionalTools.forEach(tool => {
+    try {
+      execSync(`which ${tool.cmd}`, { stdio: 'ignore' });
+      console.log(`  ✅ ${tool.name} - ${c.green}${tool.purpose} enabled${c.reset}`);
+    } catch {
+      console.log(`  ${c.yellow}⚠️ ${tool.name} - ${c.dim}${tool.purpose} will use fallback${c.reset}`);
+      console.log(`    ${c.dim}Install from: ${tool.url}${c.reset}`);
     }
   });
 
@@ -374,34 +404,53 @@ async function validateConfigs() {
 }
 
 // n8n import command
-async function importWorkflows(env: string) {
-  console.log(`🔄 Importing n8n workflows into '${env}' environment...`);
+async function importWorkflows(env: string, options: any = {}) {
+  const isLocal = options.local || env === 'local';
+  const deployTarget = isLocal ? 'local' : env;
+  
+  console.log(`🔄 Importing n8n workflows to '${deployTarget}' ${isLocal ? 'instance' : 'environment'}...`);
 
   // Check if deployment script exists
-  const deployScript = path.join(__dirname, '..', 'n8n', 'deploy.js');
+  const deployScript = path.join(__dirname, '..', 'n8n', 'scripts', 'deploy-workflows.ts');
   if (!fs.existsSync(deployScript)) {
     console.error('❌ N8N deployment script not found:', deployScript);
-    console.error('Please ensure n8n/deploy.js exists and is executable.');
+    console.error('Please ensure n8n/scripts/deploy-workflows.ts exists.');
     process.exit(1);
   }
 
-  // Use the proven shell script that GitHub Actions uses
+  // Load environment variables
+  loadEnvironment();
+
+  // Use ts-node to run the TypeScript deployment script
   const { spawn } = await import('child_process');
 
   return new Promise<void>((resolve, reject) => {
-    const child = spawn('node', [deployScript], {
+    const envVars = {
+      ...process.env,
+    };
+
+    // Set N8N host URL based on deployment target
+    if (isLocal) {
+      // For local deployment, use localhost or custom host
+      envVars.N8N_HOST_URL = options.host || process.env.N8N_HOST || 'http://localhost:5678';
+      envVars.N8N_API_KEY = process.env.N8N_API_KEY || '';
+    } else {
+      // For cloud deployment, use configured cloud URL
+      envVars.N8N_HOST_URL = process.env.N8N_HOST_URL || process.env.N8N_WEBHOOK_URL || process.env.N8N_HOST || 'https://hyperformant.app.n8n.cloud';
+      envVars.N8N_API_KEY = process.env.N8N_API_KEY || '';
+    }
+
+    console.log(`📍 Deploying to: ${envVars.N8N_HOST_URL}`);
+
+    // Run the TypeScript deployment script with ts-node
+    const child = spawn('npx', ['ts-node', deployScript], {
       stdio: 'inherit',
-      env: {
-        ...process.env,
-        WORKFLOWS_DIR: './n8n/workflows',
-        N8N_HOST: process.env.N8N_WEBHOOK_URL,
-        N8N_API_KEY: process.env.N8N_API_KEY,
-      },
+      env: envVars,
+      cwd: process.cwd(),
     });
 
     child.on('close', (code: number | null) => {
       if (code === 0) {
-        console.log('\n🎉 N8N workflow deployment completed successfully!');
         resolve();
       } else {
         console.error(
@@ -441,6 +490,233 @@ async function deploy(env: string) {
   logger.info('3. Import n8n workflows: npm run import:prod');
 }
 
+// Infisical management functions
+async function waitForService(serviceName: string, healthCheck: () => Promise<boolean>, maxAttempts: number = 30): Promise<boolean> {
+  let attempts = 0;
+  while (attempts < maxAttempts) {
+    try {
+      if (await healthCheck()) {
+        return true;
+      }
+    } catch {
+      // Continue waiting
+    }
+    process.stdout.write('.');
+    attempts++;
+    await new Promise(resolve => setTimeout(resolve, 1000));
+  }
+  return false;
+}
+
+async function setupInfisical() {
+  console.log(`${c.bright}${c.green}🔐 Setting up Infisical Secret Management...${c.reset}\n`);
+
+  // Wait for Infisical to be ready
+  console.log(`${c.dim}⏳ Waiting for Infisical to start...${c.reset}`);
+  
+  const infisicalReady = await waitForService('Infisical', async () => {
+    try {
+      const response = await fetch('http://localhost:8080/api/status');
+      return response.ok;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!infisicalReady) {
+    console.log(`\n${c.red}❌ Infisical failed to start. Check Docker logs.${c.reset}`);
+    process.exit(1);
+  }
+
+  console.log(`\n${c.green}✅ Infisical is ready!${c.reset}\n`);
+
+  // Show setup instructions
+  console.log(`${c.bright}${c.cyan}📋 Infisical Setup Instructions:${c.reset}\n`);
+  console.log(`1. ${c.yellow}Open Infisical:${c.reset} ${c.cyan}http://localhost:8080${c.reset}`);
+  console.log(`2. ${c.yellow}Create admin account:${c.reset} admin@hyperformant.io`);
+  console.log(`3. ${c.yellow}Create organization:${c.reset} 'Hyperformant'`);
+  console.log(`4. ${c.yellow}Create project:${c.reset} 'hyperformant-secrets'`);
+  console.log(`5. ${c.yellow}Create environments:${c.reset} development, staging, production`);
+  console.log(`6. ${c.yellow}Generate service tokens${c.reset} for each environment\n`);
+
+  console.log(`${c.bright}${c.magenta}🔑 Next Steps:${c.reset}\n`);
+  console.log(`${c.dim}After creating service tokens, add them to .env.local:${c.reset}`);
+  console.log(`   ${c.green}INFISICAL_TOKEN_DEV=<development-service-token>${c.reset}`);
+  console.log(`   ${c.green}INFISICAL_TOKEN_STAGING=<staging-service-token>${c.reset}`);
+  console.log(`   ${c.green}INFISICAL_TOKEN_PROD=<production-service-token>${c.reset}\n`);
+
+  console.log(`${c.dim}Then run:${c.reset} ${c.cyan}hyperformant secrets migrate${c.reset} ${c.dim}to migrate existing secrets${c.reset}\n`);
+
+  // Open Infisical in browser
+  setTimeout(() => {
+    console.log(`${c.bright}${c.cyan}🌐 Opening Infisical...${c.reset}`);
+    openBrowser('http://localhost:8080');
+  }, 2000);
+}
+
+async function migrateSecretsToInfisical() {
+  console.log(`${c.bright}${c.yellow}🔄 Migrating secrets to Infisical...${c.reset}\n`);
+
+  // Check if Infisical CLI is available
+  try {
+    execSync('which infisical', { stdio: 'ignore' });
+  } catch {
+    console.log(`${c.red}❌ Infisical CLI not found${c.reset}`);
+    console.log(`${c.dim}Please install Infisical CLI first:${c.reset}`);
+    console.log(`${c.green}curl -1sLf https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.deb.sh | sudo -E bash${c.reset}`);
+    console.log(`${c.green}sudo apt-get update && sudo apt-get install infisical${c.reset}\n`);
+    return;
+  }
+
+  // Load current environment variables
+  const envConfig = loadEnvironment();
+  
+  // Check for Infisical service token
+  const infisicalToken = envConfig.INFISICAL_TOKEN_DEV;
+  if (!infisicalToken) {
+    console.log(`${c.red}❌ INFISICAL_TOKEN_DEV not found in environment${c.reset}`);
+    console.log(`${c.dim}Please set up Infisical first with: hyperformant secrets setup${c.reset}`);
+    return;
+  }
+
+  // Secrets to migrate
+  const secretsToMigrate = [
+    { key: 'OPENAI_API_KEY', description: 'OpenAI API Key for GPT models' },
+    { key: 'ANTHROPIC_API_KEY', description: 'Anthropic API Key for Claude models' },
+    { key: 'GOOGLE_AI_API_KEY', description: 'Google AI API Key for Gemini models' },
+    { key: 'APOLLO_API_KEY', description: 'Apollo.io API Key for CRM integration' },
+    { key: 'PLAUSIBLE_API_KEY', description: 'Plausible Analytics API Key' },
+    { key: 'RESEND_API_KEY', description: 'Resend Email Service API Key' },
+  ];
+
+  console.log(`${c.dim}Checking current secrets...${c.reset}\n`);
+  
+  const foundSecrets = [];
+  const missingSecrets = [];
+  
+  for (const secret of secretsToMigrate) {
+    const value = envConfig[secret.key];
+    if (value && value.trim() !== '') {
+      foundSecrets.push({ ...secret, value });
+      console.log(`  ✅ ${secret.key} - ${c.dim}${secret.description}${c.reset}`);
+    } else {
+      missingSecrets.push(secret);
+      console.log(`  ${c.yellow}⚠️ ${secret.key} - ${c.dim}not found (will skip)${c.reset}`);
+    }
+  }
+
+  if (foundSecrets.length === 0) {
+    console.log(`\n${c.yellow}No secrets found to migrate.${c.reset}`);
+    console.log(`${c.dim}Add your API keys to .env.local first, then run migration again.${c.reset}\n`);
+    return;
+  }
+
+  console.log(`\n${c.bright}${c.cyan}🚀 Migrating ${foundSecrets.length} secrets to Infisical...${c.reset}\n`);
+
+  let successCount = 0;
+  let failureCount = 0;
+
+  // Generate INTERNAL_API_KEY if it doesn't exist
+  if (!envConfig.INTERNAL_API_KEY) {
+    console.log(`${c.dim}Generating INTERNAL_API_KEY...${c.reset}`);
+    try {
+      const crypto = require('crypto');
+      const internalApiKey = crypto.randomBytes(32).toString('hex');
+      execSync(`infisical secrets set INTERNAL_API_KEY="${internalApiKey}" --env=development`, { stdio: 'inherit' });
+      console.log(`  ${c.green}✅ INTERNAL_API_KEY generated and stored${c.reset}`);
+      successCount++;
+    } catch (error) {
+      console.log(`  ${c.red}❌ Failed to generate INTERNAL_API_KEY${c.reset}`);
+      failureCount++;
+    }
+  }
+
+  // Migrate existing secrets
+  for (const secret of foundSecrets) {
+    console.log(`${c.dim}Migrating ${secret.key}...${c.reset}`);
+    try {
+      execSync(`infisical secrets set ${secret.key}="${secret.value}" --env=development`, { stdio: 'inherit' });
+      console.log(`  ${c.green}✅ ${secret.key} migrated successfully${c.reset}`);
+      successCount++;
+    } catch (error) {
+      console.log(`  ${c.red}❌ Failed to migrate ${secret.key}${c.reset}`);
+      failureCount++;
+    }
+  }
+
+  // Report results
+  console.log(`\n${c.bright}${c.green}🎉 Migration Complete!${c.reset}`);
+  console.log(`  Successful: ${c.green}${successCount}${c.reset}`);
+  if (failureCount > 0) {
+    console.log(`  Failed: ${c.red}${failureCount}${c.reset}`);
+  }
+
+  console.log(`\n${c.bright}${c.white}📋 Next Steps:${c.reset}`);
+  console.log(`1. ${c.cyan}Open Infisical Dashboard:${c.reset} http://localhost:8080`);
+  console.log(`2. ${c.cyan}Verify secrets:${c.reset} Check that all secrets were added`);
+  console.log(`3. ${c.cyan}Test your app:${c.reset} Restart with npm run dev`);
+  console.log(`4. ${c.cyan}Remove from .env.local:${c.reset} Comment out migrated secrets\n`);
+
+  if (missingSecrets.length > 0) {
+    console.log(`${c.yellow}⚠️ Add these optional secrets manually in Infisical UI:${c.reset}`);
+    for (const secret of missingSecrets) {
+      console.log(`   - ${secret.key}: ${secret.description}`);
+    }
+    console.log('');
+  }
+}
+
+async function checkInfisicalStatus() {
+  console.log(`${c.bright}${c.cyan}🔍 Checking Infisical status...${c.reset}\n`);
+
+  try {
+    // Check if Infisical container is running
+    const containerStatus = execSync('docker compose ps infisical', { encoding: 'utf8' });
+    if (containerStatus.includes('Up')) {
+      console.log(`${c.green}✅ Infisical container is running${c.reset}`);
+      
+      // Check if Infisical API is responding
+      try {
+        const response = await fetch('http://localhost:8080/api/status');
+        if (response.ok) {
+          console.log(`${c.green}✅ Infisical API is responding${c.reset}`);
+          
+          // Check for service tokens
+          const envConfig = loadEnvironment();
+          const tokens = ['INFISICAL_TOKEN_DEV', 'INFISICAL_TOKEN_STAGING', 'INFISICAL_TOKEN_PROD'];
+          let tokenCount = 0;
+          
+          tokens.forEach(token => {
+            if (envConfig[token]) {
+              console.log(`${c.green}✅ ${token} configured${c.reset}`);
+              tokenCount++;
+            } else {
+              console.log(`${c.yellow}⚠️ ${token} not configured${c.reset}`);
+            }
+          });
+          
+          if (tokenCount === 0) {
+            console.log(`\n${c.yellow}🔑 No service tokens configured. Run: hyperformant secrets setup${c.reset}`);
+          } else {
+            console.log(`\n${c.green}🎉 Infisical is ready with ${tokenCount}/3 environments configured${c.reset}`);
+          }
+          
+        } else {
+          console.log(`${c.red}❌ Infisical API returned status: ${response.status}${c.reset}`);
+        }
+      } catch (error) {
+        console.log(`${c.red}❌ Cannot reach Infisical API: ${(error as Error).message}${c.reset}`);
+      }
+    } else {
+      console.log(`${c.red}❌ Infisical container is not running${c.reset}`);
+      console.log(`${c.dim}Start with: docker compose up -d infisical${c.reset}`);
+    }
+  } catch (error) {
+    console.log(`${c.red}❌ Failed to check Infisical container status${c.reset}`);
+    console.log(`${c.dim}Error: ${(error as Error).message}${c.reset}`);
+  }
+}
+
 // Setup command
 async function runSetup() {
   console.log(`${c.bright}${c.yellow}Running initial setup...${c.reset}\n`);
@@ -462,30 +738,39 @@ async function runSetup() {
 
   // Wait for PostgreSQL
   console.log(`\n⏳ Waiting for PostgreSQL to be ready...`);
-  let pgReady = false;
-  let attempts = 0;
-  while (!pgReady && attempts < 30) {
+  const pgReady = await waitForService('PostgreSQL', async () => {
     try {
-      execSync(
-        'docker compose exec -T postgres pg_isready -U postgres -d hyperformant',
-        { stdio: 'ignore' }
-      );
-      pgReady = true;
+      execSync('docker compose exec -T postgres pg_isready -U postgres -d hyperformant', { stdio: 'ignore' });
+      return true;
     } catch {
-      process.stdout.write('.');
-      attempts++;
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      return false;
     }
-  }
+  });
 
   if (!pgReady) {
-    console.log(
-      `\n${c.red}PostgreSQL failed to start. Check Docker logs.${c.reset}`
-    );
+    console.log(`\n${c.red}PostgreSQL failed to start. Check Docker logs.${c.reset}`);
     process.exit(1);
   }
 
   console.log(`\n✅ PostgreSQL is ready!`);
+
+  // Wait for Redis
+  console.log(`\n⏳ Waiting for Redis to be ready...`);
+  const redisReady = await waitForService('Redis', async () => {
+    try {
+      execSync('docker compose exec -T redis redis-cli ping', { stdio: 'ignore' });
+      return true;
+    } catch {
+      return false;
+    }
+  });
+
+  if (!redisReady) {
+    console.log(`\n${c.red}Redis failed to start. Check Docker logs.${c.reset}`);
+    process.exit(1);
+  }
+
+  console.log(`\n✅ Redis is ready!`);
 
   // Run Prisma database migrations
   console.log(`\n🔄 Setting up Next.js database...`);
@@ -494,6 +779,9 @@ async function runSetup() {
     { stdio: 'inherit' }
   );
   execSync('cd web && npx prisma db seed', { stdio: 'inherit' });
+
+  // Set up Infisical
+  await setupInfisical();
 
   // Build and validate
   console.log(`\n🔨 Building application...`);
@@ -633,12 +921,31 @@ ${c.cyan}━━━━━━━━━━━━━━━━━━━━━━━�
     // Ignore errors if .next directory doesn't exist
   }
 
+  // Check if Infisical CLI is available and configured
+  let useInfisical = false;
+  try {
+    execSync('which infisical', { stdio: 'ignore' });
+    // Check if Infisical is initialized for this project
+    const infisicalConfigPath = path.join(process.cwd(), '.infisical.json');
+    if (fs.existsSync(infisicalConfigPath)) {
+      useInfisical = true;
+      console.log(`${c.green}🔐 Infisical CLI configured - using secret injection${c.reset}`);
+    } else {
+      console.log(`${c.yellow}⚠️ Infisical CLI not initialized - using .env.local fallback${c.reset}`);
+      console.log(`${c.dim}   Run 'infisical init' to connect to Infisical project${c.reset}`);
+    }
+  } catch {
+    console.log(`${c.yellow}⚠️ Infisical CLI not found - using .env.local fallback${c.reset}`);
+    console.log(`${c.dim}   Install Infisical CLI for automatic secret injection${c.reset}`);
+  }
+
   // Start Next.js development server
   console.log(`${c.yellow}Starting Next.js development server...${c.reset}\n`);
 
   let nextjsReady = false;
+  const npmScript = useInfisical ? 'dev' : 'dev:fallback';
 
-  nextjsDevProcess = spawn('npm', ['run', 'dev'], {
+  nextjsDevProcess = spawn('npm', ['run', npmScript], {
     stdio: 'pipe',
     shell: true,
     detached: true,
@@ -950,9 +1257,21 @@ yargs(hideBin(process.argv))
         default: 'dev',
         describe: 'Target environment (dev or prod)',
       });
+      y.option('local', {
+        type: 'boolean',
+        default: false,
+        describe: 'Deploy to local N8N instance instead of cloud',
+      });
+      y.option('host', {
+        type: 'string',
+        describe: 'Local N8N host URL (default: http://localhost:5678)',
+      });
     },
     async argv => {
-      await importWorkflows(argv.env as string);
+      await importWorkflows(argv.env as string, {
+        local: argv.local,
+        host: argv.host,
+      });
     }
   )
   .command(
@@ -988,6 +1307,39 @@ yargs(hideBin(process.argv))
     async () => {
       checkRequirements();
       await runDev();
+    }
+  )
+  .command(
+    'secrets',
+    'Secret management commands (Infisical)',
+    yargs => {
+      return yargs
+        .command(
+          'setup',
+          'Set up Infisical secret management',
+          {},
+          async () => {
+            await setupInfisical();
+          }
+        )
+        .command(
+          'status',
+          'Check Infisical status and configuration',
+          {},
+          async () => {
+            await checkInfisicalStatus();
+          }
+        )
+        .command(
+          'migrate',
+          'Migrate secrets from environment to Infisical',
+          {},
+          async () => {
+            await migrateSecretsToInfisical();
+          }
+        )
+        .demandCommand(1, 'Please specify a secrets command')
+        .help();
     }
   )
   .command(

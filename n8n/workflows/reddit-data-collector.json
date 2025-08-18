@@ -1,0 +1,316 @@
+{
+  "name": "Reddit Data Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */15 * * *"
+            }
+          ]
+        }
+      },
+      "id": "scheduled-reddit-collection",
+      "name": "Every 15 Minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-reddit",
+        "responseMode": "onReceived"
+      },
+      "id": "manual-reddit-trigger",
+      "name": "Manual Reddit Collection",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 500]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "Entity",
+        "returnAll": false,
+        "limit": 20,
+        "where": {
+          "conditions": [
+            {
+              "field": "type",
+              "value": "COMPANY"
+            },
+            {
+              "field": "isUserCompany",
+              "value": false
+            }
+          ]
+        },
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "SELECT e.*, COALESCE(MAX(sd.\"createdAt\"), '1970-01-01'::timestamp) as last_sentiment_check FROM \"Entity\" e LEFT JOIN \"SentimentData\" sd ON e.id::text = sd.\"companyId\" AND sd.source = 'reddit' WHERE e.type = 'COMPANY' GROUP BY e.id ORDER BY last_sentiment_check ASC LIMIT 20"
+        }
+      },
+      "id": "fetch-target-companies",
+      "name": "Fetch Target Companies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 400],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "DataSource",
+        "returnAll": false,
+        "limit": 1,
+        "where": {
+          "conditions": [
+            {
+              "field": "name",
+              "value": "reddit_api"
+            },
+            {
+              "field": "isActive",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "fetch-reddit-config",
+      "name": "Fetch Reddit Config",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 200],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Prepare Reddit API collection strategy\nconst redditConfig = $node['Fetch Reddit Config'].json;\nconst companies = $node['Fetch Target Companies'].json;\n\nif (!redditConfig || !redditConfig.isActive) {\n  throw new Error('Reddit API source is not active');\n}\n\n// Reddit search targets for SaaS companies\nconst subreddits = ['SaaS', 'startups', 'entrepreneur', 'smallbusiness', 'marketing', 'sales', 'CustomerSuccess'];\nconst searchQueries = [];\n\ncompanies.forEach(company => {\n  const companyName = company.name.replace(/[^a-zA-Z0-9\\s]/g, '');\n  const domain = (company.domain || '').replace(/\\.(com|io|co|net)$/, '');\n  \n  // Create search queries for each relevant subreddit\n  subreddits.forEach(subreddit => {\n    if (companyName.length > 2) {\n      searchQueries.push({\n        company: {\n          id: company.id,\n          name: company.name,\n          domain: company.domain\n        },\n        subreddit: subreddit,\n        query: companyName,\n        url: `https://www.reddit.com/r/${subreddit}/search.json?q=\"${encodeURIComponent(companyName)}\"&sort=new&limit=25&t=week`,\n        backupUrl: domain ? `https://www.reddit.com/r/${subreddit}/search.json?q=\"${encodeURIComponent(domain)}\"&sort=new&limit=25&t=week` : null\n      });\n    }\n  });\n});\n\n// Limit to prevent rate limiting\nconst limitedQueries = searchQueries.slice(0, 30);\n\nreturn {\n  redditConfig: redditConfig,\n  searchQueries: limitedQueries,\n  totalQueries: limitedQueries.length,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "prepare-reddit-queries",
+      "name": "Prepare Reddit Queries",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [600, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Execute Reddit API searches with rate limiting\nconst strategy = $json;\nconst searchQueries = strategy.searchQueries;\nconst results = [];\n\nfor (const query of searchQueries) {\n  try {\n    // Simulate Reddit API call (replace with actual fetch in production)\n    const response = await $http.get(query.url, {\n      headers: {\n        'User-Agent': 'Hyperformant/1.0 (Market Intelligence Bot)'\n      }\n    });\n    \n    if (response.data && response.data.data && response.data.data.children) {\n      const posts = response.data.data.children;\n      \n      posts.forEach(post => {\n        if (post.data) {\n          const postData = post.data;\n          \n          // Extract sentiment indicators\n          const sentiment = analyzeSentiment(postData.title, postData.selftext || '');\n          \n          results.push({\n            company: query.company,\n            source: 'reddit',\n            subreddit: query.subreddit,\n            postId: postData.id,\n            title: postData.title,\n            content: (postData.selftext || '').substring(0, 500),\n            author: postData.author,\n            score: postData.score,\n            numComments: postData.num_comments,\n            created: new Date(postData.created_utc * 1000).toISOString(),\n            url: `https://reddit.com${postData.permalink}`,\n            sentiment: sentiment.label,\n            sentimentScore: sentiment.score,\n            confidence: sentiment.confidence\n          });\n        }\n      });\n    }\n    \n    // Rate limiting delay\n    await new Promise(resolve => setTimeout(resolve, 1000));\n    \n  } catch (error) {\n    console.log(`Reddit API error for ${query.company.name}: ${error.message}`);\n  }\n}\n\nfunction analyzeSentiment(title, content) {\n  const text = (title + ' ' + content).toLowerCase();\n  \n  // Simple sentiment analysis based on keywords\n  const positiveWords = ['great', 'excellent', 'amazing', 'love', 'best', 'awesome', 'fantastic', 'good', 'helpful', 'recommend', 'impressed', 'outstanding'];\n  const negativeWords = ['terrible', 'awful', 'hate', 'worst', 'bad', 'horrible', 'disappointing', 'useless', 'avoid', 'scam', 'broken', 'issues'];\n  \n  let positiveCount = 0;\n  let negativeCount = 0;\n  \n  positiveWords.forEach(word => {\n    if (text.includes(word)) positiveCount++;\n  });\n  \n  negativeWords.forEach(word => {\n    if (text.includes(word)) negativeCount++;\n  });\n  \n  const totalWords = positiveCount + negativeCount;\n  \n  if (totalWords === 0) {\n    return { label: 'neutral', score: 0, confidence: 0.3 };\n  }\n  \n  const positiveRatio = positiveCount / totalWords;\n  \n  if (positiveRatio > 0.6) {\n    return { label: 'positive', score: 0.3 + (positiveRatio * 0.7), confidence: 0.7 };\n  } else if (positiveRatio < 0.4) {\n    return { label: 'negative', score: -0.3 - ((1 - positiveRatio) * 0.7), confidence: 0.7 };\n  } else {\n    return { label: 'neutral', score: (positiveRatio - 0.5) * 0.4, confidence: 0.5 };\n  }\n}\n\nreturn results.map(result => ({ json: result }));"
+      },
+      "id": "collect-reddit-data",
+      "name": "Collect Reddit Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process and prepare Reddit data for storage\nconst redditData = $json;\n\nif (!redditData.company || !redditData.company.id) {\n  return null;\n}\n\n// Prepare SentimentData record\nconst sentimentRecord = {\n  companyId: redditData.company.id,\n  source: 'reddit',\n  dataSourceId: $node['Fetch Reddit Config'].json.id,\n  sentiment: redditData.sentiment,\n  score: redditData.sentimentScore,\n  content: `${redditData.title} | r/${redditData.subreddit} | Score: ${redditData.score} | Comments: ${redditData.numComments}`,\n  url: redditData.url,\n  confidence: redditData.confidence\n};\n\n// Prepare MarketInsight if significant\nlet marketInsight = null;\nif (Math.abs(redditData.sentimentScore) > 0.5 || redditData.score > 10) {\n  marketInsight = {\n    entityId: redditData.company.id,\n    insightType: redditData.sentimentScore > 0 ? 'opportunity' : 'threat',\n    category: 'market',\n    impact: Math.min(10, Math.abs(redditData.sentimentScore) * 5 + (redditData.score / 100)),\n    confidence: redditData.confidence,\n    urgency: Math.abs(redditData.sentimentScore) > 0.7 ? 'high' : 'medium',\n    contributingSources: ['reddit_api'],\n    sourceConsensus: redditData.confidence,\n    dataPointCount: 1,\n    title: `Reddit Discussion: ${redditData.sentiment} sentiment`,\n    summary: `${redditData.sentiment} discussion about ${redditData.company.name} in r/${redditData.subreddit}: \"${redditData.title}\"`,\n    actionability: redditData.sentimentScore > 0.6 ? 'Monitor positive momentum' : \n                   redditData.sentimentScore < -0.6 ? 'Address customer concerns' : 'Track sentiment trends',\n    implications: [\n      `Community sentiment: ${redditData.sentiment}`,\n      `Engagement level: ${redditData.numComments} comments`,\n      `Community score: ${redditData.score}`\n    ],\n    extractedAt: new Date().toISOString(),\n    validUntil: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString() // Valid for 7 days\n  };\n}\n\nreturn {\n  sentimentData: sentimentRecord,\n  marketInsight: marketInsight,\n  metadata: {\n    source: 'reddit',\n    subreddit: redditData.subreddit,\n    postScore: redditData.score,\n    engagement: redditData.numComments\n  }\n};"
+      },
+      "id": "process-reddit-data",
+      "name": "Process Reddit Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SentimentData",
+        "columns": "companyId,source,dataSourceId,sentiment,score,content,url,confidence",
+        "options": {
+          "onConflict": "ignore"
+        }
+      },
+      "id": "store-sentiment-data",
+      "name": "Store Sentiment Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 250],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.marketInsight !== null }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-market-insight",
+      "name": "Has Market Insight?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 350]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,title,summary,actionability,implications,extractedAt,validUntil"
+      },
+      "id": "store-market-insight",
+      "name": "Store Market Insight",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 350],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate collection summary\nconst allData = $input.all();\n\nconst summary = {\n  collectionTime: new Date().toISOString(),\n  totalRecords: allData.length,\n  sentimentBreakdown: {\n    positive: allData.filter(d => d.json?.sentimentData?.sentiment === 'positive').length,\n    negative: allData.filter(d => d.json?.sentimentData?.sentiment === 'negative').length,\n    neutral: allData.filter(d => d.json?.sentimentData?.sentiment === 'neutral').length\n  },\n  marketInsights: allData.filter(d => d.json?.marketInsight !== null).length,\n  avgSentimentScore: allData.length > 0 ? \n    allData.reduce((sum, d) => sum + (d.json?.sentimentData?.score || 0), 0) / allData.length : 0,\n  topCompanies: allData\n    .reduce((acc, d) => {\n      if (d.json?.sentimentData?.companyId) {\n        acc[d.json.sentimentData.companyId] = (acc[d.json.sentimentData.companyId] || 0) + 1;\n      }\n      return acc;\n    }, {}),\n  subredditCoverage: [...new Set(allData.map(d => d.json?.metadata?.subreddit).filter(Boolean))]\n};\n\nreturn summary;"
+      },
+      "id": "generate-collection-summary",
+      "name": "Generate Collection Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1400, 150]
+    }
+  ],
+  "connections": {
+    "scheduled-reddit-collection": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-reddit-config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual-reddit-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-reddit-config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-target-companies": {
+      "main": [
+        [
+          {
+            "node": "prepare-reddit-queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-reddit-config": {
+      "main": [
+        [
+          {
+            "node": "prepare-reddit-queries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-reddit-queries": {
+      "main": [
+        [
+          {
+            "node": "collect-reddit-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect-reddit-data": {
+      "main": [
+        [
+          {
+            "node": "process-reddit-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-reddit-data": {
+      "main": [
+        [
+          {
+            "node": "store-sentiment-data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-market-insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-market-insight": {
+      "main": [
+        [
+          {
+            "node": "store-market-insight",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "store-sentiment-data": {
+      "main": [
+        [
+          {
+            "node": "generate-collection-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

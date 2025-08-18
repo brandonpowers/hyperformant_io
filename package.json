@@ -9,6 +9,7 @@
   "scripts": {
     "dev": "ts-node src/cli.ts dev",
     "build": "cd web && npm run build",
+    "build:fallback": "cd web && npm run build:fallback",
     "test": "jest && cd web && npm test",
     "lint": "./node_modules/.bin/eslint src/ web/src/ --ext .ts,.tsx,.js,.jsx --fix",
     "format": "./node_modules/.bin/prettier --write \"src/**/*.{ts,tsx,json,md}\" \"web/src/**/*.{ts,tsx,js,jsx,json,md}\"",
@@ -21,6 +22,9 @@
     "db:seed": "npx dotenv -e .env.local -- npx prisma db seed",
     "db:studio": "npx dotenv -e .env.local -- npx prisma studio --browser none",
     "deploy": "npm run validate && npm run db:reset && ts-node src/cli.ts import-n8n",
+    "import:local": "ts-node src/cli.ts import-n8n --local",
+    "import:dev": "ts-node src/cli.ts import-n8n dev",
+    "import:prod": "ts-node src/cli.ts import-n8n prod",
     "install:all": "npm install && cd web && npm install",
     "clean:all": "rm -rf node_modules package-lock.json dist/ coverage/ web/.next/ web/node_modules web/package-lock.json",
     "prepare": "husky"
