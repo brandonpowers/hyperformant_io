@@ -1,0 +1,336 @@
+{
+  "name": "HackerNews Data Collector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 */30 * * *"
+            }
+          ]
+        }
+      },
+      "id": "scheduled-hn-collection",
+      "name": "Every 30 Minutes",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "/collect-hackernews",
+        "responseMode": "onReceived"
+      },
+      "id": "manual-hn-trigger",
+      "name": "Manual HN Collection",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [200, 500]
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "Entity",
+        "returnAll": false,
+        "limit": 30,
+        "where": {
+          "conditions": [
+            {
+              "field": "type",
+              "value": "COMPANY"
+            }
+          ]
+        },
+        "additionalFields": {
+          "rawQuery": true,
+          "query": "SELECT e.*, COALESCE(MAX(sd.\"createdAt\"), '1970-01-01'::timestamp) as last_hn_check FROM \"Entity\" e LEFT JOIN \"SentimentData\" sd ON e.id::text = sd.\"companyId\" AND sd.source = 'hackernews' WHERE e.type = 'COMPANY' AND (e.domain IS NOT NULL OR e.name IS NOT NULL) GROUP BY e.id ORDER BY last_hn_check ASC LIMIT 30"
+        }
+      },
+      "id": "fetch-target-companies",
+      "name": "Fetch Target Companies",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 400],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "select",
+        "table": "DataSource",
+        "returnAll": false,
+        "limit": 1,
+        "where": {
+          "conditions": [
+            {
+              "field": "name",
+              "value": "hackernews_api"
+            },
+            {
+              "field": "isActive",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "fetch-hn-config",
+      "name": "Fetch HackerNews Config",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [400, 200],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": {
+          "timeout": 10000
+        }
+      },
+      "id": "fetch-top-stories",
+      "name": "Fetch Top Stories",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [600, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get top 100 story IDs and prepare for processing\nconst topStoryIds = $json.slice(0, 100); // Top 100 stories\nconst companies = $node['Fetch Target Companies'].json;\nconst hnConfig = $node['Fetch HackerNews Config'].json;\n\nif (!hnConfig || !hnConfig.isActive) {\n  throw new Error('HackerNews API source is not active');\n}\n\n// Create company search patterns\nconst companyPatterns = companies.map(company => {\n  const name = company.name.replace(/[^a-zA-Z0-9\\s]/g, '').toLowerCase();\n  const domain = (company.domain || '').replace(/^https?:\\/\\//, '').replace(/\\/.*$/, '').toLowerCase();\n  \n  return {\n    company: company,\n    searchTerms: [name, domain].filter(Boolean),\n    patterns: [\n      new RegExp(name.replace(/\\s+/g, '\\\\s+'), 'i'),\n      domain ? new RegExp(domain.replace(/\\./g, '\\\\.'), 'i') : null\n    ].filter(Boolean)\n  };\n});\n\nreturn {\n  storyIds: topStoryIds,\n  companyPatterns: companyPatterns,\n  hnConfig: hnConfig,\n  timestamp: new Date().toISOString()\n};"
+      },
+      "id": "prepare-hn-processing",
+      "name": "Prepare HN Processing",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [600, 400]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Fetch story details and match with companies\nconst { storyIds, companyPatterns, hnConfig } = $json;\nconst matches = [];\n\n// Process stories in batches to avoid overwhelming the API\nconst batchSize = 20;\nconst storyBatch = storyIds.slice(0, batchSize);\n\nfor (const storyId of storyBatch) {\n  try {\n    const response = await $http.get(`https://hacker-news.firebaseio.com/v0/item/${storyId}.json`);\n    const story = response.data;\n    \n    if (!story || !story.title) continue;\n    \n    const storyText = (story.title + ' ' + (story.text || '') + ' ' + (story.url || '')).toLowerCase();\n    \n    // Check each company pattern\n    for (const companyPattern of companyPatterns) {\n      let hasMatch = false;\n      let matchType = 'none';\n      \n      for (const pattern of companyPattern.patterns) {\n        if (pattern.test(storyText)) {\n          hasMatch = true;\n          matchType = pattern.source.includes('domain') ? 'domain' : 'name';\n          break;\n        }\n      }\n      \n      if (hasMatch) {\n        // Analyze technical sentiment and innovation signals\n        const analysis = analyzeTechnicalContent(story);\n        \n        matches.push({\n          company: companyPattern.company,\n          story: {\n            id: story.id,\n            title: story.title,\n            url: story.url,\n            text: (story.text || '').substring(0, 500),\n            score: story.score || 0,\n            descendants: story.descendants || 0,\n            time: story.time,\n            type: story.type,\n            by: story.by\n          },\n          matchType: matchType,\n          analysis: analysis,\n          hnUrl: `https://news.ycombinator.com/item?id=${story.id}`\n        });\n      }\n    }\n    \n    // Rate limiting\n    await new Promise(resolve => setTimeout(resolve, 100));\n    \n  } catch (error) {\n    console.log(`Error fetching story ${storyId}: ${error.message}`);\n  }\n}\n\nfunction analyzeTechnicalContent(story) {\n  const content = (story.title + ' ' + (story.text || '')).toLowerCase();\n  \n  // Technical innovation indicators\n  const innovationKeywords = ['ai', 'machine learning', 'blockchain', 'api', 'open source', 'github', 'release', 'launch', 'beta', 'scale', 'performance', 'security'];\n  const discussionKeywords = ['review', 'experience', 'opinion', 'thoughts', 'alternatives', 'comparison', 'vs', 'better than'];\n  const problemKeywords = ['bug', 'issue', 'problem', 'down', 'outage', 'security breach', 'vulnerability', 'lawsuit'];\n  \n  let innovationScore = 0;\n  let discussionScore = 0;\n  let problemScore = 0;\n  \n  innovationKeywords.forEach(keyword => {\n    if (content.includes(keyword)) innovationScore++;\n  });\n  \n  discussionKeywords.forEach(keyword => {\n    if (content.includes(keyword)) discussionScore++;\n  });\n  \n  problemKeywords.forEach(keyword => {\n    if (content.includes(keyword)) problemScore++;\n  });\n  \n  // Determine primary signal type\n  let signalType = 'mention';\n  let sentiment = 'neutral';\n  let sentimentScore = 0;\n  \n  if (innovationScore > 0) {\n    signalType = 'innovation';\n    sentiment = 'positive';\n    sentimentScore = 0.3 + (innovationScore * 0.2);\n  } else if (problemScore > 0) {\n    signalType = 'issue';\n    sentiment = 'negative';\n    sentimentScore = -0.3 - (problemScore * 0.2);\n  } else if (discussionScore > 0) {\n    signalType = 'discussion';\n    sentiment = story.score > 50 ? 'positive' : 'neutral';\n    sentimentScore = story.score > 50 ? 0.2 : 0;\n  }\n  \n  return {\n    signalType: signalType,\n    sentiment: sentiment,\n    sentimentScore: Math.max(-1, Math.min(1, sentimentScore)),\n    confidence: innovationScore + discussionScore + problemScore > 0 ? 0.7 : 0.4,\n    technicalRelevance: innovationScore * 2 + discussionScore,\n    engagementLevel: story.score + (story.descendants * 2)\n  };\n}\n\nreturn matches.map(match => ({ json: match }));"
+      },
+      "id": "collect-hn-data",
+      "name": "Collect HN Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [800, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Process HackerNews data for storage\nconst hnData = $json;\n\nif (!hnData.company || !hnData.story) {\n  return null;\n}\n\nconst story = hnData.story;\nconst analysis = hnData.analysis;\nconst company = hnData.company;\n\n// Prepare SentimentData record\nconst sentimentRecord = {\n  companyId: company.id,\n  source: 'hackernews',\n  dataSourceId: $node['Fetch HackerNews Config'].json.id,\n  sentiment: analysis.sentiment,\n  score: analysis.sentimentScore,\n  content: `${story.title} | HN Score: ${story.score} | Comments: ${story.descendants} | ${analysis.signalType}`,\n  url: hnData.hnUrl,\n  confidence: analysis.confidence\n};\n\n// Prepare MarketInsight for significant technical signals\nlet marketInsight = null;\nif (analysis.technicalRelevance > 2 || story.score > 100 || analysis.signalType === 'innovation') {\n  const impact = Math.min(10, \n    (analysis.technicalRelevance * 2) + \n    (story.score / 50) + \n    (story.descendants / 20) +\n    (Math.abs(analysis.sentimentScore) * 3)\n  );\n  \n  marketInsight = {\n    entityId: company.id,\n    insightType: analysis.signalType === 'innovation' ? 'opportunity' : \n                 analysis.signalType === 'issue' ? 'threat' : 'signal',\n    category: 'technical',\n    impact: impact,\n    confidence: analysis.confidence,\n    urgency: story.score > 200 ? 'high' : \n             story.score > 50 ? 'medium' : 'low',\n    contributingSources: ['hackernews_api'],\n    sourceConsensus: analysis.confidence,\n    dataPointCount: 1,\n    title: `HackerNews ${analysis.signalType}: ${story.title}`,\n    summary: `Technical community discussion about ${company.name} on HackerNews: \"${story.title}\" (${story.score} points, ${story.descendants} comments)`,\n    actionability: analysis.signalType === 'innovation' ? 'Monitor innovation momentum' :\n                   analysis.signalType === 'issue' ? 'Address technical concerns' :\n                   'Track technical community sentiment',\n    implications: [\n      `Technical relevance: ${analysis.technicalRelevance}/10`,\n      `Community engagement: ${story.score} points, ${story.descendants} comments`,\n      `Signal type: ${analysis.signalType}`,\n      `Match type: ${hnData.matchType}`\n    ],\n    extractedAt: new Date().toISOString(),\n    validUntil: new Date(Date.now() + (14 * 24 * 60 * 60 * 1000)).toISOString() // Valid for 14 days\n  };\n}\n\nreturn {\n  sentimentData: sentimentRecord,\n  marketInsight: marketInsight,\n  metadata: {\n    source: 'hackernews',\n    storyId: story.id,\n    score: story.score,\n    comments: story.descendants,\n    signalType: analysis.signalType,\n    technicalRelevance: analysis.technicalRelevance,\n    matchType: hnData.matchType\n  }\n};"
+      },
+      "id": "process-hn-data",
+      "name": "Process HN Data",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1000, 300]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "SentimentData",
+        "columns": "companyId,source,dataSourceId,sentiment,score,content,url,confidence",
+        "options": {
+          "onConflict": "ignore"
+        }
+      },
+      "id": "store-sentiment-data",
+      "name": "Store Sentiment Data",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1200, 250],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{ $json.marketInsight !== null }}",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "has-market-insight",
+      "name": "Has Market Insight?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [1200, 350]
+    },
+    {
+      "parameters": {
+        "operation": "insert",
+        "table": "MarketInsight",
+        "columns": "entityId,insightType,category,impact,confidence,urgency,contributingSources,sourceConsensus,dataPointCount,title,summary,actionability,implications,extractedAt,validUntil"
+      },
+      "id": "store-market-insight",
+      "name": "Store Market Insight",
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 1,
+      "position": [1400, 350],
+      "credentials": {
+        "postgres": {
+          "id": "hyperformant-postgres-credentials",
+          "name": "Hyperformant Postgres"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate HackerNews collection summary\nconst allData = $input.all();\n\nconst summary = {\n  collectionTime: new Date().toISOString(),\n  totalMatches: allData.length,\n  signalTypes: {\n    innovation: allData.filter(d => d.json?.metadata?.signalType === 'innovation').length,\n    discussion: allData.filter(d => d.json?.metadata?.signalType === 'discussion').length,\n    issue: allData.filter(d => d.json?.metadata?.signalType === 'issue').length,\n    mention: allData.filter(d => d.json?.metadata?.signalType === 'mention').length\n  },\n  sentimentBreakdown: {\n    positive: allData.filter(d => d.json?.sentimentData?.sentiment === 'positive').length,\n    negative: allData.filter(d => d.json?.sentimentData?.sentiment === 'negative').length,\n    neutral: allData.filter(d => d.json?.sentimentData?.sentiment === 'neutral').length\n  },\n  marketInsights: allData.filter(d => d.json?.marketInsight !== null).length,\n  avgTechnicalRelevance: allData.length > 0 ?\n    allData.reduce((sum, d) => sum + (d.json?.metadata?.technicalRelevance || 0), 0) / allData.length : 0,\n  avgEngagement: allData.length > 0 ?\n    allData.reduce((sum, d) => sum + (d.json?.metadata?.score || 0) + (d.json?.metadata?.comments || 0), 0) / allData.length : 0,\n  topDiscussions: allData\n    .filter(d => d.json?.metadata?.score > 50)\n    .sort((a, b) => (b.json?.metadata?.score || 0) - (a.json?.metadata?.score || 0))\n    .slice(0, 5)\n    .map(d => ({\n      company: d.json?.sentimentData?.companyId,\n      score: d.json?.metadata?.score,\n      comments: d.json?.metadata?.comments,\n      signalType: d.json?.metadata?.signalType\n    }))\n};\n\nreturn summary;"
+      },
+      "id": "generate-hn-summary",
+      "name": "Generate HN Summary",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [1400, 150]
+    }
+  ],
+  "connections": {
+    "scheduled-hn-collection": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-hn-config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "manual-hn-trigger": {
+      "main": [
+        [
+          {
+            "node": "fetch-target-companies",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "fetch-hn-config",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-hn-config": {
+      "main": [
+        [
+          {
+            "node": "fetch-top-stories",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-target-companies": {
+      "main": [
+        [
+          {
+            "node": "prepare-hn-processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "fetch-top-stories": {
+      "main": [
+        [
+          {
+            "node": "prepare-hn-processing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare-hn-processing": {
+      "main": [
+        [
+          {
+            "node": "collect-hn-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "collect-hn-data": {
+      "main": [
+        [
+          {
+            "node": "process-hn-data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "process-hn-data": {
+      "main": [
+        [
+          {
+            "node": "store-sentiment-data",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "has-market-insight",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "has-market-insight": {
+      "main": [
+        [
+          {
+            "node": "store-market-insight",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "store-sentiment-data": {
+      "main": [
+        [
+          {
+            "node": "generate-hn-summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
