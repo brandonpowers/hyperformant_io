@@ -11,6 +11,7 @@ import path from 'path';
 const N8N_BASE_URL = process.env.N8N_HOST_URL || 'http://localhost:5678';
 const N8N_API_KEY = process.env.N8N_API_KEY || '';
 
+
 interface WorkflowData {
   name: string;
   nodes: any[];
@@ -29,6 +30,7 @@ class N8NDeployment {
   constructor(baseUrl: string, apiKey?: string) {
     this.baseUrl = baseUrl.replace(/\/$/, ''); // Remove trailing slash
     this.apiKey = apiKey || '';
+    console.log(`🔑 Using N8N API Key: ${this.apiKey ? 'Configured' : 'Not found'}`);
   }
 
   /**
@@ -44,6 +46,16 @@ class N8NDeployment {
       
       console.log(`🔄 Importing workflow: ${workflowData.name}`);
 
+      // Clean the workflow data for API compatibility (remove read-only and extra fields)
+      const cleanWorkflowData = {
+        name: workflowData.name,
+        nodes: workflowData.nodes,
+        connections: workflowData.connections,
+        settings: workflowData.settings || { executionOrder: "v1" },
+        staticData: workflowData.staticData || null,
+        ...(workflowData.pinData && Object.keys(workflowData.pinData).length > 0 && { pinData: workflowData.pinData })
+      };
+
       // Check if workflow already exists
       const existingWorkflows = await this.getWorkflows();
       const existingWorkflow = existingWorkflows.find(
@@ -55,31 +67,29 @@ class N8NDeployment {
       if (existingWorkflow) {
         console.log(`📝 Updating existing workflow: ${workflowData.name}`);
         
-        // Update existing workflow
+        // Update existing workflow with PUT (N8N 1.107.4 requirement)
         result = await this.request(
-          'PATCH',
+          'PUT',
           `/api/v1/workflows/${existingWorkflow.id}`,
-          {
-            ...workflowData,
-            id: existingWorkflow.id,
-            active: activate
-          }
+          cleanWorkflowData
         );
       } else {
         console.log(`✨ Creating new workflow: ${workflowData.name}`);
         
         // Create new workflow
-        result = await this.request('POST', '/api/v1/workflows', {
-          ...workflowData,
-          active: activate
-        });
+        result = await this.request('POST', '/api/v1/workflows', cleanWorkflowData);
       }
 
+      // Handle activation separately if requested
       if (activate && !result.active) {
         console.log(`⚡ Activating workflow: ${workflowData.name}`);
-        await this.request('PATCH', `/api/v1/workflows/${result.id}/activate`, {
-          active: true
-        });
+        try {
+          // Try activating with the standard approach
+          await this.activateWorkflow(result.id);
+          console.log(`✅ Workflow activated successfully`);
+        } catch (error) {
+          console.log(`⚠️ Could not activate workflow: ${error instanceof Error ? error.message : String(error)}`);
+        }
       }
 
       console.log(`✅ Successfully deployed: ${workflowData.name} (ID: ${result.id})`);
@@ -101,6 +111,20 @@ class N8NDeployment {
     } catch (error) {
       console.error('❌ Failed to get workflows:', error);
       return [];
+    }
+  }
+
+  /**
+   * Activate a workflow by ID
+   */
+  async activateWorkflow(workflowId: string): Promise<void> {
+    try {
+      // Try different activation endpoints for N8N 1.107.4
+      // First try the toggle endpoint
+      await this.request('POST', `/api/v1/workflows/${workflowId}/activate`, {});
+    } catch (error) {
+      // If that fails, try updating with active: true (if allowed)
+      throw new Error(`Activation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -147,7 +171,7 @@ class N8NDeployment {
       }
     };
 
-    if (data && (method === 'POST' || method === 'PATCH')) {
+    if (data && (method === 'POST' || method === 'PATCH' || method === 'PUT')) {
       options.body = JSON.stringify(data);
     }
 

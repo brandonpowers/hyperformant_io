@@ -192,16 +192,28 @@
     },
     {
       "parameters": {
-        "model": "claude-3-haiku-20240307",
+        "model": "claude-sonnet-4",
+        "messages": {
+          "messageType": "defineBelow",
+          "messages": [
+            {
+              "role": "system",
+              "content": "You are the Market Intelligence Agent analyzing consumer sentiment for competitive intelligence."
+            },
+            {
+              "role": "user",
+              "content": "=**Company Being Analyzed:**\n{{ JSON.stringify($node[\"Prepare Sentiment Collection\"].json.companies[$itemIndex]) }}\n\n**Reddit Data:**\n{{ JSON.stringify($node[\"Collect Reddit Sentiment\"].json) }}\n\n**Twitter Data:**\n{{ JSON.stringify($node[\"Collect Twitter Sentiment\"].json) }}\n\n**G2 Reviews Data:**\n{{ JSON.stringify($node[\"Collect G2 Reviews\"].json) }}\n\n**Task:** Analyze this social media and review data to extract:\n1. **Sentiment Classification**: Overall sentiment toward the company\n2. **Pain Points**: Specific customer complaints and frustrations\n3. **Feature Requests**: What customers are asking for\n4. **Switching Signals**: Evidence of customers considering alternatives\n5. **Competitor Mentions**: References to competing products\n\n**Response Format:**\n```json\n{\n  \"target_company_domain\": \"string\",\n  \"analysis_timestamp\": \"{{ new Date().toISOString() }}\",\n  \"sentiment_summary\": {\n    \"overall_sentiment\": \"very_positive|positive|neutral|negative|very_negative\",\n    \"sentiment_score\": 0.0,\n    \"confidence_level\": 0.0,\n    \"total_mentions\": 0\n  },\n  \"extracted_insights\": [\n    {\n      \"source_platform\": \"reddit|twitter|g2|hackernews\",\n      \"content_text\": \"string\",\n      \"sentiment_classification\": \"very_positive|positive|neutral|negative|very_negative\",\n      \"sentiment_score\": 0.0,\n      \"pain_points\": [\"string\"],\n      \"feature_requests\": [\"string\"],\n      \"competitor_mentions\": [\"string\"],\n      \"switching_signals\": false,\n      \"pricing_complaints\": false,\n      \"support_issues_mentioned\": false\n    }\n  ],\n  \"competitive_intelligence\": {\n    \"top_pain_points\": [\"string\"],\n    \"most_requested_features\": [\"string\"],\n    \"competitive_threats\": [\"string\"],\n    \"customer_migration_signals\": 0\n  },\n  \"data_quality\": {\n    \"sources_analyzed\": [\"string\"],\n    \"total_data_points\": 0,\n    \"confidence_threshold_met\": false\n  }\n}\n```\n\n**Analysis Guidelines:**\n- Focus on actionable competitive intelligence\n- Identify specific pain points that competitors could exploit\n- Look for patterns across multiple sources\n- Flag high-confidence switching signals\n- Extract specific feature gaps and customer requests\n- Sentiment scores: -1 (very negative) to +1 (very positive)"
+            }
+          ]
+        },
         "options": {
           "temperature": 0.0,
           "maxTokens": 1500
-        },
-        "prompt": "=You are the Market Intelligence Agent analyzing consumer sentiment for competitive intelligence.\n\n**Company Being Analyzed:**\n{{ JSON.stringify($node[\"Prepare Sentiment Collection\"].json.companies[$itemIndex]) }}\n\n**Reddit Data:**\n{{ JSON.stringify($node[\"Collect Reddit Sentiment\"].json) }}\n\n**Twitter Data:**\n{{ JSON.stringify($node[\"Collect Twitter Sentiment\"].json) }}\n\n**G2 Reviews Data:**\n{{ JSON.stringify($node[\"Collect G2 Reviews\"].json) }}\n\n**Task:** Analyze this social media and review data to extract:\n1. **Sentiment Classification**: Overall sentiment toward the company\n2. **Pain Points**: Specific customer complaints and frustrations\n3. **Feature Requests**: What customers are asking for\n4. **Switching Signals**: Evidence of customers considering alternatives\n5. **Competitor Mentions**: References to competing products\n\n**Response Format:**\n```json\n{\n  \"target_company_domain\": \"string\",\n  \"analysis_timestamp\": \"{{ new Date().toISOString() }}\",\n  \"sentiment_summary\": {\n    \"overall_sentiment\": \"very_positive|positive|neutral|negative|very_negative\",\n    \"sentiment_score\": 0.0,\n    \"confidence_level\": 0.0,\n    \"total_mentions\": 0\n  },\n  \"extracted_insights\": [\n    {\n      \"source_platform\": \"reddit|twitter|g2|hackernews\",\n      \"content_text\": \"string\",\n      \"sentiment_classification\": \"very_positive|positive|neutral|negative|very_negative\",\n      \"sentiment_score\": 0.0,\n      \"pain_points\": [\"string\"],\n      \"feature_requests\": [\"string\"],\n      \"competitor_mentions\": [\"string\"],\n      \"switching_signals\": false,\n      \"pricing_complaints\": false,\n      \"support_issues_mentioned\": false\n    }\n  ],\n  \"competitive_intelligence\": {\n    \"top_pain_points\": [\"string\"],\n    \"most_requested_features\": [\"string\"],\n    \"competitive_threats\": [\"string\"],\n    \"customer_migration_signals\": 0\n  },\n  \"data_quality\": {\n    \"sources_analyzed\": [\"string\"],\n    \"total_data_points\": 0,\n    \"confidence_threshold_met\": false\n  }\n}\n```\n\n**Analysis Guidelines:**\n- Focus on actionable competitive intelligence\n- Identify specific pain points that competitors could exploit\n- Look for patterns across multiple sources\n- Flag high-confidence switching signals\n- Extract specific feature gaps and customer requests\n- Sentiment scores: -1 (very negative) to +1 (very positive)"
+        }
       },
       "id": "analyze-sentiment-data",
       "name": "Analyze Sentiment Data",
-      "type": "n8n-nodes-base.anthropic",
+      "type": "@n8n/n8n-nodes-langchain.lmChatAnthropic",
       "typeVersion": 1,
       "position": [1000, 350],
       "credentials": {

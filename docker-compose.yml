@@ -19,7 +19,7 @@ services:
 
   # n8n Workflow Automation
   n8n:
-    image: n8nio/n8n:latest
+    image: n8nio/n8n:1.107.4
     container_name: hyperformant-n8n
     ports:
       - '5678:5678'
@@ -27,13 +27,11 @@ services:
       - N8N_BASIC_AUTH_ACTIVE=true
       - N8N_BASIC_AUTH_USER=admin
       - N8N_BASIC_AUTH_PASSWORD=admin
-      - N8N_HOST=localhost
-      - N8N_PORT=5678
-      - N8N_PROTOCOL=http
-      - WEBHOOK_URL=http://localhost:5678/
       - N8N_ENCRYPTION_KEY=hyperformant-n8n-encryption-key
+      - N8N_RUNNERS_ENABLED=true
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=false
       - N8N_PUBLIC_API_DISABLED=false
-      - N8N_PUBLIC_API_ENDPOINT=http://localhost:5678/api
+      - N8N_DISABLE_UI=false
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_HOST=postgres
       - DB_POSTGRESDB_PORT=5432
